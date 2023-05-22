@@ -1,4 +1,4 @@
-# Ignore compiled files
+#ke-build-debug  Ignore compiled files
 *.class
 *.jar
 *.war
@@ -12,6 +12,7 @@
 build/
 dist/
 target/
+cmake-build-debug/
 
 # Ignore logs
 logs/
