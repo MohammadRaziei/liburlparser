@@ -18,7 +18,10 @@ namespace TLD {
 //    class QueryParams : public std::vector<std::string>{};
     using QueryParams = std::vector<std::string>;
 
+
     class Url {
+    public:
+        class Host;
 
     public:
         Url(const std::string& url);
@@ -34,24 +37,45 @@ namespace TLD {
         std::string subdomain() const;
         std::string domain() const;
         std::string suffix() const;
-        std::string host() const;
         std::string query() const;
         std::string fragment() const;
         std::string userinfo() const;
         std::string abspath() const;
+        std::string domainName() const;
+        std::string fulldomain() const;
 
         int port() const;
         QueryParams params() const;
+        Host host() const;
 //    void doSomething();
     protected:
         class Impl;
         Impl* impl;
         Url(const Impl& url_impl);
     };
+
+    class Url::Host{
+    public:
+        Host(const std::string& host);
+        std::string suffix() const noexcept;
+        std::string domain() const noexcept;
+        std::string domainName() const noexcept;
+        std::string subdomain() const noexcept;
+        std::string fulldomain() const noexcept;
+        std::string str() const noexcept;
+
+    protected:
+        std::string host_;
+        std::string domain_;
+        std::string subdomain_;
+        std::string suffix_;
+    };
+
 }
 
 std::ostream& operator<<(std::ostream& os, const TLD::QueryParams& dt);
 std::ostream& operator<<(std::ostream& os, const TLD::Url& dt);
+std::ostream& operator<<(std::ostream& os, const TLD::Url::Host& dt);
 
 
 

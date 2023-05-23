@@ -9,49 +9,26 @@
 
 namespace URL = Url;
 
-std::ostream& operator<<(std::ostream& os, const TLD::QueryParams& v) {
-    os << "[";
-    for (auto& e : v) {
-        os << e << ", ";
-    }
-    os << (v.empty() ? "" : "\b\b") << "]";
-    return os;
-}
-
-std::ostream& operator<<(std::ostream& os, const TLD::Url& dt) {
-    os << dt.str();
-    return os;
-}
-
-
-class TLD::Url::Impl : public URL::Url{
-//    friend class TLD::Url;
+/// define Impl class:
+class TLD::Url::Impl : public URL::Url {
 public:
     static void loadPslFromPath(const std::string& filepath);
     static void loadPslFromString(const std::string& filestr);
 public:
-//    Impl();
     Impl(const std::string& url);
     ~Impl();
-
-    std::string suffix() { return suffix_; }
-    std::string domain() { return domain_; }
-    std::string subdomain() { return subdomain_; }
-    bool isPslLoaded() const noexcept;
-
+    static bool isPslLoaded() noexcept;
+    std::string str() const;
+    Host host() const;
 protected:
     static URL::PSL psl;
-
-    std::string suffix_;
-    std::string domain_;
-    std::string subdomain_;
+    friend class Host;
+    Host host_obj;
 };
 
 
 URL::PSL TLD::Url::Impl::psl = URL::PSL::fromPath(PUBLIC_SUFFIX_LIST_DAT);
 
-
-//TLD::Url::Impl::loadPslFromPath("public_suffix_list.dat");
 
 std::vector<std::string> split(const std::string& str, char delim) {
     std::vector<std::string> strings;
@@ -73,22 +50,40 @@ void TLD::Url::Impl::loadPslFromString(const std::string& filestr) {
 }
 
 
-//TLD::Url::Impl::Impl() {
-//
-//}
-bool TLD::Url::Impl::isPslLoaded() const noexcept {
-    std::cout << psl.numLevels() << std::endl;
+
+
+bool TLD::Url::Impl::isPslLoaded() noexcept {
     return psl.numLevels() > 0;
 }
 
-TLD::Url::Impl::Impl(const std::string& url): URL::Url(url) {
-    this->suffix_ = psl.getTLD(host_);
+TLD::Url::Host::Host(const std::string& host_) : host_(host_){
+    this->suffix_ = TLD::Url::Impl::Impl::psl.getTLD(host_);
     size_t suffix_pos = host_.rfind("." + suffix_);
     if (suffix_pos == std::string::npos || suffix_pos < 1) return;
     subdomain_ = host_.substr(0, suffix_pos);
     size_t domain_pos = subdomain_.find_last_of(".");
     this->domain_ = subdomain_.substr(domain_pos + 1);
     this->subdomain_ = subdomain_.substr(0, domain_pos);
+}
+std::string TLD::Url::Host::suffix() const noexcept{ return suffix_; }
+std::string TLD::Url::Host::domain() const noexcept{ return domain_; }
+std::string TLD::Url::Host::subdomain() const noexcept{ return subdomain_; }
+
+std::string TLD::Url::Host::str() const noexcept {
+    return host_;
+}
+
+std::string TLD::Url::Host::fulldomain() const noexcept {
+    return host_;
+}
+
+std::string TLD::Url::Host::domainName() const noexcept {
+    return domain_ + "." + suffix_;
+}
+
+
+TLD::Url::Impl::Impl(const std::string& url): URL::Url(url), host_obj(this->host_) {
+
 }
 
 TLD::Url::Impl::~Impl() {
@@ -112,21 +107,29 @@ void TLD::Url::loadPslFromString(const std::string &filestr){
     TLD::Url::Impl::loadPslFromString(filestr);
 }
 
+std::string TLD::Url::Impl::str() const{
+    return URL::Url::str();
+}
+
+TLD::Url::Host TLD::Url::Impl::host() const {
+    return Url::host();
+}
+
 
 std::string TLD::Url::str() const{
     return impl->str();
 }
 
 std::string TLD::Url::domain() const{
-    return impl->domain(); // TODO
+    return impl->host().domain(); // TODO
 }
 
 std::string TLD::Url::subdomain() const{
-    return impl->subdomain(); // TODO
+    return impl->host().subdomain(); // TODO
 }
 
 std::string TLD::Url::suffix() const{
-    return impl->suffix();
+    return impl->host().suffix();
 }
 
 
@@ -140,7 +143,15 @@ int TLD::Url::port() const{
 }
 
 
-std::string TLD::Url::host() const{
+std::string TLD::Url::fulldomain() const{
+    return impl->host().fulldomain();
+}
+
+std::string TLD::Url::domainName() const {
+    return impl->host().domainName();
+}
+
+TLD::Url::Host TLD::Url::host() const{
     return impl->host();
 }
 
@@ -169,4 +180,24 @@ TLD::Url::Url(const TLD::Url::Impl &url_impl) : impl(new TLD::Url::Impl(url_impl
 
 bool TLD::Url::isPslLoaded() const noexcept {
     return impl->isPslLoaded();
+}
+
+
+
+std::ostream& operator<<(std::ostream& os, const TLD::QueryParams& v) {
+    os << "[";
+    for (auto& e : v) {
+        os << e << ", ";
+    }
+    os << (v.empty() ? "" : "\b\b") << "]";
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const TLD::Url& dt) {
+    os << dt.str();
+    return os;
+}
+std::ostream& operator<<(std::ostream& os, const TLD::Url::Host& dt) {
+    os << dt.str();
+    return os;
 }

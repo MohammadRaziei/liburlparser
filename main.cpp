@@ -5,6 +5,10 @@
 #include "common.h"
 #include "urlparser.h"
 
+
+
+
+
 #undef URL_INITIALIZE_PSL
 
 #define show_attr(url, attr) std::cout << std::boolalpha << #attr << " : " << url.attr() << std::endl
@@ -22,8 +26,15 @@ int main(int argc, char* argv[]){
 //    TLD::Url::loadPslFromString("");
 //    TLD::Url url("hi");
     tic;
-    TLD::Url url("https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus");
+    TLD::Url url("m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus");
     toc;
+
+    tic;
+    for(int i = 0; i < 1000; ++i)
+        TLD::Url::Host host("www.ee.aut.ac.ir");
+    toc;
+
+    show(TLD::Url::Host("www.ee.aut.ac.ir").suffix());
 //    TLD::Url url("a.ir3");
     show_attr(url, isPslLoaded);
     show(url);
@@ -34,14 +45,14 @@ int main(int argc, char* argv[]){
     show_attr(url, protocol);
     show_attr(url, suffix);
     show_attr(url, host);
+    show_attr(url, fulldomain);
+    show_attr(url, domainName);
     show_attr(url, query);
     show_attr(url, port);
     show_attr(url, fragment);
     show_attr(url, userinfo);
     show_attr(url, params);
     show_attr(url, abspath);
-
-
     //
     return 0;
 }
