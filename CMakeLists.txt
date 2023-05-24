@@ -9,12 +9,8 @@ project(DomainExtractor LANGUAGES CXX)
 find_package(GTest REQUIRED)
 
 message(STATUS "GTest_FOUND : ${GTest_FOUND}")
-#set (CMAKE_GENERATOR "Unix Makefiles" CACHE INTERNAL "" FORCE)
-#set(CMAKE_PREFIX_PATH "~/.local/")
-#
-file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
-#file(GLOB HEADERS ${PROJECT_SOURCE_DIR}/src/*.h)
 
+file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
 add_library(urlparser SHARED ${SOURCES})
 add_library(url::base ALIAS urlparser)
@@ -32,4 +28,4 @@ enable_testing()
 add_executable(DomainExtractorTests tests/test.cpp)
 target_link_libraries(DomainExtractorTests PRIVATE url::base gtest pthread)
 
-add_test(COMMAND DomainExtractorTests)
+add_test(NAME unitTests COMMAND DomainExtractorTests)

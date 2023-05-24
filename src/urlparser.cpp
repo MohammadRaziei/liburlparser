@@ -30,7 +30,7 @@ protected:
 URL::PSL TLD::Url::Impl::psl = URL::PSL::fromPath(PUBLIC_SUFFIX_LIST_DAT);
 
 
-std::vector<std::string> split(const std::string& str, char delim) {
+inline std::vector<std::string> split(const std::string& str, char delim) {
     std::vector<std::string> strings;
     size_t start;
     size_t end = 0;
@@ -41,18 +41,18 @@ std::vector<std::string> split(const std::string& str, char delim) {
     return strings;
 }
 
-void TLD::Url::Impl::loadPslFromPath(const std::string& filepath) {
+inline void TLD::Url::Impl::loadPslFromPath(const std::string& filepath) {
     psl = URL::PSL::fromPath(filepath);
 }
 
-void TLD::Url::Impl::loadPslFromString(const std::string& filestr) {
+inline void TLD::Url::Impl::loadPslFromString(const std::string& filestr) {
     psl = URL::PSL::fromString(filestr);
 }
 
 
 
 
-bool TLD::Url::Impl::isPslLoaded() noexcept {
+inline bool TLD::Url::Impl::isPslLoaded() noexcept {
     return psl.numLevels() > 0;
 }
 
@@ -65,15 +65,15 @@ TLD::Url::Host::Host(const std::string& host_) : host_(host_){
     this->domain_ = subdomain_.substr(domain_pos + 1);
     this->subdomain_ = subdomain_.substr(0, domain_pos);
 }
-std::string TLD::Url::Host::suffix() const noexcept{ return suffix_; }
-std::string TLD::Url::Host::domain() const noexcept{ return domain_; }
-std::string TLD::Url::Host::subdomain() const noexcept{ return subdomain_; }
+inline std::string TLD::Url::Host::suffix() const noexcept{ return suffix_; }
+inline std::string TLD::Url::Host::domain() const noexcept{ return domain_; }
+inline std::string TLD::Url::Host::subdomain() const noexcept{ return subdomain_; }
 
-std::string TLD::Url::Host::str() const noexcept {
+inline std::string TLD::Url::Host::str() const noexcept {
     return host_;
 }
 
-std::string TLD::Url::Host::fulldomain() const noexcept {
+inline std::string TLD::Url::Host::fulldomain() const noexcept {
     return host_;
 }
 
@@ -99,19 +99,19 @@ TLD::Url::~Url(){
     delete impl;
 }
 
-void TLD::Url::loadPslFromPath(const std::string &filepath){
+inline void TLD::Url::loadPslFromPath(const std::string &filepath){
     TLD::Url::Impl::loadPslFromPath(filepath);
 }
 
-void TLD::Url::loadPslFromString(const std::string &filestr){
+inline void TLD::Url::loadPslFromString(const std::string &filestr){
     TLD::Url::Impl::loadPslFromString(filestr);
 }
 
-std::string TLD::Url::Impl::str() const{
+inline std::string TLD::Url::Impl::str() const{
     return URL::Url::str();
 }
 
-TLD::Url::Host TLD::Url::Impl::host() const {
+inline TLD::Url::Host TLD::Url::Impl::host() const {
     return Url::host();
 }
 

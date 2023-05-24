@@ -5,7 +5,7 @@
 #include "common.h"
 #include "urlparser.h"
 
-
+ 
 
 
 
@@ -26,7 +26,7 @@ int main(int argc, char* argv[]){
 //    TLD::Url::loadPslFromString("");
 //    TLD::Url url("hi");
     tic;
-    TLD::Url url("m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus");
+    TLD::Url url("https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus");
     toc;
 
     tic;
@@ -34,7 +34,7 @@ int main(int argc, char* argv[]){
         TLD::Url::Host host("www.ee.aut.ac.ir");
     toc;
 
-    show(TLD::Url::Host("www.ee.aut.ac.ir").suffix());
+    show(TLD::Url::Host("https://www.ee.aut.ac.ir").suffix());
 //    TLD::Url url("a.ir3");
     show_attr(url, isPslLoaded);
     show(url);
