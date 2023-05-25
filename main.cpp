@@ -34,7 +34,7 @@ int main(int argc, char* argv[]){
         TLD::Url::Host host("www.ee.aut.ac.ir");
     toc;
 
-    show(TLD::Url::Host("https://www.ee.aut.ac.ir").suffix());
+    show(TLD::Url::Host("www.ee.aut.ac.ir").suffix());
 //    TLD::Url url("a.ir3");
     show_attr(url, isPslLoaded);
     show(url);
@@ -50,7 +50,7 @@ int main(int argc, char* argv[]){
     show_attr(url, query);
     show_attr(url, port);
     show_attr(url, fragment);
-    show_attr(url, userinfo);
+    show_attr(url, userinfo);  
     show_attr(url, params);
     show_attr(url, abspath);
     //
