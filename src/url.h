@@ -257,16 +257,6 @@ namespace Url
         Url& defrag();
 
         /**
-         * Punycode the hostname.
-         */
-        Url& punycode();
-
-        /**
-         * Unpunycode the hostname.
-         */
-        Url& unpunycode();
-
-        /**
          * Reverse the hostname (a.b.c.d => d.c.b.a)
          */
         Url& host_reversed();

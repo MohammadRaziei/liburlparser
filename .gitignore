@@ -1,3 +1,6 @@
+# ignore docs
+docs/
+
 #ke-build-debug  Ignore compiled files
 *.class
 *.jar
@@ -7,6 +10,7 @@
 # Ignore IDE files
 .idea/
 .vscode/
+*env/
 
 # Ignore build output
 build/

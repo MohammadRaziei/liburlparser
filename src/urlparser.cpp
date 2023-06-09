@@ -24,12 +24,11 @@ class TLD::Url::Impl : public URL::Url {
     Host host() const;
 
    protected:
-    static URL::PSL psl;
+    static URL::PSL* psl;
     friend class Host;
     Host host_obj;
 };
 
-URL::PSL TLD::Url::Impl::psl = URL::PSL::fromPath(PUBLIC_SUFFIX_LIST_DAT);
 
 inline std::vector<std::string> split(const std::string& str, char delim) {
     std::vector<std::string> strings;
@@ -42,20 +41,24 @@ inline std::vector<std::string> split(const std::string& str, char delim) {
     return strings;
 }
 
+URL::PSL* TLD::Url::Impl::psl = new URL::PSL(URL::PSL::fromPath(PUBLIC_SUFFIX_LIST_DAT));
+
 inline void TLD::Url::Impl::loadPslFromPath(const std::string& filepath) {
-    psl = URL::PSL::fromPath(filepath);
+    delete psl;
+    psl = new URL::PSL(URL::PSL::fromPath(filepath));
 }
 
 inline void TLD::Url::Impl::loadPslFromString(const std::string& filestr) {
-    psl = URL::PSL::fromString(filestr);
+    delete psl;
+    psl =  new URL::PSL(URL::PSL::fromString(filestr));
 }
 
 inline bool TLD::Url::Impl::isPslLoaded() noexcept {
-    return psl.numLevels() > 0;
+    return psl != nullptr;
 }
 
 TLD::Url::Host::Host(const std::string& host_) : host_(host_) {
-    this->suffix_ = TLD::Url::Impl::Impl::psl.getTLD(host_);
+    this->suffix_ = TLD::Url::Impl::Impl::psl->getTLD(host_);
     size_t suffix_pos = host_.rfind("." + suffix_);
     if (suffix_pos == std::string::npos || suffix_pos < 1)
         return;
@@ -86,6 +89,10 @@ std::string TLD::Url::Host::domainName() const noexcept {
     return domain_ + "." + suffix_;
 }
 
+TLD::Url::Host TLD::Url::Host::from_url(const std::string& url) {
+    return TLD::Url::Host(TLD::Url(url).host()); // TODO :  write a faster way for finding host_ from url
+}
+
 TLD::Url::Impl::Impl(const std::string& url)
     : URL::Url(url), host_obj(this->host_) {}
 
@@ -97,11 +104,11 @@ TLD::Url::~Url() {
     delete impl;
 }
 
-inline void TLD::Url::loadPslFromPath(const std::string& filepath) {
+void TLD::Url::loadPslFromPath(const std::string& filepath) {
     TLD::Url::Impl::loadPslFromPath(filepath);
 }
 
-inline void TLD::Url::loadPslFromString(const std::string& filestr) {
+void TLD::Url::loadPslFromString(const std::string& filestr) {
     TLD::Url::Impl::loadPslFromString(filestr);
 }
 

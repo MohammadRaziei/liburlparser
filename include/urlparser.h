@@ -181,6 +181,8 @@ class Url {
  */
 class Url::Host {
    public:
+    static Host from_url(const std::string& url);
+   public:
     /**
      * @brief Constructs a Host object from the given host string.
      * @param host The host string.

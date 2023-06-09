@@ -8,7 +8,6 @@
 #include <sstream>
 
 #include "url.h"
-#include "punycode.h"
 
 namespace Url
 {
@@ -335,7 +334,6 @@ namespace Url
              .deuserinfo()
              .abspath()
              .escape()
-             .punycode()
              .remove_default_port();
         other_.strip()
               .sort_query()
@@ -343,7 +341,6 @@ namespace Url
               .deuserinfo()
               .abspath()
               .escape()
-              .punycode()
               .remove_default_port();
         return self_ == other_;
     }
@@ -885,21 +882,6 @@ namespace Url
     Url& Url::defrag()
     {
         fragment_.clear();
-        return *this;
-    }
-
-    Url& Url::punycode()
-    {
-        check_hostname(host_);
-        std::string encoded(Punycode::encodeHostname(host_));
-        check_hostname(encoded);
-        host_ = encoded;
-        return *this;
-    }
-
-    Url& Url::unpunycode()
-    {
-        host_ = Punycode::decodeHostname(host_);
         return *this;
     }
 

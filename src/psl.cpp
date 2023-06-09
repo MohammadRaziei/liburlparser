@@ -4,8 +4,6 @@
 #include <string>
 
 #include "psl.h"
-#include "punycode.h"
-
 namespace Url
 {
     const std::string PSL::not_found = "";
@@ -176,7 +174,6 @@ namespace Url
         levels[copy] = length;
 
         // And now punycoded
-        rule = Punycode::encodeHostname(rule);
         copy.assign(rule.rbegin(), rule.rend() - trim);
         levels[copy] = length;
     }

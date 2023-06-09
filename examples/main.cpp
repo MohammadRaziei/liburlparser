@@ -9,7 +9,7 @@
 
 
 
-#undef URL_INITIALIZE_PSL
+//#undef URL_INITIALIZE_PSL
 
 #define show_attr(url, attr) std::cout << std::boolalpha << #attr << " : " << url.attr() << std::endl
 #define show(var) std::cout << std::boolalpha << #var << " : " << var << std::endl
@@ -23,6 +23,7 @@
 
 
 int main(int argc, char* argv[]){
+//    TLD::Url::loadPslFromPath("/mnt/windowsD/Desk/Work/Zarebin/packages/tld/project/public_suffix_list.dat");
 //    TLD::Url::loadPslFromString("");
 //    TLD::Url url("hi");
     tic;
@@ -30,9 +31,11 @@ int main(int argc, char* argv[]){
     toc;
 
     tic;
-    for(int i = 0; i < 1000; ++i)
+    for(int i = 0; i < 1'000'000; ++i)
         TLD::Url::Host host("www.ee.aut.ac.ir");
     toc;
+    
+    TLD::Url::Host host = TLD::Url::Host::from_url("https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus");
 
     show(TLD::Url::Host("www.ee.aut.ac.ir").suffix());
 //    TLD::Url url("a.ir3");

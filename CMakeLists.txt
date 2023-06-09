@@ -2,17 +2,23 @@ cmake_minimum_required(VERSION 3.12)
 
 set(CMAKE_CXX_STANDARD 17)
 
-file(DOWNLOAD https://publicsuffix.org/list/public_suffix_list.dat public_suffix_list.dat)
 
-project(DomainExtractor LANGUAGES CXX)
+project(liburlparser LANGUAGES CXX)
 
 find_package(GTest REQUIRED)
 
 message(STATUS "GTest_FOUND : ${GTest_FOUND}")
 
+
+
+file(DOWNLOAD https://publicsuffix.org/list/public_suffix_list.dat public_suffix_list.dat)
+
 file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
-add_library(urlparser SHARED ${SOURCES})
+#add_library(public_suffix_list OBJECT public_suffix_list.dat)
+add_library(urlparser SHARED ${SOURCES}
+#        $<TARGET_OBJECTS:public_suffix_list>
+)
 add_library(url::base ALIAS urlparser)
 
 target_include_directories(urlparser
@@ -21,14 +27,46 @@ target_include_directories(urlparser
         PRIVATE
             ${PROJECT_SOURCE_DIR}/src)
 
-add_executable(DomainExtractor main.cpp)
-target_link_libraries(DomainExtractor PRIVATE url::base)
+
+if(DEFINED SKBUILD)
+    # find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+    # find_package(pybind11 CONFIG REQUIRED)
+    # python_add_library(_core MODULE src/${SKBUILD_PROJECT_NAME}/main.cpp WITH_SOABI)
+    # target_link_libraries(_core PRIVATE pybind11::headers)
+    # target_compile_definitions(_core PRIVATE VERSION_INFO=${SKBUILD_PROJECT_VERSION})
+    # target_link_libraries(_core PRIVATE url::base)
+    # install(TARGETS _core urlparser DESTINATION ${SKBUILD_PROJECT_NAME})
+
+
+    set(PYBIND11_NEWPYTHON ON)
+    find_package(pybind11 CONFIG REQUIRED)
+    pybind11_add_module(_core src/${SKBUILD_PROJECT_NAME}/main.cpp ${SOURCES})
+    target_include_directories(_core
+            PUBLIC include
+            PRIVATE src)
+
+     target_compile_definitions(_core PRIVATE VERSION_INFO=${SKBUILD_PROJECT_VERSION})
+    install(TARGETS _core DESTINATION ${SKBUILD_PROJECT_NAME})
+    
+    RETURN()
+endif()
+
+add_executable(example examples/main.cpp)
+target_sources(example PRIVATE ${SOURCES})
+target_include_directories(example
+        PUBLIC
+            ${PROJECT_SOURCE_DIR}/include
+        PRIVATE
+            ${PROJECT_SOURCE_DIR}/src)
+
+target_link_libraries(example PRIVATE url::base)
+
 
 enable_testing()
-add_executable(DomainExtractorTests tests/test.cpp)
-target_link_libraries(DomainExtractorTests PRIVATE url::base gtest pthread)
+add_executable(liburlparser_test tests/test.cpp)
+target_link_libraries(liburlparser_test PRIVATE url::base gtest pthread)
 
-add_test(NAME unitTests COMMAND DomainExtractorTests)
+add_test(NAME unitTests COMMAND liburlparser_test)
 
 
 install(TARGETS urlparser
@@ -37,35 +75,15 @@ install(TARGETS urlparser
     INCLUDES DESTINATION include
 )
 
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION include)
-
 # Find Doxygen package
 find_package(Doxygen)
 message(STATUS "Doxygen_FOUND : ${Doxygen_FOUND}")
-
-
-# if(DOXYGEN_FOUND)
-#     # Set input and output directories
-#     set(DOXYGEN_INPUT_DIR "${CMAKE_SOURCE_DIR}")
-#     set(DOXYGEN_OUTPUT_DIR "${CMAKE_BINARY_DIR}/docs")
-
-#     # Configure Doxyfile from template
-#     configure_file(Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY)
-
-#     # Add Doxygen target
-#     add_custom_target(docs
-#         COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile
-#         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-#         COMMENT "Generating Doxygen documentation"
-#         VERBATIM
-#     )
-# endif()
 
 # Find Doxygen package
 find_package(Doxygen REQUIRED)
 
 # Configure Doxyfile.in template
-configure_file(Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY)
+configure_file(docs/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY)
 
 # Add target to generate Doxyfile
 add_custom_target(generate_doxyfile
@@ -74,10 +92,13 @@ add_custom_target(generate_doxyfile
 )
 
 # Add target to generate documentation
-add_custom_target(docs
+add_custom_target(cpp-docs
     COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMENT "Generating Doxygen documentation"
     VERBATIM
 )
+
+
+
 
