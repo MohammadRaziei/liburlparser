@@ -40,24 +40,22 @@ if(DEFINED SKBUILD)
 
     set(PYBIND11_NEWPYTHON ON)
     find_package(pybind11 CONFIG REQUIRED)
-    pybind11_add_module(_core src/${SKBUILD_PROJECT_NAME}/main.cpp ${SOURCES})
-    target_include_directories(_core
-            PUBLIC include
-            PRIVATE src)
-
-     target_compile_definitions(_core PRIVATE VERSION_INFO=${SKBUILD_PROJECT_VERSION})
+    pybind11_add_module(_core src/${SKBUILD_PROJECT_NAME}/main.cpp)
+    target_sources(_core PRIVATE ${SOURCES})
+    target_include_directories(_core PRIVATE include src)
+    target_compile_definitions(_core PRIVATE VERSION_INFO=${SKBUILD_PROJECT_VERSION})
     install(TARGETS _core DESTINATION ${SKBUILD_PROJECT_NAME})
     
     RETURN()
 endif()
 
 add_executable(example examples/main.cpp)
-target_sources(example PRIVATE ${SOURCES})
-target_include_directories(example
-        PUBLIC
-            ${PROJECT_SOURCE_DIR}/include
-        PRIVATE
-            ${PROJECT_SOURCE_DIR}/src)
+# target_sources(example PRIVATE ${SOURCES})
+# target_include_directories(example
+#         PUBLIC
+#             ${PROJECT_SOURCE_DIR}/include
+#         PRIVATE
+#             ${PROJECT_SOURCE_DIR}/src)
 
 target_link_libraries(example PRIVATE url::base)
 
@@ -92,7 +90,7 @@ add_custom_target(generate_doxyfile
 )
 
 # Add target to generate documentation
-add_custom_target(cpp-docs
+add_custom_target(docs
     COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMENT "Generating Doxygen documentation"

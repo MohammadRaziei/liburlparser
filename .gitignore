@@ -1,6 +1,3 @@
-# ignore docs
-docs/
-
 #ke-build-debug  Ignore compiled files
 *.class
 *.jar

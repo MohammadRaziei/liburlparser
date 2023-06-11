@@ -1,0 +1,19 @@
+# Doxyfile.in
+
+# Project information
+PROJECT_NAME           = @PROJECT_NAME@
+PROJECT_VERSION        = 1.0
+OUTPUT_DIRECTORY       = docs
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+
+# Source code
+INPUT                  = @PROJECT_SOURCE_DIR@
+FILE_PATTERNS          = *.cpp *.h
+RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */src/* */tests*/*
+
+
+# ...
+
+# End of Doxyfile.in

@@ -5,7 +5,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "liburlparser"
-version = "0.0.1"
+version = "0.0.1.dev0"
 description="A minimal example package (with pybind11)"
 readme = "README.md"
 authors = [
@@ -22,6 +22,12 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
 ]
+
+
+[project.urls]
+"Homepage" = "https://github.com/mohammmadraziei/liburlparser"
+"Bug Tracker" = "https://github.com/mohammmadraziei/liburlparser/issues"
+"Document" = "https://mohammmadraziei.github.io/liburlparser/latest"
 
 # [project.optional-dependencies]
 # test = ["pytest"]
