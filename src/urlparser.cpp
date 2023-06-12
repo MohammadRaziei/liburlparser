@@ -58,7 +58,7 @@ inline bool TLD::Url::Impl::isPslLoaded() noexcept {
 }
 
 TLD::Url::Host::Host(const std::string& host_) : host_(host_) {
-    this->suffix_ = TLD::Url::Impl::Impl::psl->getTLD(host_);
+    this->suffix_ = TLD::Url::Impl::psl->getTLD(host_);
     size_t suffix_pos = host_.rfind("." + suffix_);
     if (suffix_pos == std::string::npos || suffix_pos < 1)
         return;

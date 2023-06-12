@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.12)
 
 set(CMAKE_CXX_STANDARD 17)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 
 project(liburlparser LANGUAGES CXX)
@@ -29,13 +36,15 @@ target_include_directories(urlparser
 
 
 if(DEFINED SKBUILD)
-    # find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
-    # find_package(pybind11 CONFIG REQUIRED)
-    # python_add_library(_core MODULE src/${SKBUILD_PROJECT_NAME}/main.cpp WITH_SOABI)
-    # target_link_libraries(_core PRIVATE pybind11::headers)
-    # target_compile_definitions(_core PRIVATE VERSION_INFO=${SKBUILD_PROJECT_VERSION})
-    # target_link_libraries(_core PRIVATE url::base)
-    # install(TARGETS _core urlparser DESTINATION ${SKBUILD_PROJECT_NAME})
+#     find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+#     find_package(pybind11 CONFIG REQUIRED)
+#     python_add_library(_core MODULE src/${SKBUILD_PROJECT_NAME}/main2.cpp WITH_SOABI)
+#     target_link_libraries(_core PRIVATE pybind11::headers)
+#     target_compile_definitions(_core PRIVATE VERSION_INFO=${SKBUILD_PROJECT_VERSION})
+##     target_link_libraries(_core PRIVATE url::base)
+#     target_sources(_core PRIVATE ${SOURCES})
+#     target_include_directories(_core PRIVATE include src)
+#     install(TARGETS _core DESTINATION ${SKBUILD_PROJECT_NAME})
 
 
     set(PYBIND11_NEWPYTHON ON)
