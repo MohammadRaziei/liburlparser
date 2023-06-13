@@ -22,22 +22,24 @@
 //POP: (Post Office Protocol): Used for retrieving email messages from a server. URLs that begin with "pop://" are used for accessing email messages.
 
 
-int main(int argc, char* argv[]){
-//    TLD::Url::loadPslFromPath("/mnt/windowsD/Desk/Work/Zarebin/packages/tld/project/public_suffix_list.dat");
+int main(){
+    TLD::Url::loadPslFromPath("/mnt/windowsD/Desk/Work/Zarebin/packages/tld/project/public_suffix_list.dat");
 //    TLD::Url::loadPslFromString("");
 //    TLD::Url url("hi");
     tic;
-    TLD::Url url("https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus");
+    const TLD::Url url("https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus");
     toc;
+
+    TLD::Url _url = TLD::Url("https://ee.aut.ac.ir");
 
     tic;
     for(int i = 0; i < 1'000'000; ++i)
-        TLD::Url::Host host("www.ee.aut.ac.ir");
+        TLD::Host host("www.ee.aut.ac.ir");
     toc;
     
-    TLD::Url::Host host = TLD::Url::Host::from_url("https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus");
+    TLD::Host host = TLD::Host::from_url("https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus");
 
-    show(TLD::Url::Host("www.ee.aut.ac.ir").suffix());
+    show(TLD::Host("www.ee.aut.ac.ir").suffix());
 //    TLD::Url url("a.ir3");
     show_attr(url, isPslLoaded);
     show(url);
@@ -53,7 +55,7 @@ int main(int argc, char* argv[]){
     show_attr(url, query);
     show_attr(url, port);
     show_attr(url, fragment);
-    show_attr(url, userinfo);  
+    show_attr(url, userinfo);
     show_attr(url, params);
     show_attr(url, abspath);
     //

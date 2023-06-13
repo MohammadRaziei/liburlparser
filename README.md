@@ -33,18 +33,6 @@
 
 ## About The Project
 
-PyDomainExtractor is a Python library designed to parse domain names quickly.
-In order to achieve the highest performance possible, the library was written in Rust.
-
-
-### Built With
-
-* [AHash](https://github.com/tkaitchuck/aHash)
-* [idna](https://github.com/servo/rust-url/)
-* [memchr](https://github.com/BurntSushi/memchr)
-* [once_cell](https://github.com/matklad/once_cell)
-* [Public Suffix List](https://publicsuffix.org/)
-
 
 ### Performance
 
