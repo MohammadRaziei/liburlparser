@@ -1,12 +1,12 @@
 [build-system]
-requires = ["scikit-build-core>=0.3.3", "pybind11"]
+requires = ["scikit-build-core>=0.3.3", "nanobind"]
 build-backend = "scikit_build_core.build"
 
 
 [project]
 name = "liburlparser"
 version = "0.0.1.dev0"
-description="A minimal example package (with pybind11)"
+description="Fastest Url parser in the world"
 readme = "README.md"
 authors = [
   { name = "Mohammad Raziei", email = "mohammadraziei1375@gmail.com" },

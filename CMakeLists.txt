@@ -37,13 +37,43 @@ target_include_directories(urlparser
             ${PROJECT_SOURCE_DIR}/src)
 
 if(DEFINED SKBUILD)
-    set(PYBIND11_NEWPYTHON ON)
-    find_package(pybind11 CONFIG REQUIRED)
-    pybind11_add_module(_core src/${SKBUILD_PROJECT_NAME}/main.cpp)
+    # Try to import all Python components potentially needed by nanobind
+find_package(Python
+    REQUIRED COMPONENTS Interpreter Development.Module
+    OPTIONAL_COMPONENTS Development.SABIModule)
+
+    # Import nanobind through CMake's find_package mechanism
+    find_package(nanobind CONFIG REQUIRED)
+
+    # We are now ready to compile the actual extension module
+    nanobind_add_module(
+        # Name of the extension
+        _core
+
+        # Target the stable ABI for Python 3.12+, which reduces
+        # the number of binary wheels that must be built. This
+        # does nothing on older Python versions
+        STABLE_ABI
+
+        # Build libnanobind statically and merge it into the
+        # extension (which itself remains a shared library)
+        #
+        # If your project builds multiple extensions, you can
+        # replace this flag by NB_SHARED to conserve space by
+        # reusing a shared libnanobind across libraries
+        NB_STATIC
+
+        # Source code goes here
+        src/${SKBUILD_PROJECT_NAME}/main.cpp
+    )
+
+#    set(PYBIND11_NEWPYTHON ON)
+#    find_package(pybind11 CONFIG REQUIRED)
+#    pybind11_add_module(_core src/${SKBUILD_PROJECT_NAME}/main.cpp)
     target_sources(_core PRIVATE ${SOURCES})
     target_include_directories(_core PRIVATE include src)
     target_compile_definitions(_core PRIVATE VERSION_INFO=${SKBUILD_PROJECT_VERSION})
-    install(TARGETS _core DESTINATION ${SKBUILD_PROJECT_NAME})
+    install(TARGETS _core LIBRARY DESTINATION ${SKBUILD_PROJECT_NAME})
     
     RETURN()
 endif()
