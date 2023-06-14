@@ -23,24 +23,29 @@
 
 
 int main(){
-    TLD::Url::loadPslFromPath("/mnt/windowsD/Desk/Work/Zarebin/packages/tld/project/public_suffix_list.dat");
+//    TLD::Host::loadPslFromPath("/mnt/windowsD/Desk/Work/Zarebin/packages/tld/project/public_suffix_list.dat");
 //    TLD::Url::loadPslFromString("");
 //    TLD::Url url("hi");
     tic;
     const TLD::Url url("https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus");
     toc;
 
-    TLD::Url _url = TLD::Url("https://ee.aut.ac.ir");
+    TLD::Url _url = url;
+    show(_url);
+    TLD::Host _host = TLD::Host::fromUrl(_url.str());
+    _host = _url.host();
+
+    show(_host);
 
     tic;
     for(int i = 0; i < 1'000'000; ++i)
         TLD::Host host("www.ee.aut.ac.ir");
     toc;
     
-    TLD::Host host = TLD::Host::from_url("https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus");
+    TLD::Host host = TLD::Host::fromUrl("https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus");
 
     show(TLD::Host("www.ee.aut.ac.ir").suffix());
-//    TLD::Url url("a.ir3");
+
     show_attr(url, isPslLoaded);
     show(url);
     show_attr(url, str);

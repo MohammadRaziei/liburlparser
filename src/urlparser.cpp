@@ -14,11 +14,6 @@ namespace URL = Url;
 class TLD::Url::Impl : public URL::Url {
     friend class TLD::Url;
    public:
-    static void loadPslFromPath(const std::string& filepath);
-    static void loadPslFromString(const std::string& filestr);
-    static bool isPslLoaded() noexcept;
-
-   public:
     Impl(const std::string& url);
     ~Impl(){}
     std::string str() const noexcept;
@@ -40,13 +35,12 @@ class TLD::Host::Impl{
     Impl(const std::string& host);
     ~Impl(){}
 
-    std::string host() const noexcept;
-    std::string domain() const noexcept;
+    const std::string& domain() const noexcept;
     std::string domainName() const noexcept;
-    std::string subdomain() const noexcept;
-    std::string suffix() const noexcept;
-    std::string fulldomain() const noexcept;
-    std::string str() const noexcept;
+    const std::string& subdomain() const noexcept;
+    const std::string& suffix() const noexcept;
+    const std::string& fulldomain() const noexcept;
+    const std::string& str() const noexcept;
 
    protected:
     std::string host_;
@@ -90,15 +84,6 @@ void TLD::Host::loadPslFromString(const std::string& filestr) {
     TLD::Host::Impl::loadPslFromString(filestr);
 }
 
-void TLD::Url::loadPslFromPath(const std::string& filepath) {
-    TLD::Host::loadPslFromPath(filepath);
-}
-
-void TLD::Url::loadPslFromString(const std::string& filestr) {
-    TLD::Host::loadPslFromString(filestr);
-}
-
-
 inline bool TLD::Host::Impl::isPslLoaded() noexcept {
     return psl != nullptr;
 }
@@ -108,7 +93,6 @@ bool TLD::Host::isPslLoaded() noexcept {
 bool TLD::Url::isPslLoaded() noexcept {
     return TLD::Host::isPslLoaded();
 }
-
 ////////////////////////////////////////////////////////////////////
 
 
@@ -124,16 +108,17 @@ TLD::Host::Impl::Impl(const std::string& host_) : host_(host_) {
     this->subdomain_ = subdomain_.substr(0, domain_pos);
 }
 TLD::Host::Host(const std::string& url) : impl(new Impl(url)) {}
-//TLD::Host::Host(TLD::Host&& host) : impl(host.impl){ delete host.impl; }
+TLD::Host::Host(TLD::Host&& host) : impl(host.impl){ host.impl = nullptr; }
 TLD::Host::~Host() {
-//    delete impl;
+    delete impl;
 }
 
 TLD::Url::Impl::Impl(const std::string& url) : URL::Url(url), host_obj(this->host_) {}
 //TLD::Url::Impl::~Impl() {}
 TLD::Url::Url(const std::string& url) : impl(new Impl(url)) {}
+TLD::Url::Url(TLD::Url&& url) : impl(url.impl) { url.impl = nullptr; }
 TLD::Url::~Url() {
-//    delete impl;
+    delete impl;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -144,49 +129,46 @@ const TLD::Host& TLD::Url::host() const{
 //    return impl->host_obj;
     return impl->host_obj; // TODO
 }
-std::string TLD::Host::Impl::host() const noexcept{
-    return host_;
-}
 
 
 /// suffix:
-inline std::string TLD::Host::Impl::suffix() const noexcept {
+inline const std::string& TLD::Host::Impl::suffix() const noexcept {
     return suffix_;
 }
-std::string TLD::Host::suffix() const noexcept {
+const std::string& TLD::Host::suffix() const noexcept {
     return impl->suffix();
 }
-std::string TLD::Url::suffix() const noexcept {
+const std::string& TLD::Url::suffix() const noexcept {
     return impl->host_obj.suffix();
 }
 /// subdomain
-inline std::string TLD::Host::Impl::subdomain() const noexcept {
+inline const std::string& TLD::Host::Impl::subdomain() const noexcept {
     return subdomain_;
 }
-std::string TLD::Host::subdomain() const noexcept {
+const std::string& TLD::Host::subdomain() const noexcept {
     return impl->subdomain();
 }
-std::string TLD::Url::subdomain() const noexcept {
+const std::string& TLD::Url::subdomain() const noexcept {
     return impl->host_obj.subdomain();
 }
 /// domain
-inline std::string TLD::Host::Impl::domain() const noexcept {
+inline const std::string& TLD::Host::Impl::domain() const noexcept {
     return domain_;
 }
-std::string TLD::Host::domain() const noexcept {
+const std::string& TLD::Host::domain() const noexcept {
     return impl->domain();
 }
-std::string TLD::Url::domain() const noexcept {
+const std::string& TLD::Url::domain() const noexcept {
     return impl->host_obj.domain();
 }
 /// fulldomain
-inline std::string TLD::Host::Impl::fulldomain() const noexcept {
+inline const std::string& TLD::Host::Impl::fulldomain() const noexcept {
     return host_;
 }
-std::string TLD::Host::fulldomain() const noexcept {
+const std::string& TLD::Host::fulldomain() const noexcept {
     return impl->fulldomain();
 }
-std::string TLD::Url::fulldomain() const noexcept {
+const std::string& TLD::Url::fulldomain() const noexcept {
     return impl->host_obj.fulldomain();
 }
 /// domainName
@@ -200,10 +182,10 @@ std::string TLD::Url::domainName() const noexcept {
     return impl->host_obj.domainName();
 }
 // str
-inline std::string TLD::Host::Impl::str() const noexcept {
+inline const std::string& TLD::Host::Impl::str() const noexcept {
     return host_;
 }
-std::string TLD::Host::str() const noexcept {
+const std::string& TLD::Host::str() const noexcept {
     return impl->str();
 }
 inline std::string TLD::Url::Impl::str() const noexcept{
@@ -214,23 +196,21 @@ std::string TLD::Url::str() const noexcept {
 }
 
 
-
-const TLD::Host& TLD::Host::from_url(const std::string& url) {
-    return std::move(TLD::Url(url).host()); // TODO :  write a faster way for finding host_ from url
+TLD::Host TLD::Host::fromUrl(const std::string& url) {
+    return TLD::Url(url).host(); // TODO :  write a faster way for finding host_ from url
 }
 
 TLD::Host::Host(const TLD::Host &host) : impl(new Impl(*host.impl)){
 }
 
-
 ////////////////////////
 
 
-std::string TLD::Url::protocol() const noexcept{
+const std::string& TLD::Url::protocol() const noexcept{
     return impl->scheme();
 }
 
-int TLD::Url::port() const noexcept{
+const int TLD::Url::port() const noexcept{
     return impl->port();
 }
 
@@ -258,13 +238,33 @@ TLD::Url::Url(const TLD::Url &url) : impl(new Impl(*url.impl)){
 
 }
 
+TLD::Url &TLD::Url::operator=(const TLD::Url& url) {
+    delete impl;
+    impl = new TLD::Url::Impl(*url.impl);
+    return *this;
+}
+TLD::Url &TLD::Url::operator=(TLD::Url&& url) {
+    delete impl;
+    impl = url.impl;
+    url.impl = nullptr;
+    return *this;
+}
+TLD::Host &TLD::Host::operator=(const TLD::Host& host) {
+    delete impl;
+    impl = new TLD::Host::Impl(*host.impl);
+    return *this;
+}
+TLD::Host &TLD::Host::operator=(TLD::Host&& host) {
+    delete impl;
+    impl = host.impl;
+    host.impl = nullptr;
+    return *this;
+}
 
-/*
- */
 
 std::ostream& operator<<(std::ostream& os, const TLD::QueryParams& v) {
     os << "[";
-    for (auto& e : v) {
+    for (const auto& e : v) {
         os << e << ", ";
     }
     os << (v.empty() ? "" : "\b\b") << "]";
