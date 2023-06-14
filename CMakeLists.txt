@@ -38,9 +38,9 @@ target_include_directories(urlparser
 
 if(DEFINED SKBUILD)
     # Try to import all Python components potentially needed by nanobind
-find_package(Python
-    REQUIRED COMPONENTS Interpreter Development.Module
-    OPTIONAL_COMPONENTS Development.SABIModule)
+    find_package(Python
+        REQUIRED COMPONENTS Interpreter Development.Module
+        OPTIONAL_COMPONENTS Development.SABIModule)
 
     # Import nanobind through CMake's find_package mechanism
     find_package(nanobind CONFIG REQUIRED)
