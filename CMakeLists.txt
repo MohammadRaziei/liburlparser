@@ -27,10 +27,7 @@ file(DOWNLOAD https://publicsuffix.org/list/public_suffix_list.dat public_suffix
 
 file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
-#add_library(public_suffix_list OBJECT public_suffix_list.dat)
-add_library(urlparser SHARED ${SOURCES}
-#        $<TARGET_OBJECTS:public_suffix_list>
-)
+add_library(urlparser SHARED ${SOURCES})
 add_library(url::base ALIAS urlparser)
 
 target_include_directories(urlparser
@@ -39,19 +36,7 @@ target_include_directories(urlparser
         PRIVATE
             ${PROJECT_SOURCE_DIR}/src)
 
-
 if(DEFINED SKBUILD)
-#     find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
-#     find_package(pybind11 CONFIG REQUIRED)
-#     python_add_library(_core MODULE src/${SKBUILD_PROJECT_NAME}/main2.cpp WITH_SOABI)
-#     target_link_libraries(_core PRIVATE pybind11::headers)
-#     target_compile_definitions(_core PRIVATE VERSION_INFO=${SKBUILD_PROJECT_VERSION})
-##     target_link_libraries(_core PRIVATE url::base)
-#     target_sources(_core PRIVATE ${SOURCES})
-#     target_include_directories(_core PRIVATE include src)
-#     install(TARGETS _core DESTINATION ${SKBUILD_PROJECT_NAME})
-
-
     set(PYBIND11_NEWPYTHON ON)
     find_package(pybind11 CONFIG REQUIRED)
     pybind11_add_module(_core src/${SKBUILD_PROJECT_NAME}/main.cpp)
@@ -64,12 +49,6 @@ if(DEFINED SKBUILD)
 endif()
 
 add_executable(example examples/main.cpp)
-# target_sources(example PRIVATE ${SOURCES})
-# target_include_directories(example
-#         PUBLIC
-#             ${PROJECT_SOURCE_DIR}/include
-#         PRIVATE
-#             ${PROJECT_SOURCE_DIR}/src)
 
 target_link_libraries(example PRIVATE url::base)
 
