@@ -92,6 +92,11 @@ NB_MODULE(_core, m) {
         Some other explanation about the load_psl_from_string function.
     )pbdoc");
 
+    m.def("is_psl_loaded", &TLD::Host::isPslLoaded, R"pbdoc(
+        return true if psl is loaded
+        Some other explanation about the load_psl_from_string function.
+    )pbdoc");
+
 #ifdef VERSION_INFO
     m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
 #else
