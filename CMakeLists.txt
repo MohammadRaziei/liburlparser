@@ -72,8 +72,12 @@ if(DEFINED SKBUILD)
     target_sources(_core PRIVATE ${SOURCES})
     target_include_directories(_core PRIVATE include src)
     target_compile_definitions(_core PRIVATE VERSION_INFO=${SKBUILD_PROJECT_VERSION})
-    install(TARGETS _core LIBRARY DESTINATION ${SKBUILD_PROJECT_NAME})
-    
+    install(TARGETS _core
+            CONFIGURATIONS Release
+            LIBRARY DESTINATION
+            ${SKBUILD_PROJECT_NAME})
+    install (FILES public_suffix_list.dat
+            DESTINATION ${SKBUILD_PROJECT_NAME})
     RETURN()
 endif()
 
