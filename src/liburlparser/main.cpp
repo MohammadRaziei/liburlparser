@@ -31,8 +31,13 @@ inline nb::dict url_to_dict(const TLD::Url& url) {
 }
 
 NB_MODULE(_core, m) {
-    if (not TLD::Host::isPslLoaded())
-        TLD::Host::loadPslFromPath(PUBLIC_SUFFIX_LIST_DAT);
+    try{
+        if (not TLD::Host::isPslLoaded())
+            TLD::Host::loadPslFromPath(PUBLIC_SUFFIX_LIST_DAT);
+    }
+    catch(const std::invalid_argument&) {
+
+    }
 
     m.doc() = R"pbdoc(
         nanobind example plugin
