@@ -4,10 +4,6 @@ from ._core import __doc__, __version__, Url, Host, load_psl_from_path, load_psl
 if not is_psl_loaded():
     import os
     load_psl_from_path(os.path.join(os.path.dirname(__file__), "public_suffix_list.dat"))
-    if not is_psl_loaded():
-        import warnings
-        warnings.warn("PSL is not loaded! it may cause some perfemormace issues and return unexpected results!")
-
 
 __all__ = [
     "__doc__", "__version__", "Url", "Host", "load_psl_from_file",
