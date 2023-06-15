@@ -12,6 +12,7 @@ namespace nb = nanobind;
 
 inline nb::dict host_to_dict(const TLD::Host& host) {
     nb::dict dict;
+    dict["str"] = host.str();
     dict["subdomain"] = host.subdomain();
     dict["domain"] = host.domain();
     dict["domain_name"] = host.domainName();
@@ -21,6 +22,7 @@ inline nb::dict host_to_dict(const TLD::Host& host) {
 //
 inline nb::dict url_to_dict(const TLD::Url& url) {
     nb::dict dict;
+    dict["str"] = url.str();
     dict["protocol"] = url.protocol();
     dict["userinfo"] = url.userinfo();
     dict["host"] = host_to_dict(url.host());
@@ -31,13 +33,13 @@ inline nb::dict url_to_dict(const TLD::Url& url) {
 }
 
 NB_MODULE(_core, m) {
-    try{
-        if (not TLD::Host::isPslLoaded())
-            TLD::Host::loadPslFromPath(PUBLIC_SUFFIX_LIST_DAT);
-    }
-    catch(const std::invalid_argument&) {
-
-    }
+//    try{
+//        if (not TLD::Host::isPslLoaded())
+//            TLD::Host::loadPslFromPath(PUBLIC_SUFFIX_LIST_DAT);
+//    }
+//    catch(const std::invalid_argument&) {
+//
+//    }
 
     m.doc() = R"pbdoc(
         nanobind example plugin
