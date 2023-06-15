@@ -86,8 +86,8 @@ inline void TLD::Host::Impl::loadPslFromPath(const std::string& filepath) {
 
 inline void TLD::Host::Impl::loadPslFromString(const std::string& filestr) {
     delete psl;
-    if (!filestr.empty())
-        psl = new URL::PSL(URL::PSL::fromString(filestr));
+//    if (!filestr.empty())
+    psl = new URL::PSL(URL::PSL::fromString(filestr));
 }
 
 void TLD::Host::loadPslFromPath(const std::string& filepath) {
@@ -99,7 +99,7 @@ void TLD::Host::loadPslFromString(const std::string& filestr) {
 }
 
 inline bool TLD::Host::Impl::isPslLoaded() noexcept {
-    return psl != nullptr;
+    return psl != nullptr && psl->numLevels() > 0;
 }
 bool TLD::Host::isPslLoaded() noexcept {
     return TLD::Host::Impl::isPslLoaded();
