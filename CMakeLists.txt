@@ -35,7 +35,7 @@ target_include_directories(urlparser
 
 if(DEFINED SKBUILD)
     # Try to import all Python components potentially needed by nanobind
-    file(DOWNLOAD https://publicsuffix.org/list/public_suffix_list.dat ${SKBUILD_DATA_DIR}/public_suffix_list.dat)
+#    file(DOWNLOAD https://publicsuffix.org/list/public_suffix_list.dat ${SKBUILD_DATA_DIR}/${SKBUILD_PROJECT_NAME}/public_suffix_list.dat)
 
     find_package(Python
         REQUIRED COMPONENTS Interpreter Development.Module

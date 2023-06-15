@@ -64,7 +64,7 @@ namespace Url
         if (!stream.good())
         {
             std::stringstream message;
-            message << "Path '" << path << "' inaccessible.";
+            message << "Path '" << path << "' is inaccessible.";
             throw std::invalid_argument(message.str());
         }
         return PSL(stream);
