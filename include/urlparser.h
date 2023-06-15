@@ -17,6 +17,7 @@ class Host;
 class Url {
    public:
     static bool isPslLoaded() noexcept;
+
    public:
     Url(const std::string& url);
     Url(const Url& url);
