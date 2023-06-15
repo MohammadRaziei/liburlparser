@@ -44,6 +44,9 @@ if(DEFINED SKBUILD)
     # Import nanobind through CMake's find_package mechanism
     find_package(nanobind CONFIG REQUIRED)
 
+    install (FILES public_suffix_list.dat
+        DESTINATION ${SKBUILD_PROJECT_NAME})
+
     # We are now ready to compile the actual extension module
     nanobind_add_module(
         # Name of the extension
@@ -76,8 +79,6 @@ if(DEFINED SKBUILD)
             CONFIGURATIONS Release
             LIBRARY DESTINATION
             ${SKBUILD_PROJECT_NAME})
-    install (FILES public_suffix_list.dat
-            DESTINATION ${SKBUILD_PROJECT_NAME})
     RETURN()
 endif()
 
