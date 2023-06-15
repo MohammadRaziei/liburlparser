@@ -29,6 +29,12 @@ classifiers = [
 "Bug Tracker" = "https://github.com/mohammmadraziei/liburlparser/issues"
 "Document" = "https://mohammmadraziei.github.io/liburlparser/latest"
 
+#[tool.scikit-build.cmake.define]
+#SOME_DEFINE = "ON"
+#
+#[tool.scikit-build]
+#cmake.args = ["-DSOME_DEFINE=ON", "-DOTHER=OFF"]
+
 # [project.optional-dependencies]
 # test = ["pytest"]
 
