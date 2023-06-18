@@ -58,7 +58,7 @@ if(DEFINED SKBUILD)
         NB_STATIC
 
         # Source code goes here
-        src/${SKBUILD_PROJECT_NAME}/main.cpp
+        src/binding/main.cpp
     )
 
 #    set(PYBIND11_NEWPYTHON ON)

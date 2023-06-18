@@ -32,6 +32,14 @@ inline nb::dict url_to_dict(const TLD::Url& url) {
     return dict;
 }
 
+inline std::string host_to_json(const TLD::Host& host) {
+    return "{\"str\": \"" + host.str() + "\""
+        + ", \"subdomain\": \"" + host.subdomain() + "\""
+        + ", \"domain\": \"" + host.domain() + "\""
+        + ", \"domain_name\": \"" + host.domainName() + "\""
+        + ", \"suffix\": \"" + host.suffix() + "\"}";
+}
+
 NB_MODULE(_core, m) {
 //    try{
 //        if (not TLD::Host::isPslLoaded())
@@ -69,6 +77,7 @@ NB_MODULE(_core, m) {
         .def_prop_ro("domain_name", &TLD::Host::domainName)
         .def_prop_ro("suffix", &TLD::Host::suffix)
         .def("to_dict", host_to_dict)
+        .def("to_json", host_to_json)
         .def("__str__", &TLD::Host::str)
         .def("__repr__", [](const TLD::Host& host) {
             return "<Host :'" + host.str() + "'>";
