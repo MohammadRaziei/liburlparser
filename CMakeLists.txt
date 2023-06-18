@@ -14,11 +14,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 project(liburlparser LANGUAGES CXX)
 
-find_package(GTest REQUIRED)
-
-message(STATUS "GTest_FOUND : ${GTest_FOUND}")
-
-
 
 file(DOWNLOAD https://publicsuffix.org/list/public_suffix_list.dat public_suffix_list.dat)
 
@@ -87,6 +82,9 @@ add_executable(example examples/main.cpp)
 
 target_link_libraries(example PRIVATE url::base)
 
+find_package(GTest REQUIRED)
+
+message(STATUS "GTest_FOUND : ${GTest_FOUND}")
 
 enable_testing()
 add_executable(liburlparser_test tests/test.cpp)
