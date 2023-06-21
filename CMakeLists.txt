@@ -32,7 +32,7 @@ if(DEFINED SKBUILD)
     # Try to import all Python components potentially needed by nanobind
 #    file(DOWNLOAD https://publicsuffix.org/list/public_suffix_list.dat ${SKBUILD_DATA_DIR}/${SKBUILD_PROJECT_NAME}/public_suffix_list.dat)
 
-    find_package(Python
+    find_package(Python 3.8
         REQUIRED COMPONENTS Interpreter Development.Module
         OPTIONAL_COMPONENTS Development.SABIModule)
 

@@ -11,12 +11,11 @@ readme = "README.md"
 authors = [
   { name = "Mohammad Raziei", email = "mohammadraziei1375@gmail.com" },
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 classifiers = [
   "Development Status :: 4 - Beta",
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
@@ -28,6 +27,14 @@ classifiers = [
 "Homepage" = "https://github.com/mohammmadraziei/liburlparser"
 "Bug Tracker" = "https://github.com/mohammmadraziei/liburlparser/issues"
 "Document" = "https://mohammmadraziei.github.io/liburlparser/latest"
+
+
+[tool.cibuildwheel]
+#test-command = "pytest {project}/tests"
+#test-extras = ["test"]
+#test-skip = ["*universal2:arm64"]
+build-verbosity = 1
+
 
 #[tool.scikit-build.cmake.define]
 #SOME_DEFINE = "ON"
