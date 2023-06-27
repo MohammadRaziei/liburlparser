@@ -50,6 +50,13 @@ inline std::string url_to_json(const TLD::Url& url) {
         + ", \"fragment\": \"" + url.fragment() + "\"}";
 }
 
+inline nb::dict extract_from_url(const std::string& url){
+    return host_to_dict(TLD::Host::fromUrl(url));
+}
+inline nb::dict extract(const std::string& host){
+    return host_to_dict(TLD::Host(host));
+}
+
 
 NB_MODULE(_core, m) {
 //    try{
@@ -78,6 +85,8 @@ NB_MODULE(_core, m) {
 
     Host.def(nb::init<const std::string&>())
         .def_static("from_url", &TLD::Host::fromUrl)
+        .def_static("extract_from_url", extract_from_url)
+        .def_static("extract", extract)
         .def_static("load_psl_from_path", &TLD::Host::loadPslFromPath,
                     nb::arg("filepath"))
         .def_static("load_psl_from_string", &TLD::Host::loadPslFromString,
