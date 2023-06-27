@@ -212,8 +212,7 @@ std::string TLD::Url::str() const noexcept {
 }
 
 TLD::Host TLD::Host::fromUrl(const std::string& url) {
-    return TLD::Url(url)
-        .host();  // TODO :  write a faster way for finding host_ from url
+    return TLD::Host(TLD::Url::extractHost(url));// TODO :  write a faster way for finding host_ from url
 }
 
 TLD::Host::Host(const TLD::Host& host) : impl(new Impl(*host.impl)) {}
@@ -261,6 +260,24 @@ TLD::Url& TLD::Url::operator=(TLD::Url&& url) {
     url.impl = nullptr;
     return *this;
 }
+
+std::string TLD::Url::extractHost(const std::string& url) noexcept {
+    // TODO: cannot not handling https:// in general (with or without)
+    std::string host;
+    auto pos = url.find("://");
+    if (pos != std::string::npos) {
+        pos += 3; // skip over "://"
+    } else {
+        pos = 0;
+    }
+    auto end_pos = url.find_first_of(":/", pos);
+    if (end_pos == std::string::npos) {
+        end_pos = url.length();
+    }
+    host = url.substr(pos, end_pos - pos);
+    return host;
+}
+
 TLD::Host& TLD::Host::operator=(const TLD::Host& host) {
     delete impl;
     impl = new TLD::Host::Impl(*host.impl);

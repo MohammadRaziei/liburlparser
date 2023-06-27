@@ -40,6 +40,17 @@ inline std::string host_to_json(const TLD::Host& host) {
         + ", \"suffix\": \"" + host.suffix() + "\"}";
 }
 
+inline std::string url_to_json(const TLD::Url& url) {
+    return "{\"str\": \"" + url.str() + "\""
+        + ", \"protocol\": \"" + url.protocol() + "\""
+        + ", \"userinfo\": \"" + url.userinfo() + "\""
+        + ", \"host\": " + host_to_json(url.host())
+        + ", \"port\": " + std::to_string(url.port())
+        + ", \"query\": \"" + url.query() + "\""
+        + ", \"fragment\": \"" + url.fragment() + "\"}";
+}
+
+
 NB_MODULE(_core, m) {
 //    try{
 //        if (not TLD::Host::isPslLoaded())
@@ -84,6 +95,7 @@ NB_MODULE(_core, m) {
         });
 
     Url.def(nb::init<const std::string&>())
+        .def_static("extract_host", &TLD::Url::extractHost)
         .def_prop_ro("protocol", &TLD::Url::protocol)
         .def_prop_ro("userinfo", &TLD::Url::userinfo)
         .def_prop_ro("host", &TLD::Url::host)
@@ -96,6 +108,7 @@ NB_MODULE(_core, m) {
         .def_prop_ro("query", &TLD::Url::query)
         .def_prop_ro("fragment", &TLD::Url::fragment)
         .def("to_dict", url_to_dict)
+        .def("to_json", url_to_json)
         .def("__str__", &TLD::Url::str)
         .def("__repr__", [](const TLD::Url& url) -> std::string {
             return "<Url :'" + url.str() + "'>";
