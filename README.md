@@ -86,7 +86,10 @@ sudo make install
 ### Python and Command Line:
 Be aware that it required `python>=3.8`
 #### Installation
-
+```sh
+pip install liburlparser
+```
+Or
 ```sh
 pip install git+https://github.com/mohammadraziei/liburlparser
 ```
