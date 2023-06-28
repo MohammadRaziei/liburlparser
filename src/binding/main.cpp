@@ -50,11 +50,19 @@ inline std::string url_to_json(const TLD::Url& url) {
         + ", \"fragment\": \"" + url.fragment() + "\"}";
 }
 
+inline nb::dict host_to_dict_minimal(const TLD::Host& host) {
+    nb::dict dict;
+    dict["suffix"] = host.suffix();
+    dict["domain"] = host.domain();
+    dict["subdomain"] = host.subdomain();
+    return dict;
+}
+
 inline nb::dict extract_from_url(const std::string& url){
-    return host_to_dict(TLD::Host::fromUrl(url));
+    return host_to_dict_minimal(TLD::Host::fromUrl(url));
 }
 inline nb::dict extract(const std::string& host){
-    return host_to_dict(TLD::Host(host));
+    return host_to_dict_minimal(TLD::Host(host));
 }
 
 
