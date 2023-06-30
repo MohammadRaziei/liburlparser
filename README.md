@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/mohammadraziei/liburlparser">
-    <img src="docs/images/logo/liburlparser-logo-1.svg" alt="Logo">
+    <img src="https://github.com/MohammadRaziei/liburlparser/raw/master/docs/images/logo/liburlparser-logo-1.svg" alt="Logo">
   </a>
   <h3 align="center">
     Fastest domain extractor library written in C++ with python binding.
@@ -39,7 +39,7 @@
 ## About The Project
 
 ### Features
-* Capable with multiple programming language such as Python, C++ and Shell
+* Multiple programming language supported such as `Python`, `C++` and `Shell`
 * Intuitive interface and identical in C++ and Python
 * Provide two seperated class Url and Host for the purpose of clean code
 * Also support [public_suffix_list](https://publicsuffix.org/list/public_suffix_list.dat) for known combinatorial suffix such as "ac.ir"
@@ -161,7 +161,7 @@ Host.extract_from_url("https://ee.aut.ac.ir/about") # from url
 ```
 
 ### C++
-there is some examples in [examples](examples) folder
+there is some examples in [examples](https://github.com/MohammadRaziei/liburlparser/tree/master/examples) folder
 
 ```c++
 #include "liburlparser"
