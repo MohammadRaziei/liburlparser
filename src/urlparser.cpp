@@ -114,10 +114,12 @@ TLD::Host::Impl::Impl(const std::string& host_) : host_(host_) {
     size_t suffix_pos = host_.rfind("." + suffix_);
     if (suffix_pos == std::string::npos || suffix_pos < 1)
         return;
-    subdomain_ = host_.substr(0, suffix_pos);
-    size_t domain_pos = subdomain_.find_last_of(".");
-    this->domain_ = subdomain_.substr(domain_pos + 1);
-    this->subdomain_ = subdomain_.substr(0, domain_pos);
+    this->domain_ = host_.substr(0, suffix_pos);
+    size_t domain_pos = domain_.find_last_of(".");
+    if (domain_pos != std::string::npos) {
+        this->subdomain_ = domain_.substr(0, domain_pos);
+        this->domain_ = domain_.substr(domain_pos + 1);
+    }
 }
 TLD::Host::Host(const std::string& url) : impl(new Impl(url)) {}
 TLD::Host::Host(TLD::Host&& host) : impl(host.impl) {
