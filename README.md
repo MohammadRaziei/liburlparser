@@ -53,7 +53,7 @@
 * Url properties:
   * protocol
   * userinfo
-  * host (and all of host properties)
+  * host (and all the host properties)
   * port
   * path
   * query
@@ -125,7 +125,7 @@ help(Url)
 help(Host)
 ```
 
-parse url as liburlparserc
+parse url and host
 ```python
 from liburlparser import Url, Host
 ## parse url:
