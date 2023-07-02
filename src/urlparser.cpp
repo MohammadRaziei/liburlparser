@@ -66,6 +66,7 @@ inline std::vector<std::string> split(const std::string& str,
 ////////////////////////////////////////////////////////////////////////////////////////
 
 URL::PSL* initiate_static_psl(){
+    std::cout << "XXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl;
     URL::PSL* psl;
     try{
         psl = new URL::PSL(URL::PSL::fromPath(PUBLIC_SUFFIX_LIST_DAT));
@@ -76,8 +77,11 @@ URL::PSL* initiate_static_psl(){
     return psl;
 }
 
-
+#ifndef DONT_INIT_PSL
 URL::PSL* TLD::Host::Impl::psl = initiate_static_psl();
+#else
+URL::PSL* TLD::Host::Impl::psl = new URL::PSL(URL::PSL::fromString(""));
+#endif
 
 inline void TLD::Host::Impl::loadPslFromPath(const std::string& filepath) {
     delete psl;
