@@ -1,11 +1,13 @@
-import pytest
-from liburlparser import Url
-import os
+from __future__ import annotations
+
+from pathlib import Path
+
 import pandas as pd
+import pytest
 
-cwd = os.path.dirname(os.path.abspath(__file__))
+from liburlparser import Url
 
-url_data_df = pd.read_csv(os.path.join(cwd, "data", "url_data.csv"), keep_default_na=False)
+url_data_df = pd.read_csv(Path(__file__).parent / "data" / "url_data.csv", keep_default_na=False)
 
 
 @pytest.mark.parametrize("url_data", map(pd.Series.to_dict, url_data_df.iloc))
@@ -20,3 +22,5 @@ def test_url(url_data):
     assert url.port == url_data["port"]
     assert url.query == url_data["query"]
     assert url.fragment == url_data["fragment"]
+
+

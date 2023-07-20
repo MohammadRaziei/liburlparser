@@ -1,11 +1,13 @@
-import pytest
-from liburlparser import Host
-import os
+from __future__ import annotations
+
+from pathlib import Path
+
 import pandas as pd
+import pytest
 
-cwd = os.path.dirname(os.path.abspath(__file__))
+from liburlparser import Host
 
-host_data_df = pd.read_csv(os.path.join(cwd, "data", "host_data.csv"), keep_default_na=False)
+host_data_df = pd.read_csv(Path(__file__).parent / "data" / "host_data.csv", keep_default_na=False)
 
 
 @pytest.mark.parametrize("host_data", map(pd.Series.to_dict, host_data_df.iloc))
