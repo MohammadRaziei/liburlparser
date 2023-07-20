@@ -1,0 +1,5 @@
+url,protocol,userinfo,host,subdomain,domain,domain_name,suffix,port,query,fragment
+https://username:password@ee.aut.ac.ir:80/about?search=forms&browser=chrome#id,https,username:password,ee.aut.ac.ir,ee,aut,aut.ac.ir,ac.ir,80,search=forms&browser=chrome,id
+http://aut.ac.ir/about,http,,aut.ac.ir,,aut,aut.ac.ir,ac.ir,0,,
+https://download.ir/#about,https,,download.ir,,download,download.ir,ir,0,,about
+

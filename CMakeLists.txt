@@ -15,8 +15,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native")
 
 project(liburlparser LANGUAGES CXX)
 
-
-file(DOWNLOAD https://publicsuffix.org/list/public_suffix_list.dat public_suffix_list.dat)
+set(PUBLIC_SUFFIX_LIST_URL "https://publicsuffix.org/list/public_suffix_list.dat")
+file(DOWNLOAD ${PUBLIC_SUFFIX_LIST_URL} public_suffix_list.dat)
 
 file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
@@ -31,8 +31,6 @@ target_include_directories(urlparser
 
 if(DEFINED SKBUILD)
     # Try to import all Python components potentially needed by nanobind
-#    file(DOWNLOAD https://publicsuffix.org/list/public_suffix_list.dat ${SKBUILD_DATA_DIR}/${SKBUILD_PROJECT_NAME}/public_suffix_list.dat)
-
     find_package(Python 3.8
         REQUIRED COMPONENTS Interpreter Development.Module
         OPTIONAL_COMPONENTS Development.SABIModule)
@@ -68,7 +66,7 @@ if(DEFINED SKBUILD)
     target_sources(_core PRIVATE ${SOURCES})
     target_include_directories(_core PRIVATE include src)
     target_compile_definitions(_core PRIVATE VERSION_INFO=${SKBUILD_PROJECT_VERSION})
-    target_compile_definitions(_core PRIVATE DONT_INIT_PSL)
+    target_compile_definitions(_core PRIVATE DONT_INIT_PSL PUBLIC_SUFFIX_LIST_URL="${PUBLIC_SUFFIX_LIST_URL}")
 
     install(TARGETS _core
             CONFIGURATIONS Release

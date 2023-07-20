@@ -10,6 +10,15 @@
 
 namespace nb = nanobind;
 
+class Psl{
+public:
+    Psl() {};
+    static std::string url(){return PUBLIC_SUFFIX_LIST_URL;}
+    static void loadFromPath(const std::string& filename) {TLD::Host::loadPslFromPath(filename);}
+    static void loadFromString(const std::string& str) {TLD::Host::loadPslFromString(str);}
+    static bool isLoaded() {return TLD::Host::isPslLoaded();}
+};
+
 inline nb::dict host_to_dict(const TLD::Host& host) {
     nb::dict dict;
     dict["str"] = host.str();
@@ -64,7 +73,6 @@ inline nb::dict extract_from_url(const std::string& url){
 inline nb::dict extract(const std::string& host){
     return host_to_dict_minimal(TLD::Host(host));
 }
-
 
 NB_MODULE(_core, m) {
 //    try{
@@ -131,20 +139,33 @@ NB_MODULE(_core, m) {
             return "<Url :'" + url.str() + "'>";
         });
 
-    m.def("load_psl_from_path", &TLD::Host::loadPslFromPath, R"pbdoc(
-        load PSL from path
-        Some other explanation about the load_psl_from_path function.
-    )pbdoc");
+    nb::class_<Psl> psl(m, "Psl", nb::dynamic_attr());
 
-    m.def("load_psl_from_string", &TLD::Host::loadPslFromString, R"pbdoc(
-        load PSL from string
-        Some other explanation about the load_psl_from_string function.
-    )pbdoc");
+    psl.def(nb::init<>())
+       .def_static("url", Psl::url)
+       .def_static("is_loaded", Psl::isLoaded, "check whether psl is loaded or not")
+       .def_static("load_from_path", Psl::loadFromPath, "load PSL from path")
+       .def_static("load_from_string", Psl::loadFromString, "load PSL from string")
+       .def("__repr__", [](const Psl& p) -> std::string {
+            return std::string("<PSL :") + (p.isLoaded() ? "loaded" : "not loaded") + ">";
+        });
 
-    m.def("is_psl_loaded", &TLD::Host::isPslLoaded, R"pbdoc(
-        return true if psl is loaded
-        Some other explanation about the load_psl_from_string function.
-    )pbdoc");
+
+
+//    m.def("load_psl_from_path", &TLD::Host::loadPslFromPath, R"pbdoc(
+//        load PSL from path
+//        Some other explanation about the load_psl_from_path function.
+//    )pbdoc");
+
+//    m.def("load_psl_from_string", &TLD::Host::loadPslFromString, R"pbdoc(
+//        load PSL from string
+//        Some other explanation about the load_psl_from_string function.
+//    )pbdoc");
+
+//    m.def("is_psl_loaded", &TLD::Host::isPslLoaded, R"pbdoc(
+//        return true if psl is loaded
+//        Some other explanation about the load_psl_from_string function.
+//    )pbdoc");
 
 #ifdef VERSION_INFO
     m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
