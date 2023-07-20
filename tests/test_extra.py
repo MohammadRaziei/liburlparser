@@ -4,7 +4,7 @@ from __future__ import annotations
 import pytest
 import requests
 
-import liburlparser
+from liburlparser import psl
 
 
 @pytest.fixture()
@@ -16,4 +16,7 @@ def disable_requests_get(monkeypatch):
 
 def test_psl_update(disable_requests_get):
     with pytest.raises(requests.exceptions.ConnectionError):
-        liburlparser.psl.update()
+        psl.update()
+
+def test_psl_loaded():
+    assert psl.is_loaded()

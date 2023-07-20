@@ -16,13 +16,13 @@ warnings.formatwarning = warning_on_one_line
 
 
 def psl_update():
-    resp = requests.get(psl.url())
+    resp = requests.get(psl.url)
     psl.load_from_string(resp.text)
 
 psl.update = psl_update
 
 if not psl.is_loaded():
-    psl_filename = Path(__file__).parent / psl.filename()
+    psl_filename = Path(__file__).parent / psl.filename
     if psl_filename.exists():
         psl.load_from_path(psl_filename.as_posix())
     else:
