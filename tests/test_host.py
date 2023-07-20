@@ -1,17 +1,18 @@
 #!/bin/python3
 from __future__ import annotations
 
+import csv
 from pathlib import Path
 
-import pandas as pd
 import pytest
 
 from liburlparser import Host
 
-host_data_df = pd.read_csv(Path(__file__).parent / "data" / "host_data.csv", keep_default_na=False)
+with (Path(__file__).parent / "data" / "host_data.csv").open("r") as f:
+    reader = csv.DictReader(f)
+    host_data_list = list(reader)
 
-
-@pytest.mark.parametrize("host_data", map(pd.Series.to_dict, host_data_df.iloc))
+@pytest.mark.parametrize("host_data", host_data_list)
 def test_host(host_data):
     host = Host.from_url(host_data["url"])
     assert str(host) == host_data["host"]

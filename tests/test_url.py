@@ -1,17 +1,18 @@
 #!/bin/python3
 from __future__ import annotations
 
+import csv
 from pathlib import Path
 
-import pandas as pd
 import pytest
 
 from liburlparser import Url
 
-url_data_df = pd.read_csv(Path(__file__).parent / "data" / "url_data.csv", keep_default_na=False)
+with (Path(__file__).parent / "data" / "url_data.csv").open("r") as f:
+    reader = csv.DictReader(f)
+    url_data_list = list(reader)
 
-
-@pytest.mark.parametrize("url_data", map(pd.Series.to_dict, url_data_df.iloc))
+@pytest.mark.parametrize("url_data", url_data_list)
 def test_url(url_data):
     url = Url(url_data["url"])
     assert url.protocol == url_data["protocol"]
@@ -20,7 +21,7 @@ def test_url(url_data):
     assert url.domain == url_data["domain"]
     assert url.domain_name == url_data["domain_name"]
     assert url.suffix == url_data["suffix"]
-    assert url.port == url_data["port"]
+    assert url.port == int(url_data["port"])
     assert url.query == url_data["query"]
     assert url.fragment == url_data["fragment"]
 

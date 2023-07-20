@@ -39,7 +39,7 @@ dependencies = [
 [tool.cibuildwheel]
 test-command = "pytest {project}/tests"
 test-extras = ["test"]
-test-skip = ["pp*", "*universal2:arm64"]
+test-skip = ["*universal2:arm64"]
 #build-verbosity = 1
 
 
@@ -50,7 +50,7 @@ test-skip = ["pp*", "*universal2:arm64"]
 #cmake.args = ["-DSOME_DEFINE=ON", "-DOTHER=OFF"]
 
 [project.optional-dependencies]
-test = ["pytest", "pandas"]
+test = ["pytest"]
 
 
 [tool.scikit-build]
