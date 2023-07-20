@@ -15,13 +15,18 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native")
 
 project(liburlparser LANGUAGES CXX)
 
+# Download the public suffix list file from the internet
 set(PUBLIC_SUFFIX_LIST_URL "https://publicsuffix.org/list/public_suffix_list.dat")
-file(DOWNLOAD ${PUBLIC_SUFFIX_LIST_URL} public_suffix_list.dat)
+set(PUBLIC_SUFFIX_LIST_DAT "public_suffix_list.dat")
+file(DOWNLOAD ${PUBLIC_SUFFIX_LIST_URL} ${PUBLIC_SUFFIX_LIST_DAT})
 
 file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
 add_library(urlparser SHARED ${SOURCES})
 add_library(url::base ALIAS urlparser)
+target_compile_definitions(urlparser PRIVATE
+        PUBLIC_SUFFIX_LIST_DAT="${PUBLIC_SUFFIX_LIST_DAT}"
+)
 
 target_include_directories(urlparser
         PUBLIC
@@ -66,7 +71,11 @@ if(DEFINED SKBUILD)
     target_sources(_core PRIVATE ${SOURCES})
     target_include_directories(_core PRIVATE include src)
     target_compile_definitions(_core PRIVATE VERSION_INFO=${SKBUILD_PROJECT_VERSION})
-    target_compile_definitions(_core PRIVATE DONT_INIT_PSL PUBLIC_SUFFIX_LIST_URL="${PUBLIC_SUFFIX_LIST_URL}")
+    target_compile_definitions(_core PRIVATE
+            DONT_INIT_PSL
+            PUBLIC_SUFFIX_LIST_URL="${PUBLIC_SUFFIX_LIST_URL}"
+            PUBLIC_SUFFIX_LIST_DAT="${PUBLIC_SUFFIX_LIST_DAT}"
+    )
 
     install(TARGETS _core
             CONFIGURATIONS Release
