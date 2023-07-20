@@ -37,10 +37,10 @@ dependencies = [
 
 
 [tool.cibuildwheel]
-test-command = "pytest {project}/tests"
+test-command = "python -m pytest {project}/tests"
 test-extras = ["test"]
 test-skip = ["*universal2:arm64"]
-build-verbosity = 1
+#build-verbosity = 1
 
 
 #[tool.scikit-build.cmake.define]

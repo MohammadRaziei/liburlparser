@@ -1,17 +1,37 @@
 cmake_minimum_required(VERSION 3.12)
 
-set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ version selection")  # or 11, 14, 17, 20
-set(CMAKE_CXX_STANDARD_REQUIRED ON)  # optional, ensure standard is supported
-set(CMAKE_CXX_EXTENSIONS OFF)  # optional, keep compiler extensions off
+set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ version selection")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
+   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+
+if(MSVC)
+  # Microsoft Visual Studio compiler
+  set(MSVC_FLAGS "/O2")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${MSVC_FLAGS}")
+elseif(CMAKE_COMPILER_IS_GNUCXX)
+  # GCC or Clang compiler
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # Linux
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+  else()
+    # Other OS
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=generic")
+  endif()
+endif()
+
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}" CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" CACHE STRING "" FORCE)
 
 project(liburlparser LANGUAGES CXX)
 
