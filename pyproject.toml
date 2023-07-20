@@ -37,9 +37,9 @@ dependencies = [
 
 
 [tool.cibuildwheel]
-test-command = "python -m pytest {project}/tests"
+test-command = "pytest {project}/tests"
 test-extras = ["test"]
-test-skip = ["*universal2:arm64"]
+test-skip = ["pp*", "*universal2:arm64"]
 #build-verbosity = 1
 
 
