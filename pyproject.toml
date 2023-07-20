@@ -105,9 +105,8 @@ flake8-unused-arguments.ignore-variadic-names = true
 isort.required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.per-file-ignores]
-"tests/**" = ["F841", "EXE", "ARG001", "PT004"]
-"src/**/__main__.py" = ["T20", "EXE"]
+"tests/**" = ["F841", "ARG001", "PT004"]
+"src/**/__main__.py" = ["T20"]
 "src/**/__init__.py" = ["EXE"]
-"src/**/core.py" = ["ARG001", "EXE", "F401"]
-"noxfile.py" = ["EXE"]
+"src/**/core.py" = ["ARG001", "F401"]
 
