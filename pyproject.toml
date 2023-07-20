@@ -40,7 +40,6 @@ dependencies = [
 test-command = "pytest {project}/tests"
 test-extras = ["test"]
 test-skip = ["*universal2:arm64"]
-cmake.verbose = false
 build-verbosity = 1
 
 
@@ -56,6 +55,7 @@ test = ["pytest", "pandas"]
 
 [tool.scikit-build]
 wheel.expand-macos-universal-tags = true
+cmake.verbose = false
 
 
 [tool.pytest.ini_options]
