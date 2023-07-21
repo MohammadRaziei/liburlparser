@@ -27,7 +27,7 @@ jobs:
         submodules: true
 
     - name: Ruff Check
-      uses: chartboost/ruff-action@v1
+      uses: jpetrucciani/ruff-check@main
 
     - name: Build SDist
       run: pipx run build --sdist
