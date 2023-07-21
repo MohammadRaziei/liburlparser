@@ -43,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
     - uses: actions/checkout@v3
@@ -53,8 +53,8 @@ jobs:
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.13.1
       env:
-         CIBW_ARCHS_MACOS: universal2
-         CIBW_ARCHS_WINDOWS: auto ARM64
+#          CIBW_ARCHS_MACOS: universal2
+#          CIBW_ARCHS_WINDOWS: auto ARM64
          # Disable building PyPy wheels on all platforms
          CIBW_SKIP: pp*
 #         CIBW_PRERELEASE_PYTHONS: true
