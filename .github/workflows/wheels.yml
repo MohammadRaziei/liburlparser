@@ -26,6 +26,9 @@ jobs:
       with:
         submodules: true
 
+    - name: Ruff Check
+      uses: jpetrucciani/ruff-check@main
+
     - name: Build SDist
       run: pipx run build --sdist
 

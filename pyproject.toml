@@ -6,7 +6,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "liburlparser"
-version = "1.0.1"
+version = "1.0.2"
 description="Fastest Url parser in the world"
 readme = "README.md"
 authors = [
@@ -31,9 +31,9 @@ dependencies = [
 
 
 [project.urls]
-"Homepage" = "https://github.com/mohammmadraziei/liburlparser"
-"Bug Tracker" = "https://github.com/mohammmadraziei/liburlparser/issues"
-"Document" = "https://mohammmadraziei.github.io/liburlparser/latest"
+"Homepage" = "https://github.com/mohammadraziei/liburlparser"
+"Bug Tracker" = "https://github.com/mohammadraziei/liburlparser/issues"
+"Document" = "https://mohammadraziei.github.io/liburlparser/latest"
 
 
 [tool.cibuildwheel]
