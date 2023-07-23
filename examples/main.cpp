@@ -73,5 +73,10 @@ int main() {
     show_attr(url, params);
     show_attr(url, abspath);
     //
+
+    show(TLD::Url("http://www.google.com").subdomain());
+    show(TLD::Url("http://www.google.com").domain());
+    show(TLD::Url("http://www.google.com", true).subdomain());
+    show(TLD::Url("http://www.google.com", true).domain());
     return 0;
 }

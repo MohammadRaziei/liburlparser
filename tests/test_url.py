@@ -14,7 +14,7 @@ with (Path(__file__).parent / "data" / "url_data.csv").open("r") as f:
 
 @pytest.mark.parametrize("url_data", url_data_list)
 def test_url(url_data):
-    url = Url(url_data["url"])
+    url = Url(url_data["url"], bool(url_data["ignore_www"]))
     assert url.protocol == url_data["protocol"]
     assert url.userinfo == url_data["userinfo"]
     assert str(url.host) == url_data["host"]

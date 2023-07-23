@@ -15,7 +15,7 @@ class TLD::Url::Impl : public URL::Url {
     friend class TLD::Url;
 
    public:
-    Impl(const std::string& url);
+    Impl(const std::string& url, const bool ignore_www);
     ~Impl() {}
     std::string str() const noexcept;
     const TLD::Host& host() const noexcept;
@@ -26,14 +26,13 @@ class TLD::Url::Impl : public URL::Url {
 
 class TLD::Host::Impl {
     friend class TLD::Host;
-
    public:
     static void loadPslFromPath(const std::string& filepath);
     static void loadPslFromString(const std::string& filestr);
     static bool isPslLoaded() noexcept;
 
    public:
-    Impl(const std::string& host);
+    Impl(const std::string& host, const bool ignore_www);
     ~Impl() {}
 
     const std::string& domain() const noexcept;
@@ -112,19 +111,30 @@ bool TLD::Url::isPslLoaded() noexcept {
 }
 ////////////////////////////////////////////////////////////////////
 
-TLD::Host::Impl::Impl(const std::string& host_) : host_(host_) {
+TLD::Host::Impl::Impl(const std::string& host_, const bool ignore_www) : host_(host_) {
     this->suffix_ = TLD::Host::Impl::psl->getTLD(host_);
     size_t suffix_pos = host_.rfind("." + suffix_);
+    size_t subdomain_pos = 0;
     if (suffix_pos == std::string::npos || suffix_pos < 1)
         return;
-    this->domain_ = host_.substr(0, suffix_pos);
+    domain_ = host_.substr(0, suffix_pos);
     size_t domain_pos = domain_.find_last_of(".");
     if (domain_pos != std::string::npos) {
-        this->subdomain_ = domain_.substr(0, domain_pos);
-        this->domain_ = domain_.substr(domain_pos + 1);
+        if (ignore_www) {
+            size_t www_pos = domain_.find("www.");
+            if (www_pos != 0) {
+                if (www_pos != std::string::npos)
+                    return;
+            } else {
+                subdomain_pos = 4;
+            }
+        }
+        if (subdomain_pos < domain_pos)
+            subdomain_ = domain_.substr(subdomain_pos, domain_pos - subdomain_pos);
+        domain_ = domain_.substr(domain_pos + 1);
     }
 }
-TLD::Host::Host(const std::string& url) : impl(new Impl(url)) {}
+TLD::Host::Host(const std::string& url, const bool ignore_www) : impl(new Impl(url, ignore_www)) {}
 TLD::Host::Host(TLD::Host&& host) : impl(host.impl) {
     host.impl = nullptr;
 }
@@ -132,10 +142,12 @@ TLD::Host::~Host() {
     delete impl;
 }
 
-TLD::Url::Impl::Impl(const std::string& url)
-    : URL::Url(url), host_obj(this->host_) {}
+TLD::Url::Impl::Impl(const std::string& url, const bool ignore_www)
+    : URL::Url(url), host_obj(TLD::Host{this->host_, ignore_www}) {}
 // TLD::Url::Impl::~Impl() {}
-TLD::Url::Url(const std::string& url) : impl(new Impl(url)) {}
+TLD::Url::Url(const std::string& url, const bool ignore_www) : impl(new Impl(url, ignore_www)) {
+//    std::cout << "++++++++++++++++++++++++++" << std::endl;
+}
 TLD::Url::Url(TLD::Url&& url) : impl(url.impl) {
     url.impl = nullptr;
 }
@@ -216,8 +228,8 @@ std::string TLD::Url::str() const noexcept {
     return impl->str();
 }
 
-TLD::Host TLD::Host::fromUrl(const std::string& url) {
-    return TLD::Host(TLD::Url::extractHost(url));// TODO :  write a faster way for finding host_ from url
+TLD::Host TLD::Host::fromUrl(const std::string& url, const bool ignore_www) {
+    return TLD::Host(TLD::Url::extractHost(url), ignore_www);// TODO :  write a faster way for finding host_ from url
 }
 
 TLD::Host::Host(const TLD::Host& host) : impl(new Impl(*host.impl)) {}

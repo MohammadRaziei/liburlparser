@@ -10,6 +10,7 @@
 #endif
 
 namespace TLD {
+constexpr bool DEFAULT_IGNORE_WWW = false;
 
 using QueryParams = std::vector<std::string>;
 
@@ -21,7 +22,7 @@ class Url {
 
 
    public:
-    Url(const std::string& url);
+    Url(const std::string& url, const bool ignore_www = DEFAULT_IGNORE_WWW);
     Url(const Url& url);
     Url(Url&& url);
     ~Url();
@@ -52,13 +53,13 @@ class Url {
 
 class Host {
    public:
-    static Host fromUrl(const std::string& url);
+    static Host fromUrl(const std::string& url, const bool ignore_www = DEFAULT_IGNORE_WWW);
     static void loadPslFromPath(const std::string& filepath);
     static void loadPslFromString(const std::string& filestr);
     static bool isPslLoaded() noexcept;
 
    public:
-    Host(const std::string& host);
+    Host(const std::string& host, const bool ignore_www = DEFAULT_IGNORE_WWW);
     Host(const Host& host);
     Host(Host&& host);
     ~Host();

@@ -6,7 +6,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "liburlparser"
-version = "1.0.2"
+version = "1.1.0"
 description="Fastest Url parser in the world"
 readme = "README.md"
 authors = [
@@ -54,7 +54,7 @@ test = ["pytest"]
 
 
 [tool.scikit-build]
-wheel.expand-macos-universal-tags = true
+#wheel.expand-macos-universal-tags = true
 cmake.verbose = false
 
 
@@ -111,6 +111,5 @@ isort.required-imports = ["from __future__ import annotations"]
 [tool.ruff.per-file-ignores]
 "tests/**" = ["F841", "ARG001", "PT004"]
 "src/**/__main__.py" = ["T20"]
-#"src/**/__init__.py" = ["EXE"]
 "src/**/core.py" = ["ARG001", "F401"]
 

@@ -9,6 +9,7 @@
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
 
 namespace nb = nanobind;
+using namespace nb::literals;
 
 class Psl{
 public:
@@ -76,14 +77,6 @@ inline nb::dict extract(const std::string& host){
 }
 
 NB_MODULE(_core, m) {
-//    try{
-//        if (not TLD::Host::isPslLoaded())
-//            TLD::Host::loadPslFromPath(PUBLIC_SUFFIX_LIST_DAT);
-//    }
-//    catch(const std::invalid_argument&) {
-//
-//    }
-
     m.doc() = R"pbdoc(
         nanobind example plugin
         -----------------------
@@ -100,14 +93,14 @@ NB_MODULE(_core, m) {
     nb::class_<TLD::Host> Host(m, "Host");
     nb::class_<TLD::Url> Url(m, "Url");
 
-    Host.def(nb::init<const std::string&>())
-        .def_static("from_url", &TLD::Host::fromUrl)
-        .def_static("extract_from_url", extract_from_url)
-        .def_static("extract", extract)
+    Host.def(nb::init<const std::string&, const bool>(), nb::arg("hoststr"), nb::arg("ignore_www") = false)
+        .def_static("from_url", &TLD::Host::fromUrl, nb::arg("urlstr"), nb::arg("ignore_www") = false)
+        .def_static("extract_from_url", extract_from_url, nb::arg("urlstr"))
+        .def_static("extract", extract, nb::arg("urlstr"))
         .def_static("load_psl_from_path", &TLD::Host::loadPslFromPath,
                     nb::arg("filepath"))
         .def_static("load_psl_from_string", &TLD::Host::loadPslFromString,
-                    nb::arg("filestr"))
+                    nb::arg("string"))
         .def_static("is_psl_loaded", &TLD::Host::isPslLoaded)
         .def_prop_ro("subdomain", &TLD::Host::subdomain)
         .def_prop_ro("domain", &TLD::Host::domain)
@@ -120,8 +113,8 @@ NB_MODULE(_core, m) {
             return "<Host :'" + host.str() + "'>";
         });
 
-    Url.def(nb::init<const std::string&>())
-        .def_static("extract_host", &TLD::Url::extractHost)
+    Url.def(nb::init<const std::string&, const bool>(), nb::arg("urlstr"), nb::arg("ignore_www") = false)
+        .def_static("extract_host", &TLD::Url::extractHost, nb::arg("urlstr"))
         .def_prop_ro("protocol", &TLD::Url::protocol)
         .def_prop_ro("userinfo", &TLD::Url::userinfo)
         .def_prop_ro("host", &TLD::Url::host)
@@ -146,8 +139,8 @@ NB_MODULE(_core, m) {
        .def_prop_ro("url", &Psl::url)
        .def_prop_ro("filename", &Psl::filename)
        .def("is_loaded", &Psl::isLoaded, "check whether psl is loaded or not")
-       .def("load_from_path", &Psl::loadFromPath, "load PSL from path")
-       .def("load_from_string", &Psl::loadFromString, "load PSL from string")
+       .def("load_from_path", &Psl::loadFromPath, nb::arg("filepath"), "load PSL from path")
+       .def("load_from_string", &Psl::loadFromString, nb::arg("string"), "load PSL from string")
        .def("__repr__", [](const Psl& p) -> std::string {
             return std::string("<PSL : ") + (p.isLoaded() ? "loaded" : "not loaded") + ">";
         });
