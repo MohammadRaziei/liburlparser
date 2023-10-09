@@ -39,7 +39,7 @@ class TLD::Host::Impl {
     std::string domainName() const noexcept;
     const std::string& subdomain() const noexcept;
     const std::string& suffix() const noexcept;
-    const std::string& fulldomain() const noexcept;
+    std::string fulldomain() const noexcept;
     const std::string& str() const noexcept;
 
    protected:
@@ -195,13 +195,17 @@ const std::string& TLD::Url::domain() const noexcept {
     return impl->host_obj.domain();
 }
 /// fulldomain
-inline const std::string& TLD::Host::Impl::fulldomain() const noexcept {
-    return host_;
+std::string TLD::Host::Impl::fulldomain() const noexcept {
+    std::string result;
+    if (subdomain_.empty())
+        result = domainName();
+    result = subdomain_ + "." + domainName();
+    return result;
 }
-const std::string& TLD::Host::fulldomain() const noexcept {
+std::string TLD::Host::fulldomain() const noexcept {
     return impl->fulldomain();
 }
-const std::string& TLD::Url::fulldomain() const noexcept {
+std::string TLD::Url::fulldomain() const noexcept {
     return impl->host_obj.fulldomain();
 }
 /// domainName

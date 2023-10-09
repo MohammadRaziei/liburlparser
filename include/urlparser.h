@@ -40,7 +40,7 @@ class Url {
     std::string userinfo() const noexcept;
     std::string abspath() const noexcept;
     std::string domainName() const noexcept;
-    const std::string& fulldomain() const noexcept;
+    std::string fulldomain() const noexcept;
     const int port() const noexcept;
     QueryParams params() const noexcept;
     const Host& host() const;
@@ -71,7 +71,7 @@ class Host {
     const std::string& domain() const noexcept;
     std::string domainName() const noexcept;
     const std::string& subdomain() const noexcept;
-    const std::string& fulldomain() const noexcept;
+    std::string fulldomain() const noexcept;
     const std::string& str() const noexcept;
 
    protected:

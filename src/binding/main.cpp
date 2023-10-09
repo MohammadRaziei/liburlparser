@@ -96,7 +96,7 @@ NB_MODULE(_core, m) {
     Host.def(nb::init<const std::string&, const bool>(), nb::arg("hoststr"), nb::arg("ignore_www") = false)
         .def_static("from_url", &TLD::Host::fromUrl, nb::arg("urlstr"), nb::arg("ignore_www") = false)
         .def_static("extract_from_url", extract_from_url, nb::arg("urlstr"))
-        .def_static("extract", extract, nb::arg("urlstr"))
+        .def_static("extract", extract, nb::arg("hoststr"))
         .def_static("load_psl_from_path", &TLD::Host::loadPslFromPath,
                     nb::arg("filepath"))
         .def_static("load_psl_from_string", &TLD::Host::loadPslFromString,
@@ -105,6 +105,7 @@ NB_MODULE(_core, m) {
         .def_prop_ro("subdomain", &TLD::Host::subdomain)
         .def_prop_ro("domain", &TLD::Host::domain)
         .def_prop_ro("domain_name", &TLD::Host::domainName)
+        .def_prop_ro("fulldomain", &TLD::Host::fulldomain)
         .def_prop_ro("suffix", &TLD::Host::suffix)
         .def("to_dict", host_to_dict)
         .def("to_json", host_to_json)
@@ -120,6 +121,7 @@ NB_MODULE(_core, m) {
         .def_prop_ro("host", &TLD::Url::host)
         .def_prop_ro("subdomain", &TLD::Url::subdomain)
         .def_prop_ro("domain", &TLD::Url::domain)
+        .def_prop_ro("fulldomain", &TLD::Url::fulldomain)
         .def_prop_ro("domain_name", &TLD::Url::domainName)
         .def_prop_ro("suffix", &TLD::Url::suffix)
         .def_prop_ro("port", &TLD::Url::port)
