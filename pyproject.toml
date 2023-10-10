@@ -6,7 +6,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "liburlparser"
-version = "1.2.0"
+version = "1.2.1"
 description="Fastest Url parser in the world"
 readme = "README.md"
 authors = [

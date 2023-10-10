@@ -196,11 +196,9 @@ const std::string& TLD::Url::domain() const noexcept {
 }
 /// fulldomain
 std::string TLD::Host::Impl::fulldomain() const noexcept {
-    std::string result;
     if (subdomain_.empty())
-        result = domainName();
-    result = subdomain_ + "." + domainName();
-    return result;
+        return domainName();
+    return subdomain_ + "." + domainName();
 }
 std::string TLD::Host::fulldomain() const noexcept {
     return impl->fulldomain();

@@ -54,6 +54,8 @@ int main() {
         "home?o=10&k=helloworld#aboutus");
 
     show(TLD::Host("www.ee.aut.ac.ir").suffix());
+    show(TLD::Host("aut.ac.ir").fulldomain());
+    show(TLD::Host("ee.aut.ac.ir").fulldomain());
 
     show_attr(url, isPslLoaded);
     show(url);
