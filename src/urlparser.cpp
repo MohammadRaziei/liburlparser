@@ -15,7 +15,7 @@ class TLD::Url::Impl : public URL::Url {
     friend class TLD::Url;
 
 public:
-    Impl(const std::string &url, const bool ignore_www, const bool auto_correction);
+    Impl(const std::string &url, const bool ignore_www);
 
     ~Impl() {}
 
@@ -158,11 +158,12 @@ TLD::Host::~Host() {
 }
 
 
-TLD::Url::Impl::Impl(const std::string &url, const bool ignore_www, const bool auto_correction)
-        : URL::Url(url), host_obj(TLD::Host{this->host_, ignore_www}) {}
+TLD::Url::Impl::Impl(const std::string &url, const bool ignore_www)
+        : URL::Url(url), host_obj(TLD::Host{this->host_, ignore_www}) {
+}
 
-TLD::Url::Url(const std::string &url, const bool ignore_www, const bool auto_correction) :
-        impl(new Impl(url, ignore_www, auto_correction)) {
+TLD::Url::Url(const std::string &url, const bool ignore_www) :
+        impl(new Impl(url, ignore_www)) {
 }
 
 TLD::Url::Url(TLD::Url &&url) : impl(url.impl) {
@@ -259,9 +260,6 @@ const std::string &TLD::Host::str() const noexcept {
     return impl->str();
 }
 
-//inline std::string TLD::Url::Impl::str() const noexcept {
-//    return URL::Url::str();
-//}
 
 std::string TLD::Url::str() const noexcept {
     return impl->str();
@@ -318,16 +316,16 @@ TLD::Url &TLD::Url::operator=(TLD::Url &&url) {
     return *this;
 }
 
-bool TLD::Url::autoCorrect(std::string &url) noexcept {
-    size_t qmark = url.find_first_of('?');
-    if (qmark < 4 or qmark==std::string::npos) return false;
-    size_t slash = url.find_last_of('/', qmark - 1);
-    if (slash > 4 and slash != std::string::npos and url[slash - 1] == '/') {
-        url.insert(qmark, 1, '/');
-        return true;
-    }
-    return false;
-}
+//bool TLD::Url::autoCorrect(std::string &url) noexcept {
+//    size_t qmark = url.find_first_of('?');
+//    if (qmark < 4 or qmark==std::string::npos) return false;
+//    size_t slash = url.find_last_of('/', qmark - 1);
+//    if (slash > 4 and slash != std::string::npos and url[slash - 1] == '/') {
+//        url.insert(qmark, 1, '/');
+//        return true;
+//    }
+//    return false;
+//}
 
 std::string TLD::Url::extractHost(const std::string &url) noexcept {
     // TODO: cannot not handling https:// in general (with or without)
@@ -338,9 +336,13 @@ std::string TLD::Url::extractHost(const std::string &url) noexcept {
     } else {
         pos = 0;
     }
-    size_t end_pos = url.find_first_of(":/", pos);
+    size_t at_pos = url.find_first_of('@', pos);
+    size_t end_pos = url.find_first_of("?/", pos);
     if (end_pos == std::string::npos) {
         end_pos = url.length();
+    }
+    if (at_pos < end_pos) {
+        pos = at_pos+1;
     }
     host = url.substr(pos, end_pos - pos);
     return host;

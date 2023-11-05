@@ -28,9 +28,6 @@
 // accessing email messages.
 
 int main() {
-    //    TLD::Host::loadPslFromPath("/mnt/windowsD/Desk/Work/Zarebin/packages/tld/project/public_suffix_list.dat");
-    //    TLD::Url::loadPslFromString("");
-    //    TLD::Url url("hi");
     tic;
     const TLD::Url url(
         "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
@@ -83,6 +80,11 @@ int main() {
     show(TLD::Url("http://www.google.com", true).subdomain());
     show(TLD::Url("http://www.google.com", true).domain());
 
-    printf("good bye :)\n");
+    show(TLD::Host::fromUrl("http://mohammad:123@www.google.com?about", true));
+    show(TLD::Host::fromUrl("mohammad:123@www.google.com?about", true));
+    show(TLD::Host::fromUrl("www.google.com?about", true));
+
+
+    printf("\ngood bye :)\n");
     return 0;
 }

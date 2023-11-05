@@ -21,11 +21,9 @@ class Url {
    public:
     static bool isPslLoaded() noexcept;
     static std::string extractHost(const std::string& url) noexcept;
-    static bool autoCorrect(std::string& url) noexcept;
 
    public:
-    Url(const std::string& url, const bool ignore_www = DEFAULT_IGNORE_WWW,
-        const bool auto_correction = DEFAULT_AUTO_CORRECTION);
+    Url(const std::string& url, const bool ignore_www = DEFAULT_IGNORE_WWW);
     Url(const Url& url);
     Url(Url&& url);
     ~Url();
