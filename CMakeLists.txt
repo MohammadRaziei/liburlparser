@@ -134,24 +134,26 @@ find_package(Doxygen)
 message(STATUS "Doxygen_FOUND : ${Doxygen_FOUND}")
 
 # Find Doxygen package
-find_package(Doxygen REQUIRED)
+find_package(Doxygen)
 
-# Configure Doxyfile.in template
-configure_file(docs/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY)
+if (Doxygen_FOUND)
+    # Configure Doxyfile.in template
+    configure_file(docs/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY)
 
-# Add target to generate Doxyfile
-add_custom_target(generate_doxyfile
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    COMMENT "Generating Doxyfile"
-)
+    # Add target to generate Doxyfile
+    add_custom_target(generate_doxyfile
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+        COMMENT "Generating Doxyfile"
+    )
 
-# Add target to generate documentation
-add_custom_target(docs
-    COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generating Doxygen documentation"
-    VERBATIM
-)
+    # Add target to generate documentation
+    add_custom_target(docs
+        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Generating Doxygen documentation"
+        VERBATIM
+    )
+endif ()
 
 
 
