@@ -45,10 +45,9 @@ class Url {
     QueryParams params() const noexcept;
     const Host& host() const;
 
-   protected:
+   private:
     class Impl;
     Impl* impl;
-    Url(const Impl& url_impl);
 };
 
 class Host {
@@ -77,7 +76,7 @@ class Host {
     const std::string& fulldomain() const noexcept;
     const std::string& str() const noexcept;
 
-   protected:
+   private:
     class Impl;
     Impl* impl;
 };
