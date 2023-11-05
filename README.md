@@ -199,13 +199,13 @@ Tests were run on a file containing 10 million random domains from various top-l
 
 The test was conducted on a file containing 1 million random urls (Mar. 13rd 2022)
 
-| Library  | Function | Time |
-| ------------- | ------------- | ------------- |
-| [liburlparser](https://github.com/Intsights/PyDomainExtractor) | liburlparser.Host.from_url | 2.20s |
-| [PyDomainExtractor](https://github.com/Intsights/PyDomainExtractor) | pydomainextractor.extract_from_url | 2.24s |
-| [publicsuffix2](https://github.com/nexb/python-publicsuffix2) | publicsuffix2.get_sld | 10.84s |
-| [tldextract](https://github.com/john-kurkowski/tldextract) | \_\_call\_\_ | 36.04s |
-| [tld](https://github.com/barseghyanartur/tld) | tld.parse_tld | 57.87s |
+| Library                                                             | Function | Time   |
+|---------------------------------------------------------------------| ------------- |--------|
+| [liburlparser](https://github.com/mohammadraziei/liburlparser)      | liburlparser.Host.from_url | 2.10s  |
+| [PyDomainExtractor](https://github.com/Intsights/PyDomainExtractor) | pydomainextractor.extract_from_url | 2.24s  |
+| [publicsuffix2](https://github.com/nexb/python-publicsuffix2)       | publicsuffix2.get_sld | 10.84s |
+| [tldextract](https://github.com/john-kurkowski/tldextract)          | \_\_call\_\_ | 36.04s |
+| [tld](https://github.com/barseghyanartur/tld)                       | tld.parse_tld | 57.87s |
 
 
 
