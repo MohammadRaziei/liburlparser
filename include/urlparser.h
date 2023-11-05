@@ -11,18 +11,21 @@
 
 namespace TLD {
 constexpr bool DEFAULT_IGNORE_WWW = false;
+constexpr bool DEFAULT_AUTO_CORRECTION = true;
 
 using QueryParams = std::vector<std::string>;
 
 class Host;
+
 class Url {
    public:
     static bool isPslLoaded() noexcept;
     static std::string extractHost(const std::string& url) noexcept;
-
+    static bool autoCorrect(std::string& url) noexcept;
 
    public:
-    Url(const std::string& url, const bool ignore_www = DEFAULT_IGNORE_WWW);
+    Url(const std::string& url, const bool ignore_www = DEFAULT_IGNORE_WWW,
+        const bool auto_correction = DEFAULT_AUTO_CORRECTION);
     Url(const Url& url);
     Url(Url&& url);
     ~Url();
@@ -65,7 +68,10 @@ class Host {
     ~Host();
 
     Host& operator=(const Host&);
-    Host& operator=(Host&&);
+    Host& operator=(Host&&) noexcept;
+    bool operator==(const Host&) const;
+    bool operator==(const std::string &) const;
+
 
     const std::string& suffix() const noexcept;
     const std::string& domain() const noexcept;
