@@ -14,7 +14,7 @@ with (Path(__file__).parent / "data" / "host_data.csv").open("r") as f:
 
 @pytest.mark.parametrize("host_data", host_data_list)
 def test_host(host_data):
-    host = Host.from_url(host_data["url"], bool(host_data["ignore_www"]))
+    host = Host.from_url(host_data["url"], host_data["ignore_www"] == "True")
     assert str(host) == host_data["host"]
     assert host.domain == host_data["domain"]
     assert host.domain_name == host_data["domain_name"]

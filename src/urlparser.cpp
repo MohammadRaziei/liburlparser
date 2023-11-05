@@ -268,7 +268,7 @@ std::string TLD::Url::str() const noexcept {
 }
 
 TLD::Host TLD::Host::fromUrl(const std::string &url, const bool ignore_www) {
-    return TLD::Host(TLD::Url::extractHost(url), ignore_www);// TODO :  write a faster way for finding host_ from url
+    return TLD::Host(TLD::Url::extractHost(url), ignore_www);
 }
 
 TLD::Host::Host(const TLD::Host &host) : impl(new Impl(*host.impl)) {}

@@ -80,11 +80,15 @@ int main() {
     show(TLD::Url("http://www.google.com", true).subdomain());
     show(TLD::Url("http://www.google.com", true).domain());
 
-    show(TLD::Host::fromUrl("http://mohammad:123@www.google.com?about", true));
-    show(TLD::Host::fromUrl("mohammad:123@www.google.com?about", true));
-    show(TLD::Host::fromUrl("www.google.com?about", true));
-    show(TLD::Host::fromUrl("www.google.com/?about", true));
-    show(TLD::Host::fromUrl("www.google.com", true));
+    show(TLD::Host::fromUrl("http://mohammad:123@www.google.com?about", false));
+    show(TLD::Host::fromUrl("mohammad:123@www.google.com?about", false));
+    show(TLD::Host::fromUrl("www.google.com?about", false));
+    show(TLD::Host::fromUrl("www.google.com/?about", false));
+    show(TLD::Host::fromUrl("www.google.com", false));
+
+
+    show(TLD::Url("http://mohammad:123@www.google.com?about", true).host());
+    show(TLD::Url("https://www.p30download.ir", false).host());
 
 
     printf("\ngood bye :)\n");
