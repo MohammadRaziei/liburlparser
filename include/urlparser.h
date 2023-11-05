@@ -11,7 +11,6 @@
 
 namespace TLD {
 constexpr bool DEFAULT_IGNORE_WWW = false;
-constexpr bool DEFAULT_AUTO_CORRECTION = true;
 
 using QueryParams = std::vector<std::string>;
 
@@ -75,7 +74,7 @@ class Host {
     const std::string& domain() const noexcept;
     std::string domainName() const noexcept;
     const std::string& subdomain() const noexcept;
-    std::string fulldomain() const noexcept;
+    const std::string& fulldomain() const noexcept;
     const std::string& str() const noexcept;
 
    protected:

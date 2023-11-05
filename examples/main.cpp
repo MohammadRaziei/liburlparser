@@ -83,6 +83,8 @@ int main() {
     show(TLD::Host::fromUrl("http://mohammad:123@www.google.com?about", true));
     show(TLD::Host::fromUrl("mohammad:123@www.google.com?about", true));
     show(TLD::Host::fromUrl("www.google.com?about", true));
+    show(TLD::Host::fromUrl("www.google.com/?about", true));
+    show(TLD::Host::fromUrl("www.google.com", true));
 
 
     printf("\ngood bye :)\n");

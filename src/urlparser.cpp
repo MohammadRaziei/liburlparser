@@ -48,7 +48,7 @@ public:
 
     const std::string &suffix() const noexcept;
 
-    std::string fulldomain() const noexcept;
+    const std::string &fulldomain() const noexcept;
 
     const std::string &str() const noexcept;
 
@@ -57,6 +57,7 @@ protected:
     std::string domain_;
     std::string subdomain_;
     std::string suffix_;
+    std::string fulldomain_;
     static URL::PSL *psl;
 };
 
@@ -125,12 +126,13 @@ bool TLD::Url::isPslLoaded() noexcept {
 
 TLD::Host::Impl::Impl(const std::string &host_, const bool ignore_www) : host_(host_) {
     this->suffix_ = TLD::Host::Impl::psl->getTLD(host_);
-    size_t suffix_pos = host_.rfind("." + suffix_);
+    this->fulldomain_ = host_;
+    size_t suffix_pos = fulldomain_.rfind("." + suffix_);
     size_t subdomain_pos = 0;
     if (suffix_pos == std::string::npos || suffix_pos < 1)
         return;
     domain_ = host_.substr(0, suffix_pos);
-    size_t domain_pos = domain_.find_last_of(".");
+    size_t domain_pos = domain_.find_last_of('.');
     if (domain_pos != std::string::npos) {
         if (ignore_www) {
             size_t www_pos = domain_.find("www.");
@@ -139,12 +141,14 @@ TLD::Host::Impl::Impl(const std::string &host_, const bool ignore_www) : host_(h
                     return;
             } else {
                 subdomain_pos = 4;
+                fulldomain_ = fulldomain_.substr(4);
             }
         }
         if (subdomain_pos < domain_pos)
             subdomain_ = domain_.substr(subdomain_pos, domain_pos - subdomain_pos);
         domain_ = domain_.substr(domain_pos + 1);
     }
+
 }
 
 TLD::Host::Host(const std::string &url, const bool ignore_www) : impl(new Impl(url, ignore_www)) {}
@@ -224,13 +228,11 @@ const std::string &TLD::Url::domain() const noexcept {
 }
 
 /// fulldomain
-std::string TLD::Host::Impl::fulldomain() const noexcept {
-    if (subdomain_.empty())
-        return domainName();
-    return subdomain_ + "." + domainName();
+const std::string &TLD::Host::Impl::fulldomain() const noexcept {
+    return fulldomain_;
 }
 
-std::string TLD::Host::fulldomain() const noexcept {
+const std::string &TLD::Host::fulldomain() const noexcept {
     return impl->fulldomain();
 }
 
@@ -253,7 +255,7 @@ std::string TLD::Url::domainName() const noexcept {
 
 // str
 inline const std::string &TLD::Host::Impl::str() const noexcept {
-    return host_;
+    return fulldomain();
 }
 
 const std::string &TLD::Host::str() const noexcept {
@@ -342,7 +344,7 @@ std::string TLD::Url::extractHost(const std::string &url) noexcept {
         end_pos = url.length();
     }
     if (at_pos < end_pos) {
-        pos = at_pos+1;
+        pos = at_pos + 1;
     }
     host = url.substr(pos, end_pos - pos);
     return host;
