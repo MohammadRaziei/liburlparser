@@ -153,7 +153,7 @@ TLD::Host::Impl::Impl(const std::string &host_, const bool ignore_www) : host_(h
 
 TLD::Host::Host(const std::string &url, const bool ignore_www) : impl(new Impl(url, ignore_www)) {}
 
-TLD::Host::Host(TLD::Host &&host) : impl(host.impl) {
+TLD::Host::Host(TLD::Host &&host) noexcept: impl(host.impl) {
     host.impl = nullptr;
 }
 
@@ -170,7 +170,7 @@ TLD::Url::Url(const std::string &url, const bool ignore_www) :
         impl(new Impl(url, ignore_www)) {
 }
 
-TLD::Url::Url(TLD::Url &&url) : impl(url.impl) {
+TLD::Url::Url(TLD::Url &&url) noexcept: impl(url.impl) {
     url.impl = nullptr;
 }
 

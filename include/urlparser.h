@@ -24,7 +24,7 @@ class Url {
    public:
     Url(const std::string& url, const bool ignore_www = DEFAULT_IGNORE_WWW);
     Url(const Url& url);
-    Url(Url&& url);
+    Url(Url&& url) noexcept;
     ~Url();
 
     Url& operator=(const Url&);
@@ -60,7 +60,7 @@ class Host {
    public:
     Host(const std::string& host, const bool ignore_www = DEFAULT_IGNORE_WWW);
     Host(const Host& host);
-    Host(Host&& host);
+    Host(Host&& host) noexcept;
     ~Host();
 
     Host& operator=(const Host&);
