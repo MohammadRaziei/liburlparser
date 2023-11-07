@@ -36,13 +36,18 @@ int main() {
 
     TLD::Url _url = url;
     show(_url);
+    show(_url.suffix());
+    TLD::Url __url(_url);
+    show(__url.suffix());
+    show(_url.suffix());
+
     TLD::Host _host = TLD::Host::fromUrl(_url.str());
     _host = _url.host();
 
     show(_host);
 
     tic;
-    for (int i = 0; i < 1'000'000; ++i)
+    for (int i = 0; i < 1'000; ++i)
         TLD::Host host("www.ee.aut.ac.ir");
     toc;
 

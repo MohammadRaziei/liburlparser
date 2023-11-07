@@ -16,13 +16,16 @@ class TLD::Url::Impl : public URL::Url {
 
 public:
     Impl(const std::string &url, const bool ignore_www);
+//    Impl(const Impl&);
+//    Impl(Impl&&) noexcept;
 
-    ~Impl() {}
+    ~Impl();
 
-    const TLD::Host &host() const noexcept;
+    const TLD::Host *host() noexcept;
 
 protected:
-    TLD::Host host_obj;
+    TLD::Host* host_obj = nullptr;
+    const bool ignore_www;
 };
 
 class TLD::Host::Impl {
@@ -163,7 +166,22 @@ TLD::Host::~Host() {
 
 
 TLD::Url::Impl::Impl(const std::string &url, const bool ignore_www)
-        : URL::Url(url), host_obj(TLD::Host{this->host_, ignore_www}) {
+        : URL::Url(url), ignore_www(ignore_www) {
+}
+
+//TLD::Url::Impl::Impl(const TLD::Url::Impl& impl) : ignore_www(impl.ignore_www) {
+//    if (this == &impl) return;
+//    if (impl.host_obj)
+//      *host_obj = *impl.host_obj;
+//}
+
+//TLD::Url::Impl::Impl(TLD::Url::Impl&& impl) noexcept : host_obj(impl.host_obj),
+//      ignore_www(impl.ignore_www) {
+//    impl.host_obj = nullptr;
+//}
+
+TLD::Url::Impl::~Impl(){
+    delete host_obj;
 }
 
 TLD::Url::Url(const std::string &url, const bool ignore_www) :
@@ -179,13 +197,15 @@ TLD::Url::~Url() {
 }
 
 //////////////////////////////////////////////////////////////////////
-const TLD::Host &TLD::Url::Impl::host() const noexcept {
-    return this->host_obj;  // TODO
+const TLD::Host *TLD::Url::Impl::host() noexcept {
+    if (!host_obj)
+        host_obj = new TLD::Host(host_, ignore_www);
+    return host_obj;  // TODO
 }
 
 const TLD::Host &TLD::Url::host() const {
     //    return impl->host_obj;
-    return impl->host_obj;  // TODO
+    return *impl->host();  // TODO
 }
 
 /// suffix:
@@ -198,7 +218,7 @@ const std::string &TLD::Host::suffix() const noexcept {
 }
 
 const std::string &TLD::Url::suffix() const noexcept {
-    return impl->host_obj.suffix();
+    return impl->host()->suffix();
 }
 
 /// subdomain
@@ -211,7 +231,7 @@ const std::string &TLD::Host::subdomain() const noexcept {
 }
 
 const std::string &TLD::Url::subdomain() const noexcept {
-    return impl->host_obj.subdomain();
+    return impl->host()->subdomain();
 }
 
 /// domain
@@ -224,7 +244,7 @@ const std::string &TLD::Host::domain() const noexcept {
 }
 
 const std::string &TLD::Url::domain() const noexcept {
-    return impl->host_obj.domain();
+    return impl->host()->domain();
 }
 
 /// fulldomain
@@ -237,7 +257,7 @@ const std::string &TLD::Host::fulldomain() const noexcept {
 }
 
 std::string TLD::Url::fulldomain() const noexcept {
-    return impl->host_obj.fulldomain();
+    return impl->host()->fulldomain();
 }
 
 /// domainName
@@ -250,7 +270,7 @@ std::string TLD::Host::domainName() const noexcept {
 }
 
 std::string TLD::Url::domainName() const noexcept {
-    return impl->host_obj.domainName();
+    return impl->host()->domainName();
 }
 
 // str
