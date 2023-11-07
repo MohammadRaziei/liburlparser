@@ -33,6 +33,16 @@ int main() {
             "https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus", true);
     toc;
 
+    tic;
+    const std::string suffix = url.suffix();
+    toc;
+    tic;
+    const std::string domain = url.domain();
+    toc;
+
+    show(suffix);
+    show(domain);
+
     TLD::Url _url = url;
     show(_url);
     show(_url.suffix());
@@ -43,7 +53,6 @@ int main() {
 }
     show(_url.suffix());
 
-    return 0;
 
     TLD::Host _host = TLD::Host::fromUrl(_url.str());
     _host = _url.host();
@@ -51,7 +60,7 @@ int main() {
     show(_host);
 
     tic;
-    for (int i = 0; i < 1'000; ++i)
+    for (int i = 0; i < 1'000'000; ++i)
         TLD::Host host("www.ee.aut.ac.ir");
     toc;
 

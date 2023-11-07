@@ -24,13 +24,12 @@ class Url {
 
    public:
     Url(const std::string& url, const bool ignore_www = DEFAULT_IGNORE_WWW);
-//    Url();
-    Url(const Url& url);
-    Url(Url&& url) noexcept;
-    ~Url();
+    Url(const Url&);
+    Url() = default;
+    ~Url() noexcept;
 
     Url& operator=(const Url&);
-    Url& operator=(Url&&);
+
 
     std::string str() const noexcept;
     const std::string& protocol() const noexcept;
@@ -49,8 +48,7 @@ class Url {
 
    private:
     class Impl;
-//    std::unique_ptr<Impl*>a;
-    Impl* impl = nullptr;
+    std::unique_ptr<Impl> impl;
 };
 
 class Host {
@@ -62,12 +60,11 @@ class Host {
 
    public:
     Host(const std::string& host, const bool ignore_www = DEFAULT_IGNORE_WWW);
-    Host(const Host& host);
-    Host(Host&& host) noexcept;
-    ~Host();
+    Host(const Host&);
+    ~Host() noexcept;
 
     Host& operator=(const Host&);
-    Host& operator=(Host&&) noexcept;
+//    Host& operator=(Host&&) noexcept;
     bool operator==(const Host&) const;
     bool operator==(const std::string &) const;
 
@@ -81,7 +78,7 @@ class Host {
 
    private:
     class Impl;
-    Impl* impl = nullptr;
+    std::unique_ptr<Impl> impl;
 };
 }  // namespace TLD
 

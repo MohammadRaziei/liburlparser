@@ -46,18 +46,6 @@ protected:
     static URL::PSL *psl;
 };
 
-inline std::vector<std::string> split(const std::string &str,
-                                      char delim) noexcept {
-    std::vector<std::string> strings;
-    size_t start;
-    size_t end = 0;
-    while ((start = str.find_first_not_of(delim, end)) != std::string::npos) {
-        end = str.find(delim, start);
-        strings.push_back(str.substr(start, end - start));
-    }
-    return strings;
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////
 
 URL::PSL *initiate_static_psl() {
@@ -132,15 +120,13 @@ TLD::Host::Impl::Impl(const std::string &host_, const bool ignore_www) : host_(h
 
 }
 
-TLD::Host::Host(const std::string &url, const bool ignore_www) : impl(new Impl(url, ignore_www)) {}
+TLD::Host::Host(const std::string &url, const bool ignore_www) : impl(std::make_unique<Impl>(url, ignore_www)) {}
 
-TLD::Host::Host(TLD::Host &&host) noexcept: impl(host.impl) {
-    host.impl = nullptr;
-}
+TLD::Host::Host(const TLD::Host &other) : impl(std::make_unique<Impl>(*other.impl)) {}
 
-TLD::Host::~Host() {
-    delete impl;
-}
+TLD::Host::~Host() noexcept {}
+
+
 
 /// suffix:
 inline const std::string &TLD::Host::Impl::suffix() const noexcept {
@@ -188,41 +174,24 @@ std::string TLD::Host::domainName() const noexcept {
     return impl->domainName();
 }
 
-// str
-inline const std::string &TLD::Host::Impl::str() const noexcept {
-    return fulldomain();
-}
-
 const std::string &TLD::Host::str() const noexcept {
-    return impl->str();
+    return impl->fulldomain();
 }
 
 TLD::Host TLD::Host::fromUrl(const std::string &url, const bool ignore_www) {
     return TLD::Host(TLD::Url::extractHost(url), ignore_www);
 }
 
-TLD::Host::Host(const TLD::Host &host) : impl(new Impl(*host.impl)) {}
 
-////////////////////////
-
-TLD::Host &TLD::Host::operator=(const TLD::Host &host) {
-    if (this == &host) { return *this; }
-    *impl = *host.impl;
-    return *this;
-}
-
-TLD::Host &TLD::Host::operator=(TLD::Host &&host) noexcept {
-    if (impl == host.impl) { return *this; }
-    delete impl;
-    impl = host.impl;
-    host.impl = nullptr;
-    return *this;
-}
-
-bool TLD::Host::operator==(const TLD::Host &host) const {
-    return impl->fulldomain() == host.impl->fulldomain();
+bool TLD::Host::operator==(const TLD::Host &other) const {
+    return impl->fulldomain() == other.impl->fulldomain();
 }
 
 bool TLD::Host::operator==(const std::string &host) const {
     return impl->fulldomain() == host;
+}
+
+TLD::Host &TLD::Host::operator=(const TLD::Host &other) {
+    impl = std::make_unique<Impl>(*other.impl);
+    return *this;
 }
