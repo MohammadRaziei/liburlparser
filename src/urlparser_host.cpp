@@ -23,7 +23,7 @@ public:
 public:
     Impl(const std::string &host, const bool ignore_www);
 
-    ~Impl() {}
+    ~Impl() = default;
 
     const std::string &domain() const noexcept;
 
@@ -37,7 +37,7 @@ public:
 
     const std::string &str() const noexcept;
 
-protected:
+private:
     std::string host_;
     std::string domain_;
     std::string subdomain_;
@@ -120,12 +120,13 @@ TLD::Host::Impl::Impl(const std::string &host_, const bool ignore_www) : host_(h
 
 }
 
-TLD::Host::Host(const std::string &url, const bool ignore_www) : impl(std::make_unique<Impl>(url, ignore_www)) {}
+TLD::Host::Host(const std::string &host, const bool ignore_www) : impl(std::make_unique<Impl>(host, ignore_www)) {}
 
 TLD::Host::Host(const TLD::Host &other) : impl(std::make_unique<Impl>(*other.impl)) {}
 
-TLD::Host::~Host() noexcept {}
+TLD::Host::Host(TLD::Host &&other) noexcept : impl(std::move(other.impl)) {}
 
+TLD::Host::~Host() noexcept {}
 
 
 /// suffix:
@@ -192,6 +193,12 @@ bool TLD::Host::operator==(const std::string &host) const {
 }
 
 TLD::Host &TLD::Host::operator=(const TLD::Host &other) {
+    if (this != &other) return *this;
     impl = std::make_unique<Impl>(*other.impl);
+    return *this;
+}
+
+TLD::Host &TLD::Host::operator=(TLD::Host &&other) noexcept {
+    impl = std::move(other.impl);
     return *this;
 }

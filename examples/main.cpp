@@ -10,7 +10,7 @@
 #define show_attr(url, attr) \
     std::cout << std::boolalpha << #attr << " : " << url.attr() << std::endl
 #define show(var) \
-    std::cout << std::boolalpha << #var << " : " << var << std::endl
+    std::cout << std::boolalpha << #var << " : " << (var) << std::endl
 
 // HTTPS (Hypertext Transfer Protocol Secure): A secure version of HTTP that
 // encrypts data transmission to prevent unauthorized access. URLs that begin
@@ -47,11 +47,14 @@ int main() {
     show(_url);
     show(_url.suffix());
     {
-    TLD::Url __url("https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus", true);
-    __url = _url;
-    show(__url.suffix());
-}
+        TLD::Url __url("https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus", true);
+        __url = _url;
+        show(__url.suffix());
+        show((_url == __url));
+
+    }
     show(_url.suffix());
+    show(_url == url);
 
 
     TLD::Host _host = TLD::Host::fromUrl(_url.str());
@@ -64,6 +67,10 @@ int main() {
         TLD::Host host("www.ee.aut.ac.ir");
     toc;
 
+    tic;
+    for (int i = 0; i < 1'000'000; ++i)
+        TLD::Host::fromUrl("https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus", true);
+    toc;
     TLD::Host host = TLD::Host::fromUrl(
             "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
             "home?o=10&k=helloworld#aboutus");
@@ -98,11 +105,11 @@ int main() {
     show(TLD::Url("http://www.google.com", true).subdomain());
     show(TLD::Url("http://www.google.com", true).domain());
 
-    show(TLD::Host::fromUrl("http://mohammad:123@www.google.com?about", false));
-    show(TLD::Host::fromUrl("mohammad:123@www.google.com?about", false));
-    show(TLD::Host::fromUrl("www.google.com?about", false));
-    show(TLD::Host::fromUrl("www.google.com/?about", false));
-    show(TLD::Host::fromUrl("www.google.com", false));
+    show(TLD::Host::fromUrl("http://mohammad:123@www.google.com?about", true));
+    show(TLD::Host::fromUrl("mohammad:123@www.google.com?about", true));
+    show(TLD::Host::fromUrl("www.google.com?about", true));
+    show(TLD::Host::fromUrl("www.google.com/?about", true));
+    show(TLD::Host::fromUrl("www.google.com", true));
 
 
     show(TLD::Url("http://mohammad:123@www.google.com?about", true).host());
