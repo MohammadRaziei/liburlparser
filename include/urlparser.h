@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <memory>
 
 #ifndef PUBLIC_SUFFIX_LIST_DAT
 #define PUBLIC_SUFFIX_LIST_DAT "public_suffix_list.dat"
@@ -23,6 +24,7 @@ class Url {
 
    public:
     Url(const std::string& url, const bool ignore_www = DEFAULT_IGNORE_WWW);
+//    Url();
     Url(const Url& url);
     Url(Url&& url) noexcept;
     ~Url();
@@ -47,7 +49,8 @@ class Url {
 
    private:
     class Impl;
-    Impl* impl;
+//    std::unique_ptr<Impl*>a;
+    Impl* impl = nullptr;
 };
 
 class Host {
@@ -78,7 +81,7 @@ class Host {
 
    private:
     class Impl;
-    Impl* impl;
+    Impl* impl = nullptr;
 };
 }  // namespace TLD
 

@@ -30,16 +30,20 @@
 int main() {
     tic;
     const TLD::Url url(
-        "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
-        "home?o=10&k=helloworld#aboutus", true);
+            "https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus", true);
     toc;
 
     TLD::Url _url = url;
     show(_url);
     show(_url.suffix());
-    TLD::Url __url(_url);
+    {
+    TLD::Url __url("https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=helloworld#aboutus", true);
+    __url = _url;
     show(__url.suffix());
+}
     show(_url.suffix());
+
+    return 0;
 
     TLD::Host _host = TLD::Host::fromUrl(_url.str());
     _host = _url.host();
@@ -52,8 +56,8 @@ int main() {
     toc;
 
     TLD::Host host = TLD::Host::fromUrl(
-        "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
-        "home?o=10&k=helloworld#aboutus");
+            "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
+            "home?o=10&k=helloworld#aboutus");
 
     show(TLD::Host("www.ee.aut.ac.ir").suffix());
     show(TLD::Host("aut.ac.ir").fulldomain());
