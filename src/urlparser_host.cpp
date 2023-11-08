@@ -124,8 +124,6 @@ TLD::Host::Host(const std::string &host, const bool ignore_www) : impl(std::make
 
 TLD::Host::Host(const TLD::Host &other) : impl(std::make_unique<Impl>(*other.impl)) {}
 
-TLD::Host::Host(TLD::Host &&other) noexcept : impl(std::move(other.impl)) {}
-
 TLD::Host::~Host() noexcept {}
 
 
@@ -195,10 +193,5 @@ bool TLD::Host::operator==(const std::string &host) const {
 TLD::Host &TLD::Host::operator=(const TLD::Host &other) {
     if (this != &other) return *this;
     impl = std::make_unique<Impl>(*other.impl);
-    return *this;
-}
-
-TLD::Host &TLD::Host::operator=(TLD::Host &&other) noexcept {
-    impl = std::move(other.impl);
     return *this;
 }

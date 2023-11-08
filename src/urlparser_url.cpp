@@ -55,8 +55,7 @@ TLD::Url::Url(const TLD::Url &url) :
         impl(std::make_unique<TLD::Url::Impl>(*url.impl)) {
 }
 
-TLD::Url::Url(TLD::Url &&url) noexcept : impl(std::move(url.impl)) {
-}
+//TLD::Url::Url(TLD::Url &&url) noexcept : impl(std::move(url.impl)) {}
 
 TLD::Url::~Url() noexcept {}
 
@@ -67,10 +66,10 @@ TLD::Url &TLD::Url::operator=(const TLD::Url &other) {
     return *this;
 }
 
-TLD::Url &TLD::Url::operator=(TLD::Url &&other) noexcept {
-    impl = std::move(other.impl);
-    return *this;
-}
+//TLD::Url &TLD::Url::operator=(TLD::Url &&other) noexcept {
+//    impl = std::move(other.impl);
+//    return *this;
+//}
 
 
 
