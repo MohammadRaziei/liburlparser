@@ -1,0 +1,32 @@
+name: Build
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+     - master
+  release:
+    types:
+      - published
+
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-project:
+    name: Build Project
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3.5.3
+
+      - name: Configure the project
+        uses: threeal/cmake-action@v1.3.0
+
+      - name: Build the project
+        runs: cmake --build build
+
+      - name: Test the project
+        runs: ctest --test-dir build
