@@ -39,7 +39,14 @@ project(liburlparser LANGUAGES CXX)
 # Download the public suffix list file from the internet
 set(PUBLIC_SUFFIX_LIST_URL "https://publicsuffix.org/list/public_suffix_list.dat")
 set(PUBLIC_SUFFIX_LIST_DAT "public_suffix_list.dat")
-file(DOWNLOAD ${PUBLIC_SUFFIX_LIST_URL} ${PUBLIC_SUFFIX_LIST_DAT})
+
+if(EXISTS "${PUBLIC_SUFFIX_LIST_DAT}")
+      message(STATUS "[DATA] ${PUBLIC_SUFFIX_LIST_DAT} is found.")
+else()
+  message(STATUS "[DATA] ${PUBLIC_SUFFIX_LIST_DAT} is not found. Trying to download it.")
+  file(DOWNLOAD "${PUBLIC_SUFFIX_LIST_URL}" ${PUBLIC_SUFFIX_LIST_DAT})
+  message(STATUS "[DATA] ${PUBLIC_SUFFIX_LIST_DAT} is downloaded.")
+endif()
 
 file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
@@ -102,7 +109,7 @@ if(DEFINED SKBUILD)
             CONFIGURATIONS Release
             LIBRARY DESTINATION
             ${SKBUILD_PROJECT_NAME})
-    install (FILES public_suffix_list.dat
+    install (FILES ${PUBLIC_SUFFIX_LIST_DAT}
         DESTINATION ${SKBUILD_PROJECT_NAME})
 
     RETURN()

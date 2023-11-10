@@ -57,7 +57,7 @@ test-skip = ["*universal2:arm64"]
 
 [tool.scikit-build]
 #wheel.expand-macos-universal-tags = true
-cmake.verbose = false
+cmake.verbose = true
 
 
 [tool.pytest.ini_options]
