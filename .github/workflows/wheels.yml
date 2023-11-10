@@ -1,4 +1,4 @@
-name: Wheels
+name: PYTHON_BUILD_TEST_DEPLOY
 
 on:
   workflow_dispatch:
