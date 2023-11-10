@@ -19,7 +19,7 @@ public:
     const TLD::Host* getHost() noexcept;
 
 private:
-    std::unique_ptr<TLD::Host> host_obj;
+    std::shared_ptr<TLD::Host> host_obj = nullptr;
     const bool ignore_www;
 };
 
@@ -55,7 +55,6 @@ TLD::Url::Url(const TLD::Url &url) :
         impl(std::make_unique<TLD::Url::Impl>(*url.impl)) {
 }
 
-
 TLD::Url::~Url() noexcept {}
 
 
@@ -66,9 +65,10 @@ TLD::Url &TLD::Url::operator=(const TLD::Url &other) {
 }
 
 
+
 const TLD::Host* TLD::Url::Impl::getHost() noexcept {
     if (!host_obj)
-        host_obj = std::make_unique<TLD::Host>(host_, ignore_www);
+        host_obj = std::make_shared<TLD::Host>(host_, ignore_www);
     return host_obj.get();
 }
 
@@ -150,8 +150,7 @@ std::string TLD::Url::extractHost(const std::string &url) noexcept {
     if (end_pos == std::string::npos) {
         end_pos = url.length();
     }
-    size_t at_pos = url.find_first_of('@', pos);
-    if (at_pos < end_pos) {
+    if (size_t at_pos = url.find_first_of('@', pos); at_pos < end_pos) {
         pos = at_pos + 1;
     }
     host = url.substr(pos, end_pos - pos);
