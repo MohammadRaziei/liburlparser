@@ -43,37 +43,33 @@ private:
     std::string subdomain_;
     std::string suffix_;
     std::string fulldomain_;
-    static URL::PSL *psl;
+    static std::unique_ptr<URL::PSL> psl;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////
-
-URL::PSL *initiate_static_psl() {
-    URL::PSL *psl;
+#ifndef DONT_INIT_PSL
+std::unique_ptr<URL::PSL> initiate_static_psl() {
+    std::unique_ptr<URL::PSL> psl;
     try {
-        psl = new URL::PSL(URL::PSL::fromPath(PUBLIC_SUFFIX_LIST_DAT));
+        psl = std::make_unique<URL::PSL>(URL::PSL::fromPath(PUBLIC_SUFFIX_LIST_DAT));
     }
     catch (const std::invalid_argument &) {
-        psl = new URL::PSL(URL::PSL::fromString(""));
+        psl = std::make_unique<URL::PSL>(URL::PSL::fromString(""));
     }
     return psl;
 }
-
-#ifndef DONT_INIT_PSL
-URL::PSL *TLD::Host::Impl::psl = initiate_static_psl();
+std::unique_ptr<URL::PSL> TLD::Host::Impl::psl = initiate_static_psl();
 #else
-URL::PSL* TLD::Host::Impl::psl = new URL::PSL(URL::PSL::fromString(""));
+std::unique_ptr<URL::PSL> TLD::Host::Impl::psl =
+    std::make_unique<URL::PSL>(URL::PSL::fromString(""));
 #endif
 
 inline void TLD::Host::Impl::loadPslFromPath(const std::string &filepath) {
-    delete psl;
-    psl = new URL::PSL(URL::PSL::fromPath(filepath));
+    psl = std::make_unique<URL::PSL>(URL::PSL::fromPath(filepath));
 }
 
 inline void TLD::Host::Impl::loadPslFromString(const std::string &filestr) {
-    delete psl;
-//    if (!filestr.empty())
-    psl = new URL::PSL(URL::PSL::fromString(filestr));
+    psl = std::make_unique<URL::PSL>(URL::PSL::fromString(filestr));
 }
 
 void TLD::Host::loadPslFromPath(const std::string &filepath) {
@@ -93,9 +89,9 @@ bool TLD::Host::isPslLoaded() noexcept {
 }
 ////////////////////////////////////////////////////////////////////
 
-TLD::Host::Impl::Impl(const std::string &host_, const bool ignore_www) : host_(host_) {
+TLD::Host::Impl::Impl(const std::string &host_, const bool ignore_www) :
+      host_(host_), fulldomain_(host_) {
     this->suffix_ = TLD::Host::Impl::psl->getTLD(host_);
-    this->fulldomain_ = host_;
     size_t suffix_pos = fulldomain_.rfind("." + suffix_);
     size_t subdomain_pos = 0;
     if (suffix_pos == std::string::npos || suffix_pos < 1)
