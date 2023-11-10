@@ -9,35 +9,26 @@
 
 namespace URL = Url;
 
-
 class TLD::Host::Impl {
     friend class TLD::Host;
 
-public:
-    static void loadPslFromPath(const std::string &filepath);
-
-    static void loadPslFromString(const std::string &filestr);
-
+   public:
+    static void loadPslFromPath(const std::string& filepath);
+    static void loadPslFromString(const std::string& filestr);
     static bool isPslLoaded() noexcept;
 
-public:
-    Impl(const std::string &host, const bool ignore_www);
-
+   public:
+    Impl(const std::string& host, const bool ignore_www);
     ~Impl() = default;
 
-    const std::string &domain() const noexcept;
-
+    const std::string& domain() const noexcept;
     std::string domainName() const noexcept;
+    const std::string& subdomain() const noexcept;
+    const std::string& suffix() const noexcept;
+    const std::string& fulldomain() const noexcept;
+    const std::string& str() const noexcept;
 
-    const std::string &subdomain() const noexcept;
-
-    const std::string &suffix() const noexcept;
-
-    const std::string &fulldomain() const noexcept;
-
-    const std::string &str() const noexcept;
-
-private:
+   private:
     std::string host_;
     std::string domain_;
     std::string subdomain_;
@@ -52,8 +43,7 @@ URL::PSL initiate_static_psl() {
     URL::PSL psl;
     try {
         psl = URL::PSL::fromPath(PUBLIC_SUFFIX_LIST_DAT);
-    }
-    catch (const std::invalid_argument &) {
+    } catch (const std::invalid_argument&) {
         psl = URL::PSL::fromString("");
     }
     return psl;
@@ -64,19 +54,19 @@ std::unique_ptr<URL::PSL> TLD::Host::Impl::psl =
     std::make_unique<URL::PSL>(URL::PSL::fromString(""));
 #endif
 
-inline void TLD::Host::Impl::loadPslFromPath(const std::string &filepath) {
+inline void TLD::Host::Impl::loadPslFromPath(const std::string& filepath) {
     psl = URL::PSL::fromPath(filepath);
 }
 
-inline void TLD::Host::Impl::loadPslFromString(const std::string &filestr) {
+inline void TLD::Host::Impl::loadPslFromString(const std::string& filestr) {
     psl = URL::PSL::fromString(filestr);
 }
 
-void TLD::Host::loadPslFromPath(const std::string &filepath) {
+void TLD::Host::loadPslFromPath(const std::string& filepath) {
     TLD::Host::Impl::loadPslFromPath(filepath);
 }
 
-void TLD::Host::loadPslFromString(const std::string &filestr) {
+void TLD::Host::loadPslFromString(const std::string& filestr) {
     TLD::Host::Impl::loadPslFromString(filestr);
 }
 
@@ -89,8 +79,8 @@ bool TLD::Host::isPslLoaded() noexcept {
 }
 ////////////////////////////////////////////////////////////////////
 
-TLD::Host::Impl::Impl(const std::string &host_, const bool ignore_www) :
-      host_(host_), fulldomain_(host_) {
+TLD::Host::Impl::Impl(const std::string& host_, const bool ignore_www)
+    : host_(host_), fulldomain_(host_) {
     this->suffix_ = TLD::Host::Impl::psl.getTLD(host_);
     size_t suffix_pos = fulldomain_.rfind("." + suffix_);
     size_t subdomain_pos = 0;
@@ -110,53 +100,53 @@ TLD::Host::Impl::Impl(const std::string &host_, const bool ignore_www) :
             }
         }
         if (subdomain_pos < domain_pos)
-            subdomain_ = domain_.substr(subdomain_pos, domain_pos - subdomain_pos);
+            subdomain_ =
+                domain_.substr(subdomain_pos, domain_pos - subdomain_pos);
         domain_ = domain_.substr(domain_pos + 1);
     }
-
 }
 
-TLD::Host::Host(const std::string &host, const bool ignore_www) : impl(std::make_unique<Impl>(host, ignore_www)) {}
+TLD::Host::Host(const std::string& host, const bool ignore_www)
+    : impl(std::make_unique<Impl>(host, ignore_www)) {}
 
-TLD::Host::Host(const TLD::Host &other) : impl(std::make_unique<Impl>(*other.impl)) {}
+TLD::Host::Host(const TLD::Host& other)
+    : impl(std::make_unique<Impl>(*other.impl)) {}
 
 TLD::Host::~Host() noexcept {}
 
-
 /// suffix:
-inline const std::string &TLD::Host::Impl::suffix() const noexcept {
+inline const std::string& TLD::Host::Impl::suffix() const noexcept {
     return suffix_;
 }
 
-const std::string &TLD::Host::suffix() const noexcept {
+const std::string& TLD::Host::suffix() const noexcept {
     return impl->suffix();
 }
 
-
 /// subdomain
-inline const std::string &TLD::Host::Impl::subdomain() const noexcept {
+inline const std::string& TLD::Host::Impl::subdomain() const noexcept {
     return subdomain_;
 }
 
-const std::string &TLD::Host::subdomain() const noexcept {
+const std::string& TLD::Host::subdomain() const noexcept {
     return impl->subdomain();
 }
 
 /// domain
-inline const std::string &TLD::Host::Impl::domain() const noexcept {
+inline const std::string& TLD::Host::Impl::domain() const noexcept {
     return domain_;
 }
 
-const std::string &TLD::Host::domain() const noexcept {
+const std::string& TLD::Host::domain() const noexcept {
     return impl->domain();
 }
 
 /// fulldomain
-const std::string &TLD::Host::Impl::fulldomain() const noexcept {
+const std::string& TLD::Host::Impl::fulldomain() const noexcept {
     return fulldomain_;
 }
 
-const std::string &TLD::Host::fulldomain() const noexcept {
+const std::string& TLD::Host::fulldomain() const noexcept {
     return impl->fulldomain();
 }
 
@@ -169,25 +159,25 @@ std::string TLD::Host::domainName() const noexcept {
     return impl->domainName();
 }
 
-const std::string &TLD::Host::str() const noexcept {
+const std::string& TLD::Host::str() const noexcept {
     return impl->fulldomain();
 }
 
-TLD::Host TLD::Host::fromUrl(const std::string &url, const bool ignore_www) {
+TLD::Host TLD::Host::fromUrl(const std::string& url, const bool ignore_www) {
     return TLD::Host(TLD::Url::extractHost(url), ignore_www);
 }
 
-
-bool TLD::Host::operator==(const TLD::Host &other) const {
+bool TLD::Host::operator==(const TLD::Host& other) const {
     return impl->fulldomain() == other.impl->fulldomain();
 }
 
-bool TLD::Host::operator==(const std::string &host) const {
+bool TLD::Host::operator==(const std::string& host) const {
     return impl->fulldomain() == host;
 }
 
-TLD::Host &TLD::Host::operator=(const TLD::Host &other) {
-    if (this != &other) return *this;
+TLD::Host& TLD::Host::operator=(const TLD::Host& other) {
+    if (this != &other)
+        return *this;
     impl = std::make_unique<Impl>(*other.impl);
     return *this;
 }
