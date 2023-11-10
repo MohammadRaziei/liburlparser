@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v3.5.3
 
       - name: Installing required packages
-        run: apt install -y build-essential cmake libgtest-dev libgmock-dev
+        run: sudo apt install -y build-essential cmake libgtest-dev libgmock-dev
 
 #      - name: Configure the project
 #        uses: threeal/cmake-action@v1.3.0
