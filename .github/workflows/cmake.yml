@@ -30,3 +30,7 @@ jobs:
 
       - name: Test the project
         runs: ctest --test-dir build
+
+      - uses: actions/upload-artifact@v3
+        with:
+          path: build/*urlparser*
