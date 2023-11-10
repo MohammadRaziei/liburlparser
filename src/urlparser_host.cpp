@@ -50,8 +50,7 @@ URL::PSL initiate_static_psl() {
 }
 URL::PSL TLD::Host::Impl::psl = initiate_static_psl();
 #else
-std::unique_ptr<URL::PSL> TLD::Host::Impl::psl =
-    std::make_unique<URL::PSL>(URL::PSL::fromString(""));
+URL::PSL TLD::Host::Impl::psl = URL::PSL::fromString("");
 #endif
 
 inline void TLD::Host::Impl::loadPslFromPath(const std::string& filepath) {
