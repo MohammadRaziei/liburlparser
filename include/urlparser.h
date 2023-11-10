@@ -45,6 +45,7 @@ class Url {
     const int port() const noexcept;
     QueryParams params() const noexcept;
     const Host& host() const;
+    const std::string& hostName() const;
 
    private:
     class Impl;

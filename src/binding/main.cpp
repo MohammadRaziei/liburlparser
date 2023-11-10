@@ -119,6 +119,7 @@ NB_MODULE(_core, m) {
         .def_prop_ro("protocol", &TLD::Url::protocol)
         .def_prop_ro("userinfo", &TLD::Url::userinfo)
         .def_prop_ro("host", &TLD::Url::host)
+        .def_prop_ro("host_name", &TLD::Url::hostName)
         .def_prop_ro("subdomain", &TLD::Url::subdomain)
         .def_prop_ro("domain", &TLD::Url::domain)
         .def_prop_ro("fulldomain", &TLD::Url::fulldomain)

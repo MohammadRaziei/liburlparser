@@ -70,6 +70,10 @@ const TLD::Host& TLD::Url::host() const {
     return *impl->getHost();
 }
 
+const std::string& TLD::Url::hostName() const {
+    return impl->host_;
+}
+
 /// suffix
 const std::string& TLD::Url::suffix() const noexcept {
     return impl->getHost()->suffix();
