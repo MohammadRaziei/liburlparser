@@ -26,8 +26,12 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
 ]
 dependencies = [
-  "requests"
+#  "requests"
 ]
+
+[project.optional-dependencies]
+test = ["pytest"]
+online = ["requests"]
 
 
 [project.urls]
@@ -49,8 +53,6 @@ test-skip = ["*universal2:arm64"]
 #[tool.scikit-build]
 #cmake.args = ["-DSOME_DEFINE=ON", "-DOTHER=OFF"]
 
-[project.optional-dependencies]
-test = ["pytest"]
 
 
 [tool.scikit-build]
