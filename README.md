@@ -223,7 +223,7 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 Project Link: 
 - [https://github.com/mohammadraziei/liburlparser](https://github.com/mohammadraziei/liburlparser)
-- [pypi.org/project/liburlparser/](pypi.org/project/liburlparser/)
+- [https://pypi.org/project/liburlparser](https://pypi.org/project/liburlparser)
 
 
 
