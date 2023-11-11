@@ -86,14 +86,17 @@ sudo make install
 ### Python and Command Line:
 Be aware that it required `python>=3.8`
 #### Installation
+###### pip by [pypi](https://pypi.org/project/liburlparser/)
 ```sh
 pip install liburlparser
 ```
 Or
+###### pip by [git](https://github.com/mohammadraziei/liburlparser)
 ```sh
 pip install git+https://github.com/mohammadraziei/liburlparser
 ```
 Or
+###### manually
 ```sh
 git clone https://github.com/mohammadraziei/liburlparser
 pip install ./liburlparser
@@ -218,8 +221,9 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 <!-- Gal Ben David - gal@intsights.com -->
 
-Project Link: [https://github.com/mohammadraziei/liburlparser](https://github.com/mohammadraziei/liburlparser)
-
+Project Link: 
+- [https://github.com/mohammadraziei/liburlparser](https://github.com/mohammadraziei/liburlparser)
+- [pypi.org/project/liburlparser/](pypi.org/project/liburlparser/)
 
 
 
