@@ -19,7 +19,7 @@ class TLD::Url::Impl : public URL::Url {
     const TLD::Host* getHost() noexcept;
 
    private:
-    std::shared_ptr<TLD::Host> host_obj = nullptr;
+    std::unique_ptr<TLD::Host> host_obj = nullptr;
     const bool ignore_www;
 };
 
@@ -48,21 +48,9 @@ TLD::Url::Impl::Impl(const std::string& url, const bool ignore_www)
 TLD::Url::Url(const std::string& url, const bool ignore_www)
     : impl(std::make_unique<TLD::Url::Impl>(url, ignore_www)) {}
 
-TLD::Url::Url(const TLD::Url& url)
-    : impl(std::make_unique<TLD::Url::Impl>(*url.impl)) {}
-
-TLD::Url::~Url() noexcept {}
-
-TLD::Url& TLD::Url::operator=(const TLD::Url& other) {
-    if (this == &other)
-        return *this;
-    impl = std::make_unique<Impl>(*other.impl);
-    return *this;
-}
-
 const TLD::Host* TLD::Url::Impl::getHost() noexcept {
     if (!host_obj)
-        host_obj = std::make_shared<TLD::Host>(host_, ignore_www);
+        host_obj = std::make_unique<TLD::Host>(host_, ignore_www);
     return host_obj.get();
 }
 

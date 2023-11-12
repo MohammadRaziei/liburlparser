@@ -106,12 +106,7 @@ TLD::Host::Impl::Impl(const std::string& host_, const bool ignore_www)
 }
 
 TLD::Host::Host(const std::string& host, const bool ignore_www)
-    : impl(std::make_unique<Impl>(host, ignore_www)) {}
-
-TLD::Host::Host(const TLD::Host& other)
-    : impl(std::make_unique<Impl>(*other.impl)) {}
-
-TLD::Host::~Host() noexcept {}
+    : impl(std::make_shared<Impl>(host, ignore_www)) {}
 
 /// suffix:
 inline const std::string& TLD::Host::Impl::suffix() const noexcept {
@@ -172,11 +167,4 @@ bool TLD::Host::operator==(const TLD::Host& other) const {
 
 bool TLD::Host::operator==(const std::string& host) const {
     return impl->fulldomain() == host;
-}
-
-TLD::Host& TLD::Host::operator=(const TLD::Host& other) {
-    if (this != &other)
-        return *this;
-    impl = std::make_unique<Impl>(*other.impl);
-    return *this;
 }
