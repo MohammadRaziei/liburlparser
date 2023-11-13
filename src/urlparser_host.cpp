@@ -94,7 +94,7 @@ TLD::Host::Impl::Impl(const std::string& host_, const bool ignore_www)
                 if (www_pos != std::string::npos)
                     return;
             } else {
-                subdomain_pos = 4;
+                subdomain_pos = 4;  // length of "www."
                 fulldomain_ = fulldomain_.substr(4);
             }
         }
@@ -167,4 +167,11 @@ bool TLD::Host::operator==(const TLD::Host& other) const {
 
 bool TLD::Host::operator==(const std::string& host) const {
     return impl->fulldomain() == host;
+}
+std::string_view TLD::Host::removeWWW(const std::string_view& host) noexcept {
+    if (const size_t www_pos = host.find("www.");
+        www_pos == std::string_view::npos || www_pos != 0) {
+            return host;
+    }
+    return host.substr(4); // 4 is the length of the "www."
 }

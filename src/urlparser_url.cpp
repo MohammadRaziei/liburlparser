@@ -17,10 +17,11 @@ class TLD::Url::Impl : public URL::Url {
     Impl(const std::string& url, const bool ignore_www);
 
     const TLD::Host* getHost() noexcept;
+    inline const std::string& hostName();
 
    private:
     std::unique_ptr<TLD::Host> host_obj = nullptr;
-    const bool ignore_www;
+    const bool ignore_www = DEFAULT_IGNORE_WWW;
 };
 
 inline std::vector<std::string> split(const std::string& str,
@@ -43,23 +44,26 @@ bool TLD::Url::isPslLoaded() noexcept {
 ////////////////////////////////////////////////////////////////////
 
 TLD::Url::Impl::Impl(const std::string& url, const bool ignore_www)
-    : URL::Url(url), ignore_www(ignore_www) {}
+    : URL::Url(url) , ignore_www(ignore_www) {}
 
 TLD::Url::Url(const std::string& url, const bool ignore_www)
     : impl(std::make_unique<TLD::Url::Impl>(url, ignore_www)) {}
 
 const TLD::Host* TLD::Url::Impl::getHost() noexcept {
     if (!host_obj)
-        host_obj = std::make_unique<TLD::Host>(host_, ignore_www);
+        host_obj = std::make_unique<TLD::Host>(hostName(), false);
+    /// we set ignore_www to false because we remove www in hostName function
     return host_obj.get();
+}
+const std::string& TLD::Url::Impl::hostName() {
+    if (ignore_www){
+        host_ = TLD::Host::removeWWW(host_);
+    }
+    return host_;
 }
 
 const TLD::Host& TLD::Url::host() const {
     return *impl->getHost();
-}
-
-const std::string& TLD::Url::hostName() const {
-    return impl->host_;
 }
 
 /// suffix
@@ -79,7 +83,7 @@ const std::string& TLD::Url::domain() const noexcept {
 
 /// fulldomain
 const std::string& TLD::Url::fulldomain() const noexcept {
-    return impl->getHost()->fulldomain();
+    return impl->hostName();
 }
 
 /// domainName

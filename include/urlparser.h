@@ -42,7 +42,6 @@ class Url {
     const int port() const noexcept;
     QueryParams params() const noexcept;
     const Host& host() const;
-    const std::string& hostName() const;
 
    private:
     class Impl;
@@ -56,9 +55,11 @@ class Host {
     static void loadPslFromPath(const std::string& filepath);
     static void loadPslFromString(const std::string& filestr);
     static bool isPslLoaded() noexcept;
+    static std::string_view removeWWW(const std::string_view&) noexcept;
 
    public:
     Host(const std::string& host, const bool ignore_www = DEFAULT_IGNORE_WWW);
+    Host() = default;
 
     bool operator==(const Host&) const;
     bool operator==(const std::string&) const;

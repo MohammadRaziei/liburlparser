@@ -102,11 +102,13 @@ NB_MODULE(_core, m) {
         .def_static("load_psl_from_string", &TLD::Host::loadPslFromString,
                     nb::arg("string"))
         .def_static("is_psl_loaded", &TLD::Host::isPslLoaded)
+        .def_static("removeWWW", &TLD::Host::removeWWW, nb::arg("hoststr"))
         .def_prop_ro("subdomain", &TLD::Host::subdomain)
         .def_prop_ro("domain", &TLD::Host::domain)
         .def_prop_ro("domain_name", &TLD::Host::domainName)
         .def_prop_ro("fulldomain", &TLD::Host::fulldomain)
         .def_prop_ro("suffix", &TLD::Host::suffix)
+//        .def("__eq__", &TLD::Host::operator==) // TODO: fix this operator for 2 types
         .def("to_dict", host_to_dict)
         .def("to_json", host_to_json)
         .def("__str__", &TLD::Host::str)
@@ -119,7 +121,6 @@ NB_MODULE(_core, m) {
         .def_prop_ro("protocol", &TLD::Url::protocol)
         .def_prop_ro("userinfo", &TLD::Url::userinfo)
         .def_prop_ro("host", &TLD::Url::host)
-        .def_prop_ro("host_name", &TLD::Url::hostName)
         .def_prop_ro("subdomain", &TLD::Url::subdomain)
         .def_prop_ro("domain", &TLD::Url::domain)
         .def_prop_ro("fulldomain", &TLD::Url::fulldomain)
@@ -129,6 +130,7 @@ NB_MODULE(_core, m) {
         .def_prop_ro("params", &TLD::Url::params)
         .def_prop_ro("query", &TLD::Url::query)
         .def_prop_ro("fragment", &TLD::Url::fragment)
+//        .def("__eq__", &TLD::Url::operator==) // TODO: fix this operator for 2 types
         .def("to_dict", url_to_dict)
         .def("to_json", url_to_json)
         .def("__str__", &TLD::Url::str)
