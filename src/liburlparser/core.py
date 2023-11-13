@@ -25,7 +25,10 @@ try:
     psl.update = psl_update
 
 except ImportError:
-    pass
+    def psl_update():
+        raise NotImplementedError
+
+    psl.update = psl_update
 
 if not psl.is_loaded():
     psl_filename = Path(__file__).parent / psl.filename

@@ -90,6 +90,12 @@ Be aware that it required `python>=3.8`
 ```sh
 pip install liburlparser
 ```
+if you want to use psl.update to update the public suffix list, you must install the `online` version
+```sh
+pip install "liburlparser[online]"
+```
+
+
 Or
 ###### pip by [git](https://github.com/mohammadraziei/liburlparser)
 ```sh
