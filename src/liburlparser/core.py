@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import warnings
+from filelock import FileLock
 from pathlib import Path
 
 from ._core import Host, Psl, Url, __doc__, __version__
+
 
 psl = Psl()  # psl
 
@@ -33,7 +35,8 @@ except ImportError:
 if not psl.is_loaded():
     psl_filename = Path(__file__).parent / psl.filename
     if psl_filename.exists():
-        psl.load_from_path(psl_filename.as_posix())
+        with FileLock(psl_filename.with_suffix(".lock")):
+            psl.load_from_path(psl_filename.as_posix())
     else:
         warnings.warn(
             "Cannot find Public_suffix_list.dat. you must import it with \"psl.load_from_path\" or \"psl.load_from_string\" or \"psl.update\" functions",
