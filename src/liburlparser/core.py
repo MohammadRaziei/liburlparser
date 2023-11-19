@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 import warnings
-from filelock import FileLock
 from pathlib import Path
 
-from ._core import Host, Psl, Url, __doc__, __version__
+from filelock import FileLock
 
+from ._core import Host, Psl, Url, __doc__, __version__
 
 psl = Psl()  # psl
 
