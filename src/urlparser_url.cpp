@@ -25,7 +25,7 @@ class TLD::Url::Impl : public URL::Url {
 };
 
 inline std::vector<std::string> split(const std::string& str,
-                                      char delim) noexcept {
+                                      const char delim) noexcept {
     std::vector<std::string> strings;
     size_t start;
     size_t end = 0;
@@ -36,12 +36,10 @@ inline std::vector<std::string> split(const std::string& str,
     return strings;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
 
 bool TLD::Url::isPslLoaded() noexcept {
     return TLD::Host::isPslLoaded();
 }
-////////////////////////////////////////////////////////////////////
 
 TLD::Url::Impl::Impl(const std::string& url, const bool ignore_www)
     : URL::Url(url) , ignore_www(ignore_www) {}
