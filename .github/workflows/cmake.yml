@@ -30,8 +30,8 @@ jobs:
       - name: Configure the project
         uses: threeal/cmake-action@v1.3.0
 
-      - name: Configure the project
-        run: cmake . -Bbuild
+#      - name: Configure the project
+#        run: cmake . -Bbuild
 
       - name: Build the project
         run: cmake --build build

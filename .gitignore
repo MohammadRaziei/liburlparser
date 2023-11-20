@@ -32,3 +32,5 @@ logs/
 node_modules/
 
 tests-old
+__pycache__
+Testing
