@@ -116,19 +116,7 @@ if(DEFINED SKBUILD)
 endif()
 
 add_executable(example examples/main.cpp)
-
 target_link_libraries(example PRIVATE url::base)
-
-find_package(GTest REQUIRED)
-
-message(STATUS "GTest_FOUND : ${GTest_FOUND}")
-
-enable_testing()
-add_executable(liburlparser_test tests/test.cpp)
-target_link_libraries(liburlparser_test PRIVATE url::base gtest pthread)
-
-add_test(NAME unitTests COMMAND liburlparser_test)
-
 
 install(TARGETS urlparser
     LIBRARY DESTINATION lib
@@ -136,13 +124,21 @@ install(TARGETS urlparser
     INCLUDES DESTINATION include
 )
 
+
+
+add_subdirectory(third_party/googletest)
+enable_testing()
+add_executable(liburlparser_test tests/test.cpp)
+target_link_libraries(liburlparser_test PRIVATE url::base gtest pthread)
+
+add_test(NAME unitTests COMMAND liburlparser_test)
+
+
+
 # Find Doxygen package
 find_package(Doxygen)
 message(STATUS "Doxygen_FOUND : ${Doxygen_FOUND}")
-
 # Find Doxygen package
-find_package(Doxygen)
-
 if (Doxygen_FOUND)
     # Configure Doxyfile.in template
     configure_file(docs/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY)
