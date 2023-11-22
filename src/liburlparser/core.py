@@ -39,5 +39,5 @@ if not psl.is_loaded():
             psl.load_from_path(psl_filename.as_posix())
     else:
         warnings.warn(
-            "Cannot find Public_suffix_list.dat. you must import it with \"psl.load_from_path\" or \"psl.load_from_string\" or \"psl.update\" functions",
+            f"Cannot find {psl_filename}. you must import it with \"psl.load_from_path\" or \"psl.load_from_string\" or \"psl.update\" functions",
             RuntimeWarning, stacklevel=2)

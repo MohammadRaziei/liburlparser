@@ -65,11 +65,16 @@ std::vector<UrlData> load_url_data(const std::string& filename) {
     return url_data_list;
 }
 
+
 class CSVUrlTest : public ::testing::TestWithParam<UrlData> {};
 
 INSTANTIATE_TEST_SUITE_P(UrlDataTestCases, CSVUrlTest,
                          ::testing::ValuesIn(load_url_data(
                              makeAbsolutePath("data/url_data.csv"))));
+
+TEST(CSVUrlTest, CheckPSLisLoaded){
+    ASSERT_TRUE(TLD::Host::isPslLoaded()) << "PSL is not loaded";
+}
 
 TEST_P(CSVUrlTest, UrlDataInput) {
     const UrlData& url_data = GetParam();

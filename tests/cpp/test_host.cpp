@@ -58,6 +58,10 @@ INSTANTIATE_TEST_SUITE_P(HostDataTestCases, CSVHostTest,
                          ::testing::ValuesIn(load_host_data(
                              makeAbsolutePath("data/host_data.csv"))));
 
+TEST(CSVHostTest, CheckPSLisLoaded){
+    ASSERT_TRUE(TLD::Host::isPslLoaded()) << "PSL is not loaded";
+}
+
 TEST_P(CSVHostTest, HostDataInput) {
     const HostData& host_data = GetParam();
     TLD::Host host = TLD::Host::fromUrl(host_data.url, host_data.ignore_www);

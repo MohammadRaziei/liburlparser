@@ -39,6 +39,9 @@ project(liburlparser LANGUAGES CXX)
 # Download the public suffix list file from the internet
 set(PUBLIC_SUFFIX_LIST_URL "https://publicsuffix.org/list/public_suffix_list.dat")
 set(PUBLIC_SUFFIX_LIST_DAT "public_suffix_list.dat")
+if(NOT DEFINED SKBUILD)
+    set(PUBLIC_SUFFIX_LIST_DAT "${CMAKE_CURRENT_BINARY_DIR}/${PUBLIC_SUFFIX_LIST_DAT}")
+endif()
 
 if(EXISTS "${PUBLIC_SUFFIX_LIST_DAT}")
       message(STATUS "[DATA] ${PUBLIC_SUFFIX_LIST_DAT} is found.")
@@ -50,17 +53,6 @@ endif()
 
 file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
-add_library(urlparser SHARED ${SOURCES})
-add_library(url::base ALIAS urlparser)
-target_compile_definitions(urlparser PRIVATE
-        PUBLIC_SUFFIX_LIST_DAT="${PUBLIC_SUFFIX_LIST_DAT}"
-)
-
-target_include_directories(urlparser
-        PUBLIC
-            ${PROJECT_SOURCE_DIR}/include
-        PRIVATE
-            ${PROJECT_SOURCE_DIR}/src)
 
 if(DEFINED SKBUILD)
     # Try to import all Python components potentially needed by nanobind
@@ -110,10 +102,24 @@ if(DEFINED SKBUILD)
             LIBRARY DESTINATION
             ${SKBUILD_PROJECT_NAME})
     install (FILES ${PUBLIC_SUFFIX_LIST_DAT}
-        DESTINATION ${SKBUILD_PROJECT_NAME})
+             DESTINATION ${SKBUILD_PROJECT_NAME})
 
     RETURN()
 endif()
+
+
+add_library(urlparser SHARED ${SOURCES})
+add_library(url::base ALIAS urlparser)
+target_compile_definitions(urlparser PRIVATE
+        PUBLIC_SUFFIX_LIST_DAT="${PUBLIC_SUFFIX_LIST_DAT}"
+)
+
+target_include_directories(urlparser
+        PUBLIC
+            ${PROJECT_SOURCE_DIR}/include
+        PRIVATE
+            ${PROJECT_SOURCE_DIR}/src)
+
 
 add_executable(example examples/main.cpp)
 target_link_libraries(example PRIVATE url::base)
@@ -126,13 +132,16 @@ install(TARGETS urlparser
 
 
 
-add_subdirectory(third_party/googletest)
 enable_testing()
+add_subdirectory(third_party/googletest)
 file(GLOB TEST_SOURCES ${PROJECT_SOURCE_DIR}/tests/cpp/*.cpp)
-add_executable(liburlparser_test ${TEST_SOURCES})
-target_link_libraries(liburlparser_test PRIVATE url::base gtest gtest_main pthread)
-target_include_directories(liburlparser_test PRIVATE ${PROJECT_SOURCE_DIR}/tests/cpp)
-add_test(NAME unitTests COMMAND liburlparser_test)
+
+add_executable(test_liburlparser ${TEST_SOURCES})
+target_link_libraries(test_liburlparser PRIVATE url::base gtest gtest_main pthread)
+target_include_directories(test_liburlparser PRIVATE ${PROJECT_SOURCE_DIR}/tests/cpp)
+add_test(NAME unitTests COMMAND test_liburlparser)
+# add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
+                        # DEPENDS test_liburlparser)
 
 
 
