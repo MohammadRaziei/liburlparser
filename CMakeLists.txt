@@ -140,8 +140,7 @@ add_executable(test_liburlparser ${TEST_SOURCES})
 target_link_libraries(test_liburlparser PRIVATE url::base gtest gtest_main pthread)
 target_include_directories(test_liburlparser PRIVATE ${PROJECT_SOURCE_DIR}/tests/cpp)
 add_test(NAME unitTests COMMAND test_liburlparser)
-# add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
-                        # DEPENDS test_liburlparser)
+add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -V DEPENDS test_liburlparser)
 
 
 
