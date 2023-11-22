@@ -65,9 +65,9 @@ TEST(CSVHostTest, CheckPSLisLoaded){
 TEST_P(CSVHostTest, HostDataInput) {
     const HostData& host_data = GetParam();
     TLD::Host host = TLD::Host::fromUrl(host_data.url, host_data.ignore_www);
-    ASSERT_EQ(host.str(), host_data.host);
-    ASSERT_EQ(host.domain(), host_data.domain);
-    ASSERT_EQ(host.domainName(), host_data.domain_name);
-    ASSERT_EQ(host.suffix(), host_data.suffix);
+    EXPECT_EQ(host.str(), host_data.host);
+    EXPECT_EQ(host.domain(), host_data.domain);
+    EXPECT_EQ(host.domainName(), host_data.domain_name);
+    EXPECT_EQ(host.suffix(), host_data.suffix);
 }
 

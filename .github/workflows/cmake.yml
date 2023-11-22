@@ -37,7 +37,7 @@ jobs:
         run: cmake --build build
 
       - name: Test the project
-        run: ctest --test-dir build
+        run: ctest --test-dir build -V
 
       - uses: actions/upload-artifact@v3
         with:

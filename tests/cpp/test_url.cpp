@@ -78,14 +78,14 @@ TEST(CSVUrlTest, CheckPSLisLoaded){
 
 TEST_P(CSVUrlTest, UrlDataInput) {
     const UrlData& url_data = GetParam();
-    TLD::Url url = TLD::Url(url_data.url, url_data.ignore_www);
-    ASSERT_EQ(url.protocol(), url_data.protocol);
-    ASSERT_EQ(url.userinfo(), url_data.userinfo);
-    ASSERT_EQ(url.fulldomain(), url_data.fulldomain);
-    ASSERT_EQ(url.host().str(), url_data.fulldomain);
-    ASSERT_EQ(url.suffix(), url_data.suffix);
-    ASSERT_EQ(url.port(), url_data.port);
-    ASSERT_EQ(url.query(), url_data.query);
-    ASSERT_EQ(url.fragment(), url_data.fragment);
+    TLD::Url url(url_data.url, url_data.ignore_www);
+    EXPECT_EQ(url.protocol(), url_data.protocol);
+    EXPECT_EQ(url.userinfo(), url_data.userinfo);
+    EXPECT_EQ(url.fulldomain(), url_data.fulldomain);
+    EXPECT_EQ(url.host().str(), url_data.fulldomain);
+    EXPECT_EQ(url.suffix(), url_data.suffix);
+    EXPECT_EQ(url.port(), url_data.port);
+    EXPECT_EQ(url.query(), url_data.query);
+    EXPECT_EQ(url.fragment(), url_data.fragment);
 }
 
