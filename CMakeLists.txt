@@ -128,9 +128,10 @@ install(TARGETS urlparser
 
 add_subdirectory(third_party/googletest)
 enable_testing()
-add_executable(liburlparser_test tests/test.cpp)
-target_link_libraries(liburlparser_test PRIVATE url::base gtest pthread)
-
+file(GLOB TEST_SOURCES ${PROJECT_SOURCE_DIR}/tests/cpp/*.cpp)
+add_executable(liburlparser_test ${TEST_SOURCES})
+target_link_libraries(liburlparser_test PRIVATE url::base gtest gtest_main pthread)
+target_include_directories(liburlparser_test PRIVATE ${PROJECT_SOURCE_DIR}/tests/cpp)
 add_test(NAME unitTests COMMAND liburlparser_test)
 
 

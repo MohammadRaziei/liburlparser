@@ -8,7 +8,7 @@ import pytest
 
 from liburlparser import Url
 
-with (Path(__file__).parent / "data" / "url_data.csv").open("r") as f:
+with (Path(__file__).parent.parent / "data" / "url_data.csv").open("r") as f:
     reader = csv.DictReader(f)
     url_data_list = list(reader)
 

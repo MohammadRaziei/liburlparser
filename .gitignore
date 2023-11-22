@@ -8,8 +8,10 @@
 .idea/
 .vscode/
 *env/
+venv*/
 
 # Ignore build output
+build_*/
 build/
 dist/
 target/

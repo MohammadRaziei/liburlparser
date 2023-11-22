@@ -1,8 +1,8 @@
-url,ignore_www,auto_correction,protocol,userinfo,fulldomain,subdomain,domain,domain_name,suffix,port,query,fragment
-https://username:password@ee.aut.ac.ir:80/about?search=forms&browser=chrome#id,True,False,https,username:password,ee.aut.ac.ir,ee,aut,aut.ac.ir,ac.ir,80,search=forms&browser=chrome,id
-http://aut.ac.ir/about,False,True,http,,aut.ac.ir,,aut,aut.ac.ir,ac.ir,0,,
-https://download.ir/#about,False,False,https,,download.ir,,download,download.ir,ir,0,,about
-http://www.aut.ac.ir/#about,True,False,http,,aut.ac.ir,,aut,aut.ac.ir,ac.ir,0,,about
-http://www.ee.aut.ac.ir/#about,True,True,http,,ee.aut.ac.ir,ee,aut,aut.ac.ir,ac.ir,0,,about
-http://www.ee.aut.ac.ir/?search,True,True,http,,ee.aut.ac.ir,ee,aut,aut.ac.ir,ac.ir,0,search,
-http://www.ee.aut.ac.ir?search,True,True,http,,ee.aut.ac.ir,ee,aut,aut.ac.ir,ac.ir,0,search,
+url,ignore_www,protocol,userinfo,fulldomain,subdomain,domain,domain_name,suffix,port,query,fragment
+https://username:password@ee.aut.ac.ir:80/about?search=forms&browser=chrome#id,True,https,username:password,ee.aut.ac.ir,ee,aut,aut.ac.ir,ac.ir,80,search=forms&browser=chrome,id
+http://aut.ac.ir/about,False,http,,aut.ac.ir,,aut,aut.ac.ir,ac.ir,0,,
+https://download.ir/#about,False,https,,download.ir,,download,download.ir,ir,0,,about
+http://www.aut.ac.ir/#about,True,http,,aut.ac.ir,,aut,aut.ac.ir,ac.ir,0,,about
+http://www.ee.aut.ac.ir/#about,True,http,,ee.aut.ac.ir,ee,aut,aut.ac.ir,ac.ir,0,,about
+http://www.ee.aut.ac.ir/?search,True,http,,ee.aut.ac.ir,ee,aut,aut.ac.ir,ac.ir,0,search,
+http://www.ee.aut.ac.ir?search,True,http,,ee.aut.ac.ir,ee,aut,aut.ac.ir,ac.ir,0,search,
