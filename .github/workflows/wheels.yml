@@ -91,7 +91,8 @@ jobs:
       with:
         files: dist/*
 
-    - uses: pypa/gh-action-pypi-publish@v1
+    - name: Publishing to PyPi
+      uses: pypa/gh-action-pypi-publish@release/v1
       with:
         password: ${{ secrets.PYPI_PASSWORD }}
         user: ${{ secrets.PYPI_USERNAME }}
