@@ -3,9 +3,8 @@
 //
 #include <iostream>
 #include "common.h"
-#include "urlparser.h"
+#include "urlparser.h" \
 
-// #undef URL_INITIALIZE_PSL
 
 #define show_attr(url, attr) \
     std::cout << std::boolalpha << #attr << " : " << url.attr() << std::endl
