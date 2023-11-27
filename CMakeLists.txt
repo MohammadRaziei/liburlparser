@@ -5,6 +5,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
+include(PyProject)
+message(STATUS "Project: ${PyProject_NAME}@v${PyProject_VERSION}")
+
+
 if(NOT CMAKE_BUILD_TYPE)
    set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -34,7 +40,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING "" FORCE)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}" CACHE STRING "" FORCE)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" CACHE STRING "" FORCE)
 
-project(liburlparser LANGUAGES CXX)
+project(${PyProject_NAME} LANGUAGES CXX)
+
 
 # Download the public suffix list file from the internet
 set(PUBLIC_SUFFIX_LIST_URL "https://publicsuffix.org/list/public_suffix_list.dat")
@@ -43,12 +50,17 @@ if(NOT DEFINED SKBUILD)
     set(PUBLIC_SUFFIX_LIST_DAT "${CMAKE_CURRENT_BINARY_DIR}/${PUBLIC_SUFFIX_LIST_DAT}")
 endif()
 
+# Download the public suffix list file from the internet if not already exists
 if(EXISTS "${PUBLIC_SUFFIX_LIST_DAT}")
-      message(STATUS "[DATA] ${PUBLIC_SUFFIX_LIST_DAT} is found.")
+    message(STATUS "[DATA] ${PUBLIC_SUFFIX_LIST_DAT} is found.")
 else()
-  message(STATUS "[DATA] ${PUBLIC_SUFFIX_LIST_DAT} is not found. Trying to download it.")
-  file(DOWNLOAD "${PUBLIC_SUFFIX_LIST_URL}" ${PUBLIC_SUFFIX_LIST_DAT})
-  message(STATUS "[DATA] ${PUBLIC_SUFFIX_LIST_DAT} is downloaded.")
+    message(WARNING "[DATA] ${PUBLIC_SUFFIX_LIST_DAT} is not found. Trying to download it.")
+    file(DOWNLOAD "${PUBLIC_SUFFIX_LIST_URL}" ${PUBLIC_SUFFIX_LIST_DAT})
+    if(EXISTS "${PUBLIC_SUFFIX_LIST_DAT}")
+        message(STATUS "[DATA] ${PUBLIC_SUFFIX_LIST_DAT} is downloaded.")
+    else()
+        message(FATAL_ERROR "[DATA] Failed to download ${PUBLIC_SUFFIX_LIST_DAT}.")
+    endif()
 endif()
 
 file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
@@ -85,9 +97,6 @@ if(DEFINED SKBUILD)
         src/binding/main.cpp
     )
 
-#    set(PYBIND11_NEWPYTHON ON)
-#    find_package(pybind11 CONFIG REQUIRED)
-#    pybind11_add_module(_core src/${SKBUILD_PROJECT_NAME}/main.cpp)
     target_sources(_core PRIVATE ${SOURCES})
     target_include_directories(_core PRIVATE include src)
     target_compile_definitions(_core PRIVATE VERSION_INFO=${SKBUILD_PROJECT_VERSION})
@@ -133,7 +142,7 @@ install(TARGETS urlparser
 
 
 enable_testing()
-add_subdirectory(third_party/googletest)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest)
 file(GLOB TEST_SOURCES ${PROJECT_SOURCE_DIR}/tests/cpp/*.cpp)
 
 add_executable(test_liburlparser ${TEST_SOURCES})
@@ -150,13 +159,7 @@ message(STATUS "Doxygen_FOUND : ${Doxygen_FOUND}")
 # Find Doxygen package
 if (Doxygen_FOUND)
     # Configure Doxyfile.in template
-    configure_file(docs/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY)
-
-    # Add target to generate Doxyfile
-    add_custom_target(generate_doxyfile
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-        COMMENT "Generating Doxyfile"
-    )
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
 
     # Add target to generate documentation
     add_custom_target(docs

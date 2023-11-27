@@ -2,7 +2,7 @@
 
 # Project information
 PROJECT_NAME           = @PROJECT_NAME@
-PROJECT_VERSION        = 1.0
+PROJECT_VERSION        = @PyProject_VERSION@
 OUTPUT_DIRECTORY       = docs
 GENERATE_HTML          = YES
 GENERATE_LATEX         = NO
