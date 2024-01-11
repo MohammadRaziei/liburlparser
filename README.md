@@ -14,6 +14,7 @@
 [![stars - liburlparser](https://img.shields.io/github/stars/mohammadraziei/liburlparser?style=social)](https://github.com/mohammadraziei/liburlparser)
 [![forks - liburlparser](https://img.shields.io/github/forks/mohammadraziei/liburlparser?style=social)](https://github.com/mohammadraziei/liburlparser)
 
+[![PyPi](https://img.shields.io/pypi/v/liburlparser.svg)](https://pypi.org/project/liburlparser/)
 ![Python](https://img.shields.io/badge/Python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11-blue)
 ![Cpp](https://img.shields.io/badge/C++-17-blue)
 
