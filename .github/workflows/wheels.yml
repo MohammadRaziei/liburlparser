@@ -53,7 +53,7 @@ jobs:
         submodules: true
 
     - name: Build wheels
-      uses: pypa/cibuildwheel@v2.13.1
+      uses: pypa/cibuildwheel@latest
       env:
 #          CIBW_ARCHS_MACOS: universal2
 #          CIBW_ARCHS_WINDOWS: auto ARM64
