@@ -58,6 +58,8 @@
 
 ## About The Project
 
+**liburlparser** is a powerful domain extractor library written in C++ with Python bindings. It provides efficient URL parsing capabilities for both C++ and Python, making it a valuable tool for projects that involve working with web addresses.
+
 ### Features
 
 
