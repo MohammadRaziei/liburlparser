@@ -175,7 +175,7 @@ Host.extract_from_url("https://ee.aut.ac.ir/about") # from url
 there is some examples in [examples](https://github.com/MohammadRaziei/liburlparser/tree/master/examples) folder
 
 ```c++
-#include "liburlparser"
+#include "urlparser.h"
 ...
 /// for parsing url
 TLD::Url url("https://ee.aut.ac.ir/about");
