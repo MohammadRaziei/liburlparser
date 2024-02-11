@@ -59,6 +59,33 @@
 ## About The Project
 
 ### Features
+
+
+Here are some key features of **liburlparser**:
+
+1. **Multiple Language Support**:
+   - liburlparser can be used in multiple programming languages, including `Python`, `C++`, and `Shell`.
+   - It offers an intuitive interface that remains consistent across both C++ and Python.
+
+2. **Clean Code Design**:
+   - The library provides two separate classes: `Url` and `Host`.
+   - This separation allows for cleaner and more organized code when dealing with URLs.
+
+3. **Public Suffix List Support**:
+   - liburlparser supports known combinatorial suffixes (e.g., "ac.ir") using the public_suffix_list.
+   - It can also handle unknown suffixes (e.g., "comm" in "google.comm").
+
+4. **Automatic Public Suffix List Updates**:
+   - Before each build and deployment, liburlparser updates the public_suffix_list automatically.
+
+5. **Host Properties**:
+   - The `Host` class includes properties such as subdomain, domain, domain name, and suffix.
+
+6. **URL Properties**:
+   - The `Url` class provides properties like protocol, userinfo, host (and all host properties), port, path, query parameters, and fragment.
+
+
+<!--
 * Multiple programming language supported such as `Python`, `C++` and `Shell`
 * Intuitive interface and identical in C++ and Python
 * Provide two seperated class Url and Host for the purpose of clean code
@@ -79,54 +106,7 @@
   * query
   * params
   * fragment
-
-
-## Setup
-### C++:
-
-#### build steps:
-```sh
-git clone https://github.com/mohammadraziei/liburlparser
-mkdir -p build; cd build
-cmake ..
-# Build the project:
-make
-# [Optional] run tests:
-make test
-# [Optional] make documents:
-make docs
-# [Optional] Run examples:
-./example
-# Make install
-sudo make install
-```
-
-
-
-### Python and Command Line:
-Be aware that it required `python>=3.8`
-#### Installation
-###### pip by [pypi](https://pypi.org/project/liburlparser/)
-```sh
-pip install liburlparser
-```
-if you want to use psl.update to update the public suffix list, you must install the `online` version
-```sh
-pip install "liburlparser[online]"
-```
-
-
-Or
-###### pip by [git](https://github.com/mohammadraziei/liburlparser)
-```sh
-pip install git+https://github.com/mohammadraziei/liburlparser
-```
-Or
-###### manually
-```sh
-git clone https://github.com/mohammadraziei/liburlparser
-pip install ./liburlparser
-```
+-->
 
 ## Usage
 
@@ -206,6 +186,56 @@ TLD::Host host = url.host();
 TLD::Host host = TLD::Host::fromUrl("https://ee.aut.ac.ir/about");
 ```
 you can see all methods in python we can use in c++ very easily
+
+
+
+## Installation
+### C++:
+
+#### build steps:
+```sh
+git clone https://github.com/mohammadraziei/liburlparser
+mkdir -p build; cd build
+cmake ..
+# Build the project:
+make
+# [Optional] run tests:
+make test
+# [Optional] make documents:
+make docs
+# [Optional] Run examples:
+./example
+# Make install
+sudo make install
+```
+
+
+
+### Python and Command Line:
+Be aware that it required `python>=3.8`
+#### Installation
+###### pip by [pypi](https://pypi.org/project/liburlparser/)
+```sh
+pip install liburlparser
+```
+if you want to use psl.update to update the public suffix list, you must install the `online` version
+```sh
+pip install "liburlparser[online]"
+```
+
+
+Or
+###### pip by [git](https://github.com/mohammadraziei/liburlparser)
+```sh
+pip install git+https://github.com/mohammadraziei/liburlparser
+```
+Or
+###### manually
+```sh
+git clone https://github.com/mohammadraziei/liburlparser
+pip install ./liburlparser
+```
+
 
 
 ### Performance
