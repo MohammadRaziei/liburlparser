@@ -275,6 +275,9 @@ The test was conducted on a file containing 1 million random urls (Mar. 13rd 202
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 
+## Stats
+[![Stars](https://starchart.cc/mohammadraziei/liburlparser.svg?variant=adaptive)](https://starchart.cc/mohammadraziei/liburlparser)
+
 ## Contact
 
 <!-- Gal Ben David - gal@intsights.com -->
