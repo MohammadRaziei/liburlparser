@@ -76,7 +76,7 @@ inline nb::dict extract(const std::string& host){
     return host_to_dict_minimal(TLD::Host(host));
 }
 
-NB_MODULE(_core, m) {
+NB_MODULE(NB_MODULE_NAME, m) {
     m.doc() = R"pbdoc(
         nanobind example plugin
         -----------------------
@@ -150,9 +150,5 @@ NB_MODULE(_core, m) {
             return std::string("<PSL : ") + (p.isLoaded() ? "loaded" : "not loaded") + ">";
         });
 
-#ifdef VERSION_INFO
-    m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
-#else
-    m.attr("__version__") = "dev";
-#endif
+
 }

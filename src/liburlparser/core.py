@@ -6,7 +6,7 @@ from pathlib import Path
 
 from filelock import FileLock
 
-from ._core import Host, Psl, Url, __doc__, __version__
+from ._core import Host, Psl, Url, __doc__
 
 psl = Psl()  # psl
 
