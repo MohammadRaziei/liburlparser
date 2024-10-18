@@ -25,8 +25,12 @@ jobs:
       with:
         submodules: false
 
+    - uses: actions/setup-python@v4
+      with:
+        python-version: "3.x"
+
     - name: Ruff Check
-      uses: jpetrucciani/ruff-check@main
+      run: pipx run ruff check .
 
     - name: Build SDist
       run: pipx run build --sdist
@@ -43,7 +47,7 @@ jobs:
     name: Wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         os: [ubuntu-latest, windows-latest]
 
@@ -77,10 +81,6 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
 
     steps:
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "3.x"
-
     - uses: actions/download-artifact@v3
       with:
         name: artifact
