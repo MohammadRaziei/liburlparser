@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.10)
 
 option(BUILD_PYTHON "export python module" off)
 
@@ -34,8 +34,14 @@ elseif(BUILD_PYTHON)
     if(NOT PYTHON_REQUIREMENT_INSTALLED)
         execute_process(
                 COMMAND "${Python3_EXECUTABLE}" -m pip install
-                nanobind ninja pytest-xdist # build requirements
+                nanobind ninja pytest-xdist piptools # build requirements
                 OUTPUT_QUIET
+        )
+        execute_process(
+                COMMAND "${Python3_EXECUTABLE}" -m piptools compile --output-file ${CMAKE_CURRENT_BINARY_DIR}/requirements.txt pyproject.toml
+                    --no-emit-options --quiet --no-strip-extras --extra test
+                COMMAND "${Python3_EXECUTABLE}" -m pip install -r ${CMAKE_CURRENT_BINARY_DIR}/requirements.txt
+                OUTPUT_QUIET COMMAND_ERROR_IS_FATAL ANY
         )
         set(PYTHON_REQUIREMENT_INSTALLED TRUE CACHE INTERNAL "Python requirements installed")
     endif()
