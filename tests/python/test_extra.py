@@ -7,7 +7,7 @@ import requests
 from liburlparser import psl
 
 
-@pytest.fixture()
+@pytest.fixture
 def disable_requests_get(monkeypatch):
     def request_get(*args, **kwargs):
         msg = "Fake Connection Error :)"
