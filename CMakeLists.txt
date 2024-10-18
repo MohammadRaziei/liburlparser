@@ -34,7 +34,7 @@ elseif(BUILD_PYTHON)
     if(NOT PYTHON_REQUIREMENT_INSTALLED)
         execute_process(
                 COMMAND "${Python3_EXECUTABLE}" -m pip install
-                nanobind ninja pytest-xdist piptools # build requirements
+                nanobind ninja pytest-xdist pip-tools # build requirements
                 OUTPUT_QUIET
         )
         execute_process(
