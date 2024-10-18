@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.19)
 
 option(BUILD_PYTHON "export python module" off)
 
@@ -35,11 +35,14 @@ elseif(BUILD_PYTHON)
         execute_process(
                 COMMAND "${Python3_EXECUTABLE}" -m pip install
                 nanobind ninja pytest-xdist pip-tools # build requirements
-                OUTPUT_QUIET
+                OUTPUT_QUIET COMMAND_ERROR_IS_FATAL ANY
         )
         execute_process(
                 COMMAND "${Python3_EXECUTABLE}" -m piptools compile --output-file ${CMAKE_CURRENT_BINARY_DIR}/requirements.txt pyproject.toml
                     --no-emit-options --quiet --no-strip-extras --extra test
+                OUTPUT_QUIET COMMAND_ERROR_IS_FATAL ANY
+        )
+        execute_process(
                 COMMAND "${Python3_EXECUTABLE}" -m pip install -r ${CMAKE_CURRENT_BINARY_DIR}/requirements.txt
                 OUTPUT_QUIET COMMAND_ERROR_IS_FATAL ANY
         )
