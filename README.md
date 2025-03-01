@@ -27,6 +27,7 @@
 [![SonarCloud](https://sonarcloud.io/images/project_badges/sonarcloud-white.svg)](https://sonarcloud.io/summary/new_code?id=MohammadRaziei_liburlparser)
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=MohammadRaziei_liburlparser&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=MohammadRaziei_liburlparser)
+[![CodeFactor](https://www.codefactor.io/repository/github/mohammadraziei/liburlparser/badge/master)](https://www.codefactor.io/repository/github/mohammadraziei/liburlparser/overview/master)
 [![snyk.io](https://snyk.io/advisor/python/liburlparser/badge.svg)](https://snyk.io/advisor/python/liburlparser)
 
 [//]: # ([![View site - GH Pages]&#40;https://img.shields.io/badge/View_site-GH_Pages-2ea44f?style=for-the-badge&#41;]&#40;https://mohammadraziei.github.io/liburlparser/&#41;)
