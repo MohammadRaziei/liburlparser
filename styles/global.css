@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Write custom base/ component/ utility styles with `@layer` directive */
+
+@layer base {
+
+  [type="text"],
+  [type="email"],
+  [type="url"],
+  [type="password"],
+  [type="number"],
+  [type="date"],
+  [type="datetime-local"],
+  [type="month"],
+  [type="search"],
+  [type="tel"],
+  [type="time"],
+  [type="week"],
+  [multiple],
+  textarea,
+  select {
+    @apply border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-lg shadow-sm;
+  }
+
+  [type="checkbox"],
+  [type="radio"] {
+    @apply border-gray-300 focus:ring-blue-500 h-5 text-blue-600 w-5;
+  }
+
+  [type="checkbox"] {
+    @apply rounded;
+  }
+
+  [type="radio"] {
+    @apply rounded-full;
+  }
+
+}
+
+@layer components {
+
+  .prose :where(code):not(:where([class~="not-prose"] *)) {
+    @apply bg-gray-200 dark:bg-gray-800 dark:text-white font-normal px-1 py-0.5 rounded-md text-sm;
+  }
+
+  .prose :where(code):not(:where([class~="not-prose"] *))::before {
+    content: '';
+  }
+
+  .prose :where(code):not(:where([class~="not-prose"] *))::after {
+    content: '';
+  }
+
+}
