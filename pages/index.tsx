@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCode, faTrophy, faLightbulb, faBars } from '@fortawesome/free-solid-svg-icons';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
 import FeaturesSection from '../components/FeaturesSection';
+import InstallationGuide from '../components/InstallationGuide';
 
 export default function LibUrlParserDocumentation() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -186,56 +187,8 @@ export default function LibUrlParserDocumentation() {
           </div>
         </div>
 
-        {/* Quick Start Section */}
-        <div className="section-container">
-          <h2 className="section-title">
-            <FontAwesomeIcon icon={faCode} className="text-[var(--primary-blue)] mr-3" />
-            Quick Start
-          </h2>
-          <div className="space-y-8">
-            <div>
-              <h3 className="font-medium text-[var(--primary-blue)] mb-3">C++ Installation</h3>
-              <pre className="code-block">
-                <code>
-                  {`# Clone the repository
-git clone https://github.com/mohammadraziei/liburlparser
-mkdir -p build; cd build
-cmake ..
-make
-sudo make install`}
-                </code>
-              </pre>
-            </div>
-            <div>
-              <h3 className="font-medium text-[var(--primary-blue)] mb-3">Python Installation</h3>
-              <pre className="code-block">
-                <code>
-                  {`# Install from PyPI
-pip install liburlparser
-
-# Or install from source
-pip install git+https://github.com/mohammadraziei/liburlparser.git`}
-                </code>
-              </pre>
-            </div>
-            <div>
-              <h3 className="font-medium text-[var(--primary-blue)] mb-3">Basic Usage (Python)</h3>
-              <pre className="code-block">
-                <code>
-                  {`from liburlparser import Url, Host
-
-# Parse URL
-url = Url("https://ee.aut.ac.ir/#id")
-print(url.suffix, url.domain, url.fragment)
-
-# Parse host
-host = Host("ee.aut.ac.ir")
-print(host.domain, host.suffix)`}
-                </code>
-              </pre>
-            </div>
-          </div>
-        </div>
+        {/* Replace the Quick Start Section with the InstallationGuide component */}
+        <InstallationGuide />
 
         <footer className="mt-auto pt-16 pb-8 text-center text-gray-500 text-sm w-full bg-[var(--primary-dark)]/5">
           <div className="max-w-4xl mx-auto px-4">
