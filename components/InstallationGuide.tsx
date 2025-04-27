@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCode, faCopy, faCheck } from '@fortawesome/free-solid-svg-icons';
 import { faGithub, faPython } from '@fortawesome/free-brands-svg-icons';
+// Import the syntax highlighter and a style
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+// Change the import path from /esm/ to /cjs/ for the style
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism'; 
+
 
 type Language = 'python' | 'cpp';
 type Method = 'pip' | 'git' | 'cmake' | 'sub_directory';
@@ -192,9 +197,15 @@ int main() {
               <span>{copied ? "Copied!" : "Copy"}</span>
             </button>
           </div>
-          <pre className="bg-[#1e1e1e] text-white p-2 m-0 overflow-x-auto">
-            <code>{currentCommand}</code> {/* Use the helper function result */}
-          </pre>
+          {/* Replace pre/code with SyntaxHighlighter */}
+          <SyntaxHighlighter 
+            language="bash" // Installation commands are usually shell commands
+            style={vscDarkPlus} 
+            customStyle={{ margin: 0, padding: '0.5rem', borderRadius: '0 0 0.375rem 0.375rem' }} // Adjust padding/margin as needed
+            wrapLongLines={true}
+          >
+            {currentCommand}
+          </SyntaxHighlighter>
         </div>
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
@@ -208,9 +219,15 @@ int main() {
               <span>{copied ? "Copied!" : "Copy"}</span>
             </button>
           </div>
-          <pre className="bg-[#1e1e1e] text-white p-2 m-0 overflow-x-auto">
-            <code>{currentUsageExample}</code> {/* Use the pre-calculated example */}
-          </pre>
+           {/* Replace pre/code with SyntaxHighlighter */}
+          <SyntaxHighlighter 
+            language={language} // Use the selected language (python or cpp)
+            style={vscDarkPlus} 
+            customStyle={{ margin: 0, padding: '0.5rem', borderRadius: '0 0 0.375rem 0.375rem' }} // Adjust padding/margin as needed
+            wrapLongLines={true}
+          >
+            {currentUsageExample}
+          </SyntaxHighlighter>
         </div>
       </div>
     </div>
