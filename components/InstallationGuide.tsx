@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPython, faCode, faCopy, faCheck } from '@fortawesome/free-solid-svg-icons';
-import { faGithub } from '@fortawesome/free-brands-svg-icons';
+import { faCode, faCopy, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faGithub, faPython } from '@fortawesome/free-brands-svg-icons';
 
 type Language = 'python' | 'cpp';
 type Method = 'pip' | 'git' | 'cmake' | 'apt';
@@ -83,6 +83,22 @@ int main() {
   };
 
 
+  // Helper function to get the correct command safely
+  const getCommand = (lang: Language, meth: Method): string => {
+    if (lang === 'python' && (meth === 'pip' || meth === 'git')) {
+      return installationCommands.python[meth];
+    }
+    if (lang === 'cpp' && (meth === 'cmake' || meth === 'apt')) {
+      return installationCommands.cpp[meth];
+    }
+    // Fallback for unexpected combinations (shouldn't happen with current logic)
+    console.error("Invalid language/method combination:", lang, meth);
+    return "Error: Invalid selection";
+  };
+
+  const currentCommand = getCommand(language, method);
+  const currentUsageExample = usageExamples[language];
+
   return (
     <div className="section-container">
       <h2 className="section-title">
@@ -158,7 +174,7 @@ int main() {
           <div className="flex justify-between items-center bg-gray-50 text-[var(--primary-dark)] px-2 py-1">
             <h3 className="font-medium">Installation Commands</h3>
             <button 
-              onClick={() => copyToClipboard(installationCommands[language][method])}
+              onClick={() => copyToClipboard(currentCommand)} // Use the helper function result
               className="flex items-center space-x-1 text-xs bg-white hover:bg-gray-100 rounded px-1.5 py-0.5 transition-colors text-[var(--primary-dark)] border border-gray-200"
             >
               <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
@@ -166,7 +182,7 @@ int main() {
             </button>
           </div>
           <pre className="bg-[#1e1e1e] text-white p-2 m-0 overflow-x-auto">
-            <code>{installationCommands[language][method]}</code>
+            <code>{currentCommand}</code> {/* Use the helper function result */}
           </pre>
         </div>
         
@@ -174,7 +190,7 @@ int main() {
           <div className="flex justify-between items-center bg-gray-50 text-[var(--primary-dark)] px-2 py-1">
             <h3 className="font-medium">Basic Usage Example</h3>
             <button 
-              onClick={() => copyToClipboard(usageExamples[language])}
+              onClick={() => copyToClipboard(currentUsageExample)} // Use the pre-calculated example
               className="flex items-center space-x-1 text-xs bg-white hover:bg-gray-100 rounded px-1.5 py-0.5 transition-colors text-[var(--primary-dark)] border border-gray-200"
             >
               <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
@@ -182,7 +198,7 @@ int main() {
             </button>
           </div>
           <pre className="bg-[#1e1e1e] text-white p-2 m-0 overflow-x-auto">
-            <code>{usageExamples[language]}</code>
+            <code>{currentUsageExample}</code> {/* Use the pre-calculated example */}
           </pre>
         </div>
       </div>
