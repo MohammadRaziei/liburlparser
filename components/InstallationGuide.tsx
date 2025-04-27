@@ -4,11 +4,12 @@ import { faCode, faCopy, faCheck } from '@fortawesome/free-solid-svg-icons';
 import { faGithub, faPython } from '@fortawesome/free-brands-svg-icons';
 
 type Language = 'python' | 'cpp';
-type Method = 'pip' | 'git' | 'cmake' | 'apt';
+type Method = 'pip' | 'git' | 'cmake' | 'sub_directory';
 
 const InstallationGuide: React.FC = () => {
   const [language, setLanguage] = useState<Language>('python');
-  const [method, setMethod] = useState<Method>('pip');
+  // Initialize C++ method to 'cmake' if 'cpp' is selected initially (or adjust as needed)
+  const [method, setMethod] = useState<Method>('pip'); 
   const [copied, setCopied] = useState(false);
 
   const languageOptions = [
@@ -23,7 +24,8 @@ const InstallationGuide: React.FC = () => {
     ],
     cpp: [
       { value: 'cmake', label: 'CMake (Build from source)', icon: <FontAwesomeIcon icon={faCode} /> },
-      { value: 'apt', label: 'Package Manager (apt)', icon: <FontAwesomeIcon icon={faCode} /> },
+      // Replace 'apt' with 'sub_directory'
+      { value: 'sub_directory', label: 'CMake (Add as Subdirectory)', icon: <FontAwesomeIcon icon={faCode} /> },
     ],
   };
 
@@ -44,9 +46,17 @@ mkdir -p build && cd build
 cmake ..
 make
 sudo make install`,
-      apt: `# Add the repository (coming soon)
-sudo apt update
-sudo apt install liburlparser-dev`,
+      // Replace 'apt' command with 'sub_directory' instructions
+      sub_directory: `# 1. Add liburlparser as a submodule or copy it into your project
+# Example using git submodule:
+git submodule add https://github.com/mohammadraziei/liburlparser.git extern/liburlparser
+
+# 2. In your main CMakeLists.txt:
+# Add the subdirectory
+add_subdirectory(extern/liburlparser)
+
+# Link against the library
+target_link_libraries(your_target_name PRIVATE urlparser)`,
     },
   };
 
@@ -88,7 +98,8 @@ int main() {
     if (lang === 'python' && (meth === 'pip' || meth === 'git')) {
       return installationCommands.python[meth];
     }
-    if (lang === 'cpp' && (meth === 'cmake' || meth === 'apt')) {
+    // Update check for C++ methods
+    if (lang === 'cpp' && (meth === 'cmake' || meth === 'sub_directory')) {
       return installationCommands.cpp[meth];
     }
     // Fallback for unexpected combinations (shouldn't happen with current logic)
