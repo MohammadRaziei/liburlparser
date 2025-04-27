@@ -5,6 +5,12 @@
 /* Write custom base/ component/ utility styles with `@layer` directive */
 
 @layer base {
+  :root {
+    --primary-dark: #231f20;
+    --primary-blue: #3871a2;
+    --primary-yellow: #ffd340;
+    --white: #ffffff;
+  }
 
   [type="text"],
   [type="email"],
@@ -36,11 +42,9 @@
   [type="radio"] {
     @apply rounded-full;
   }
-
 }
 
 @layer components {
-
   .prose :where(code):not(:where([class~="not-prose"] *)) {
     @apply bg-gray-200 dark:bg-gray-800 dark:text-white font-normal px-1 py-0.5 rounded-md text-sm;
   }
@@ -53,4 +57,76 @@
     content: '';
   }
 
+  /* Custom components */
+  .navbar {
+    @apply bg-white shadow-md sticky top-0 z-50;
+  }
+
+  .navbar-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .navbar-link {
+    @apply inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-[#3871a2] hover:border-[#3871a2];
+  }
+
+  .mobile-menu-link {
+    @apply block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-[#3871a2] hover:text-[#3871a2];
+  }
+
+  .hero-container {
+    @apply bg-gradient-to-r from-[#3871a2]/10 to-[#ffd340]/10 p-12 rounded-3xl shadow-sm mb-8;
+  }
+
+  .section-container {
+    @apply mt-16 w-full max-w-4xl p-8 rounded-xl shadow-md bg-white border border-gray-100 mx-4;
+  }
+
+  .section-title {
+    @apply text-2xl font-semibold text-[#231f20] mb-6 flex items-center;
+  }
+
+  .feature-card {
+    @apply bg-white p-8 rounded-2xl border border-gray-100 transition-all duration-300 hover:shadow-lg hover:border-[#3871a2]/30;
+  }
+
+  .feature-icon-container {
+    @apply p-3 bg-gradient-to-br from-[#3871a2]/10 to-[#ffd340]/10 rounded-lg transition-colors hover:from-[#3871a2]/20 hover:to-[#ffd340]/20;
+  }
+
+  .code-block {
+    @apply bg-[#231f20] text-white p-5 rounded-md overflow-x-auto;
+  }
+
+  .btn {
+    @apply flex items-center gap-2 rounded-lg px-6 py-3 text-white transition-colors shadow-md hover:shadow-lg;
+  }
+
+  .btn-primary {
+    @apply bg-[#3871a2] hover:bg-[#3871a2]/80;
+  }
+
+  .btn-secondary {
+    @apply bg-[#ffd340] hover:bg-[#ffd340]/80 text-[#231f20];
+  }
+
+  .btn-dark {
+    @apply bg-[#231f20] hover:bg-[#231f20]/80;
+  }
+
+  .performance-table {
+    @apply min-w-full bg-white;
+  }
+
+  .performance-table-header {
+    @apply bg-[#3871a2]/10;
+  }
+
+  .performance-table-cell {
+    @apply py-3 px-6 border-b;
+  }
+
+  .performance-highlight-row {
+    @apply bg-[#ffd340]/10;
+  }
 }

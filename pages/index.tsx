@@ -2,33 +2,33 @@ import Head from 'next/head';
 import * as React from 'react';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCode, faTrophy, faLightbulb } from '@fortawesome/free-solid-svg-icons';
+import { faCode, faTrophy, faLightbulb, faBars } from '@fortawesome/free-solid-svg-icons';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
 import FeaturesSection from '../components/FeaturesSection';
 
 export default function LibUrlParserDocumentation() {
-  // Remove the features array since we're moving it to FeaturesSection
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   
   const navigationButtons = [
     {
       href: "cpp",
       label: "C++ Documentation",
       icon: <FontAwesomeIcon icon={faCode} />,
-      className: "bg-blue-600 hover:bg-blue-700",
+      className: "btn-primary",
       external: false
     },
     {
       href: "python",
       label: "Python Documentation",
       icon: <FontAwesomeIcon icon={faCode} />,
-      className: "bg-green-600 hover:bg-green-700",
+      className: "btn-secondary",
       external: false
     },
     {
       href: "https://github.com/MohammadRaziei/liburlparser",
       label: "GitHub Repository",
       icon: <FontAwesomeIcon icon={faGithub} />,
-      className: "bg-gray-800 hover:bg-gray-900",
+      className: "btn-dark",
       external: true
     }
   ];
@@ -42,87 +42,141 @@ export default function LibUrlParserDocumentation() {
   ];
 
   return (
-    <main className="bg-gray-50">
+    <main className="bg-gray-50 min-h-screen">
       <Head>
         <title>LibUrlParser - Fastest Domain Extractor Library</title>
         <meta name="description" content="Fastest domain extractor library written in C++ with Python binding" />
       </Head>
 
-      <section className="layout relative flex min-h-screen flex-col items-center py-12">
-        <div className="flex flex-col items-center text-center w-full max-w-4xl">
-          <img
-            width={200}
-            src="https://github.com/MohammadRaziei/liburlparser/raw/master/docs/images/logo/liburlparser-logo-1.svg"
-            alt="LibUrlParser Logo"
-            className="mb-6"
-          />
-
-          <h1 className="text-4xl font-bold text-gray-900">
-            LibUrlParser
-          </h1>
-
-          <p className="mt-4 text-lg text-gray-600">
-            Fastest domain extractor library written in C++ with Python binding.
-            First and complete library for parsing URL in C++, Python, and Command Line.
-          </p>
-
-          {/* Remove the Feature Highlights section */}
-
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
-            {navigationButtons.map((button, index) => {
-              const commonClasses = "flex items-center gap-2 rounded-lg px-6 py-3 text-white transition-colors";
-              
-              return button.external ? (
-                <a
-                  key={index}
-                  href={button.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`${commonClasses} ${button.className}`}
-                >
-                  {button.icon} {button.label}
-                </a>
-              ) : (
-                <Link
-                  key={index}
-                  href={button.href}
-                  className={`${commonClasses} ${button.className}`}
-                >
-                  {button.icon} {button.label}
+      {/* Navbar */}
+      <nav className="navbar">
+        <div className="navbar-container">
+          <div className="flex justify-between h-16">
+            <div className="flex">
+              <div className="flex-shrink-0 flex items-center">
+                <Link href="/" className="flex items-center">
+                  <img 
+                    className="h-10 w-auto" 
+                    src="https://github.com/MohammadRaziei/liburlparser/raw/master/docs/images/logo/liburlparser-logo-1.svg" 
+                    alt="LibUrlParser" 
+                  />
+                  <span className="ml-3 text-xl font-bold text-[var(--primary-dark)]">LibUrlParser</span>
                 </Link>
-              );
-            })}
+              </div>
+              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+                <Link href="/cpp" className="navbar-link">
+                  C++ Docs
+                </Link>
+                <Link href="/python" className="navbar-link">
+                  Python Docs
+                </Link>
+                <a href="https://github.com/MohammadRaziei/liburlparser" target="_blank" rel="noopener noreferrer" className="navbar-link">
+                  <FontAwesomeIcon icon={faGithub} className="mr-1" /> GitHub
+                </a>
+              </div>
+            </div>
+            <div className="-mr-2 flex items-center sm:hidden">
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--primary-blue)]"
+              >
+                <span className="sr-only">Open main menu</span>
+                <FontAwesomeIcon icon={faBars} className="block h-6 w-6" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile menu, show/hide based on menu state */}
+        <div className={`sm:hidden ${isMenuOpen ? 'block' : 'hidden'}`}>
+          <div className="pt-2 pb-3 space-y-1">
+            <Link href="/cpp" className="mobile-menu-link">
+              C++ Docs
+            </Link>
+            <Link href="/python" className="mobile-menu-link">
+              Python Docs
+            </Link>
+            <a href="https://github.com/MohammadRaziei/liburlparser" target="_blank" rel="noopener noreferrer" className="mobile-menu-link">
+              <FontAwesomeIcon icon={faGithub} className="mr-1" /> GitHub
+            </a>
+          </div>
+        </div>
+      </nav>
+
+      <section className="layout relative flex flex-col items-center py-12">
+        <div className="flex flex-col items-center text-center w-full max-w-4xl px-4">
+          <div className="hero-container">
+            <img
+              width={180}
+              src="https://github.com/MohammadRaziei/liburlparser/raw/master/docs/images/logo/liburlparser-logo-1.svg"
+              alt="LibUrlParser Logo"
+              className="mb-6 mx-auto"
+            />
+
+            <h1 className="text-5xl font-bold text-[var(--primary-dark)] mb-4">
+              LibUrlParser
+            </h1>
+
+            <p className="mt-4 text-xl text-gray-700 max-w-2xl mx-auto">
+              Fastest domain extractor library written in C++ with Python binding.
+              First and complete library for parsing URL in C++, Python, and Command Line.
+            </p>
+
+            <div className="mt-10 flex flex-wrap justify-center gap-4">
+              {navigationButtons.map((button, index) => {
+                return button.external ? (
+                  <a
+                    key={index}
+                    href={button.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`btn ${button.className}`}
+                  >
+                    {button.icon} {button.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={index}
+                    href={button.href}
+                    className={`btn ${button.className}`}
+                  >
+                    {button.icon} {button.label}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </div>
 
         <FeaturesSection />
 
         {/* Performance Section */}
-        <div className="mt-16 w-full max-w-4xl p-8 rounded-xl shadow-sm bg-white">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+        <div className="section-container">
+          <h2 className="section-title">
+            <FontAwesomeIcon icon={faTrophy} className="text-[var(--primary-yellow)] mr-3" />
             Performance Comparison
           </h2>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-700 mb-6">
             LibUrlParser outperforms other domain extraction libraries in both host and URL parsing:
           </p>
           <div className="space-y-6">
             <div>
-              <h3 className="font-medium text-gray-800 mb-2">Extract From Host (10 million domains)</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white border border-gray-200">
+              <h3 className="font-medium text-[var(--primary-blue)] mb-4">Extract From Host (10 million domains)</h3>
+              <div className="overflow-x-auto rounded-lg shadow">
+                <table className="performance-table">
                   <thead>
-                    <tr className="bg-gray-100">
-                      <th className="py-2 px-4 border-b text-left">Library</th>
-                      <th className="py-2 px-4 border-b text-left">Function</th>
-                      <th className="py-2 px-4 border-b text-left">Time</th>
+                    <tr className="performance-table-header">
+                      <th className="performance-table-cell text-left text-[var(--primary-dark)] font-semibold">Library</th>
+                      <th className="performance-table-cell text-left text-[var(--primary-dark)] font-semibold">Function</th>
+                      <th className="performance-table-cell text-left text-[var(--primary-dark)] font-semibold">Time</th>
                     </tr>
                   </thead>
                   <tbody>
                     {performanceData.map((row, index) => (
-                      <tr key={index} className={row.highlight ? "bg-green-50" : ""}>
-                        <td className="py-2 px-4 border-b font-medium">{row.library}</td>
-                        <td className="py-2 px-4 border-b">{row.function}</td>
-                        <td className="py-2 px-4 border-b font-bold">{row.time}</td>
+                      <tr key={index} className={row.highlight ? "performance-highlight-row" : ""}>
+                        <td className="performance-table-cell font-medium">{row.library}</td>
+                        <td className="performance-table-cell">{row.function}</td>
+                        <td className="performance-table-cell font-bold">{row.time}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -133,14 +187,15 @@ export default function LibUrlParserDocumentation() {
         </div>
 
         {/* Quick Start Section */}
-        <div className="mt-16 w-full max-w-4xl p-8 rounded-xl shadow-sm bg-white">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+        <div className="section-container">
+          <h2 className="section-title">
+            <FontAwesomeIcon icon={faCode} className="text-[var(--primary-blue)] mr-3" />
             Quick Start
           </h2>
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div>
-              <h3 className="font-medium text-gray-800 mb-2">C++ Installation</h3>
-              <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
+              <h3 className="font-medium text-[var(--primary-blue)] mb-3">C++ Installation</h3>
+              <pre className="code-block">
                 <code>
                   {`# Clone the repository
 git clone https://github.com/mohammadraziei/liburlparser
@@ -152,8 +207,8 @@ sudo make install`}
               </pre>
             </div>
             <div>
-              <h3 className="font-medium text-gray-800 mb-2">Python Installation</h3>
-              <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
+              <h3 className="font-medium text-[var(--primary-blue)] mb-3">Python Installation</h3>
+              <pre className="code-block">
                 <code>
                   {`# Install from PyPI
 pip install liburlparser
@@ -164,8 +219,8 @@ pip install git+https://github.com/mohammadraziei/liburlparser.git`}
               </pre>
             </div>
             <div>
-              <h3 className="font-medium text-gray-800 mb-2">Basic Usage (Python)</h3>
-              <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
+              <h3 className="font-medium text-[var(--primary-blue)] mb-3">Basic Usage (Python)</h3>
+              <pre className="code-block">
                 <code>
                   {`from liburlparser import Url, Host
 
@@ -182,11 +237,13 @@ print(host.domain, host.suffix)`}
           </div>
         </div>
 
-        <footer className="mt-auto pt-12 text-center text-gray-500 text-sm">
-          <p>© {new Date().getFullYear()} LibUrlParser. All rights reserved.</p>
-          <p className="mt-1">
-            Created by <a href="https://github.com/MohammadRaziei" className="text-blue-600 hover:underline">Mohammad Raziei</a>
-          </p>
+        <footer className="mt-auto pt-16 pb-8 text-center text-gray-500 text-sm w-full bg-[var(--primary-dark)]/5">
+          <div className="max-w-4xl mx-auto px-4">
+            <p>© {new Date().getFullYear()} LibUrlParser. All rights reserved.</p>
+            <p className="mt-2">
+              Created by <a href="https://github.com/MohammadRaziei" className="text-[var(--primary-blue)] hover:underline">Mohammad Raziei</a>
+            </p>
+          </div>
         </footer>
       </section>
     </main>
