@@ -29,12 +29,12 @@ jobs:
 
       - name: Build
         run: |
-          mv docs/python/* docs/
+          mv docs docs-old && mv docs-old/python docs
           mkdocs build
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: docs/python/site
+          folder: docs/site
           branch: gh-pages
           target-folder: docs/python
