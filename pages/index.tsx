@@ -18,14 +18,14 @@ export default function LibUrlParserDocumentation() {
   
   const navigationButtons = [
     {
-      href: "cpp",
+      href: "docs/cpp",
       label: "C++ Documentation",
       icon: <FontAwesomeIcon icon={faCode} />,
       className: "btn-primary",
       external: false
     },
     {
-      href: "python",
+      href: "docs/python",
       label: "Python Documentation",
       icon: <FontAwesomeIcon icon={faCode} />,
       className: "btn-secondary",
