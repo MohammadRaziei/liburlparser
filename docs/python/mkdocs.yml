@@ -1,7 +1,7 @@
 site_name: liburlparser
 site_description: Fastest domain extractor library for Python
 site_author: Mohammad Raziei
-site_url: https://mohammadraziei.github.io/liburlparser/docs/python
+site_url: https://mohammadraziei.github.io/liburlparser/
 
 repo_name: mohammadraziei/liburlparser
 repo_url: https://github.com/mohammadraziei/liburlparser
