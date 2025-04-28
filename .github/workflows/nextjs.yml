@@ -83,12 +83,8 @@ jobs:
   
       - name: Fetch Python docs from gh-pages branch
         run: |
-          git fetch origin gh-pages:gh-pages
-          mkdir -p ./out/docs/python
-          git checkout gh-pages -- docs/python
-          cp -r docs/python/* ./out/docs/python/
-          git checkout -
-            
+          git clone --branch gh-pages "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" out-docs
+          mv out-docs/* out
       - name: Beautifier - tidy format output html
         run: |
           sudo apt-get install tidy -qq -y 1> /dev/null
