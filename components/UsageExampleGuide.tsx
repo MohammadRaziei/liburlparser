@@ -4,6 +4,7 @@ import { faCode, faCopy, faCheck, faLightbulb } from '@fortawesome/free-solid-sv
 import { faPython } from '@fortawesome/free-brands-svg-icons';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import Container from './Container'; // Import the new Container
 
 type Language = 'python' | 'cpp';
 
@@ -51,14 +52,16 @@ int main() {
   const currentUsageExample = usageExamples[language];
 
   return (
-    <div className="section-container">
-      <h2 className="section-title">
-        <FontAwesomeIcon icon={faLightbulb} className="text-[var(--primary-yellow)] mr-3" />
-        Basic Usage Example
-      </h2>
+    // Use Container, add vertical padding (e.g., py-12 or py-16)
+    <Container className="py-12"> 
+        <h2 className="section-title">
+          <FontAwesomeIcon icon={faLightbulb} className="text-[var(--primary-yellow)] mr-3" />
+          Basic Usage Example
+        </h2>
 
-      {/* Language Selection Row */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4 border border-gray-200">
+        {/* Content remains the same */}
+        {/* Language Selection Row */}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4 border border-gray-200">
          <table className="w-full">
            <tbody>
              <tr className="border-b border-gray-200">
@@ -111,7 +114,7 @@ int main() {
           {currentUsageExample}
         </SyntaxHighlighter>
       </div>
-    </div>
+    </Container>
   );
 };
 
