@@ -1,6 +1,9 @@
 name: Build and Deploy Documentation
 
 on:
+  push:
+    branches:
+      - master
   release:
     types: [published]
   workflow_dispatch:
