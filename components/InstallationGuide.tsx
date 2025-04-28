@@ -10,8 +10,8 @@ import Container from './Container'; // Import the new Container
 
 // Add 'bash' to Language type
 type Language = 'python' | 'cpp' | 'bash'; 
-// Keep Method type as is for now, might simplify later for bash
-type Method = 'pip' | 'git' | 'cmake' | 'sub_directory';
+// Rename 'git_http' to 'pip_git' in Method type
+type Method = 'pip' | 'git' | 'cmake' | 'sub_directory' | 'pip_git'; 
 type Version = 'latest' | '1.0.0'; // Example versions, adjust as needed
 
 const InstallationGuide: React.FC = () => {
@@ -31,7 +31,8 @@ const InstallationGuide: React.FC = () => {
   const methodOptions = {
     python: [
       { value: 'pip', label: 'Pip', icon: <FontAwesomeIcon icon={faPython} /> },
-      { value: 'git', label: 'From Source (Git)', icon: <FontAwesomeIcon icon={faGithub} /> },
+      { value: 'pip_git', label: 'From Source (Pip + Git)', icon: <FontAwesomeIcon icon={faGithub} /> }, 
+      { value: 'git', label: 'From Source (Git Clone)', icon: <FontAwesomeIcon icon={faGithub} /> },
     ],
     cpp: [
       { value: 'cmake', label: 'CMake (Build from source)', icon: <FontAwesomeIcon icon={faCode} /> },
@@ -51,6 +52,9 @@ pip install liburlparser`,
 git clone https://github.com/mohammadraziei/liburlparser.git
 cd liburlparser
 pip install .`,
+      // Add command for Git+HTTP
+      pip_git: `# Install directly from GitHub repository URL using pip
+pip install git+https://github.com/mohammadraziei/liburlparser.git`, 
     },
     cpp: {
       cmake: `# Clone the repository
@@ -114,13 +118,14 @@ int main() {
 
   // Helper function to get the correct command safely
   const getCommand = (lang: Language, meth: Method, ver: Version): string => {
-    if (lang === 'python' && (meth === 'pip' || meth === 'git')) {
-      return installationCommands.python[meth];
+    // Update Python condition to include 'pip_git' instead of 'git_http'
+    if (lang === 'python' && (meth === 'pip' || meth === 'git' || meth === 'pip_git')) { 
+      // Ensure the key matches the renamed key
+      return installationCommands.python[meth as 'pip' | 'git' | 'pip_git']; 
     }
     if (lang === 'cpp' && (meth === 'cmake' || meth === 'sub_directory')) {
       return installationCommands.cpp[meth];
     }
-    // Add case for bash
     if (lang === 'bash' && meth === 'pip') { 
       return installationCommands.bash.pip;
     }
