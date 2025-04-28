@@ -91,12 +91,21 @@
   }
 
   .feature-icon-container {
+    /* Revert to using Tailwind opacity modifier syntax */
     @apply p-3 bg-gradient-to-br from-[#3871a2]/10 to-[#ffd340]/10 rounded-lg transition-colors hover:from-[#3871a2]/20 hover:to-[#ffd340]/20;
   }
 
+  /* Remove the separate hover rule */
+  /* .feature-icon-container:hover { ... } */
+
+
   .btn-selected-gradient {
+    /* Revert to using Tailwind opacity modifier syntax and text-[var()] */
     @apply bg-gradient-to-br from-[#3871a2]/10 to-[#ffd340]/10 text-[#231f20] font-medium;
   }
+
+  /* Remove the table-row-highlight class */
+  /* .table-row-highlight { ... } */
 
   .code-block {
     @apply bg-[#231f20] text-white p-5 rounded-md overflow-x-auto;

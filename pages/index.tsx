@@ -72,7 +72,8 @@ export default function LibUrlParserDocumentation() {
               className="mb-6 mx-auto"
             />
 
-            <h1 className="text-5xl font-bold text-[var(--primary-dark)] mb-4">
+            {/* Replace var(--primary-dark) with #231f20 */}
+            <h1 className="text-5xl font-bold text-[#231f20] mb-4">
               LibUrlParser
             </h1>
 
@@ -115,8 +116,9 @@ export default function LibUrlParserDocumentation() {
         <Container className="py-12"> 
           {/* Removed section-container class if it existed */}
           <div> 
+            {/* Replace var(--primary-yellow) with #ffd340 */}
             <h2 className="section-title">
-              <FontAwesomeIcon icon={faTrophy} className="text-[var(--primary-yellow)] mr-3" />
+              <FontAwesomeIcon icon={faTrophy} className="text-[#ffd340] mr-3" />
               Performance Comparison
             </h2>
             {/* START: Restore Performance Section Content */}
@@ -125,7 +127,8 @@ export default function LibUrlParserDocumentation() {
             </p>
             <div className="space-y-6">
               <div>
-                <h3 className="font-medium text-[var(--primary-blue)] mb-4">Extract From Host (10 million domains)</h3>
+                {/* Replace var(--primary-blue) with #3871a2 */}
+                <h3 className="font-medium text-[#3871a2] mb-4">Extract From Host (10 million domains)</h3>
                 <div className="overflow-x-auto rounded-lg shadow border border-gray-200">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -143,14 +146,17 @@ export default function LibUrlParserDocumentation() {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {performanceData.map((item, index) => (
-                        <tr key={index} className={item.highlight ? 'bg-gradient-to-r from-[var(--primary-blue)]/5 to-[var(--primary-yellow)]/5' : ''}>
-                          <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${item.highlight ? 'text-[var(--primary-dark)]' : 'text-gray-900'}`}>
+                        // Replace var() with hex codes (already done in previous step, confirmed here)
+                        <tr key={index} className={item.highlight ? 'bg-gradient-to-r from-[#3871a2]/10 to-[#ffd340]/10' : ''}> 
+                          {/* Replace var(--primary-dark) with #231f20 */}
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${item.highlight ? 'text-[#231f20]' : 'text-gray-900'}`}>
                             {item.library}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {item.function}
                           </td>
-                          <td className={`px-6 py-4 whitespace-nowrap text-sm ${item.highlight ? 'text-[var(--primary-dark)] font-semibold' : 'text-gray-500'}`}>
+                          {/* Replace var(--primary-dark) with #231f20 */}
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm ${item.highlight ? 'text-[#231f20] font-semibold' : 'text-gray-500'}`}>
                             {item.time}
                           </td>
                         </tr>
@@ -175,13 +181,15 @@ export default function LibUrlParserDocumentation() {
 
       {/* Footer */}
       {/* Container handles width/padding */}
-      <footer className="mt-auto pt-16 pb-8 text-center text-gray-500 text-sm w-full bg-[var(--primary-dark)]/5">
+      {/* Replace var(--primary-dark) with #231f20 */}
+      <footer className="mt-auto pt-16 pb-8 text-center text-gray-500 text-sm w-full bg-[#231f20]/5">
         <Container> 
           {/* Removed outer centering/width classes */}
           <div> 
             <p>© {new Date().getFullYear()} LibUrlParser. All rights reserved.</p>
             <p className="mt-2">
-              Created by <a href="https://github.com/MohammadRaziei" className="text-[var(--primary-blue)] hover:underline">Mohammad Raziei</a>
+              {/* Replace var(--primary-blue) with #3871a2 */}
+              Created by <a href="https://github.com/MohammadRaziei" className="text-[#3871a2] hover:underline">Mohammad Raziei</a>
             </p>
           </div>
         </Container>
