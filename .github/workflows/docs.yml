@@ -29,8 +29,8 @@ jobs:
 
       - name: Build
         run: |
-          cd docs/python
-          mkdocs build -f mkdocs.yml
+          mv docs/python/* docs/
+          mkdocs build
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
