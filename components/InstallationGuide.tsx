@@ -176,7 +176,7 @@ int main() {
                         }`}
                       >
                         {/* Replace var() with hex codes */}
-                        <div className={`text-base ${language === option.value ? 'text-[#231f20]' : 'text-[#3871a2]'}`}>
+                        <div className={`text-base ${language === option.value ? 'text-[#3871a2]' : 'text-[#231f20]'}`}>
                           {option.icon}
                         </div>
                         <span>{option.label}</span>
@@ -208,7 +208,7 @@ int main() {
                           onClick={() => setMethod(option.value as Method)}
                         >
                           {/* Replace var() with hex codes */}
-                          <div className={`text-base ${method === option.value ? 'text-[#231f20]' : 'text-[#3871a2]'}`}>
+                          <div className={`text-base ${method === option.value ? 'text-[#3871a2]' : 'text-[#231f20]'}`}>
                             {option.icon}
                           </div>
                           <span>{option.label}</span>

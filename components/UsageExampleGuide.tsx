@@ -94,7 +94,7 @@ python -m liburlparser --url "https://www.example.com/path?q=test" --json`,
                        }`}
                        onClick={() => setLanguage(option.value as Language)}
                      >
-                       <div className={`text-base ${language === option.value ? 'text-[var(--primary-dark)]' : 'text-[var(--primary-blue)]'}`}>
+                       <div className={`text-base ${language === option.value ? 'text-[#3871a2]' : 'text-[#231f20]'}`}>
                          {option.icon}
                        </div>
                        <span>{option.label}</span>
