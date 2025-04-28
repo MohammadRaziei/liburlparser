@@ -10,6 +10,7 @@ import InstallationGuide from '../components/InstallationGuide';
 import UsageExampleGuide from '../components/UsageExampleGuide'; 
 import Container from '../components/Container'; 
 import Navbar from '../components/Navbar'; 
+import SponsorSection from '../components/SponsorSection'; // Import the new component
 
 export default function LibUrlParserDocumentation() {
   // Remove isMenuOpen state
@@ -108,7 +109,10 @@ export default function LibUrlParserDocumentation() {
           </div>
         </Container>
 
-        {/* Features Section (already uses Container internally) */}
+        {/* Add the Sponsor Section here */}
+        <SponsorSection /> 
+
+        {/* Features Section */}
         <FeaturesSection />
 
         {/* Performance Section */}
