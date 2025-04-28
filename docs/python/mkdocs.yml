@@ -1,0 +1,39 @@
+site_name: liburlparser
+site_description: Fastest domain extractor library for Python
+site_author: Mohammad Raziei
+site_url: https://mohammadraziei.github.io/liburlparser/docs/python
+
+repo_name: mohammadraziei/liburlparser
+repo_url: https://github.com/mohammadraziei/liburlparser
+edit_uri: ""
+
+theme:
+  name: readthedocs
+  highlightjs: true
+  hljs_languages:
+    - python
+    - bash
+    - json
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Usage:
+    - Basic Usage: usage/basic.md
+    - Advanced Usage: usage/advanced.md
+    - Command Line: usage/cli.md
+  - API Reference:
+    - Host: api/host.md
+    - Url: api/url.md
+    - PSL: api/psl.md
+  - Examples: examples.md
+  - Performance: performance.md
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
+
+plugins:
+  - search
