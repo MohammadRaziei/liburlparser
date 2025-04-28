@@ -80,6 +80,15 @@ jobs:
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
       - name: Static HTML export with Next.js
         run: ${{ steps.detect-package-manager.outputs.runner }} next export
+  
+      - name: Fetch Python docs from gh-pages branch
+        run: |
+          git fetch origin gh-pages:gh-pages
+          mkdir -p ./out/docs/python
+          git checkout gh-pages -- docs/python
+          cp -r docs/python/* ./out/docs/python/
+          git checkout -
+            
       - name: Beautifier - tidy format output html
         run: |
           sudo apt-get install tidy -qq -y 1> /dev/null
