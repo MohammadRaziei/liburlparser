@@ -140,7 +140,8 @@ int main() {
                         key={option.value}
                         className={`px-2 py-1 rounded-md flex items-center space-x-1.5 transition-all ${
                           language === option.value
-                            ? 'bg-gradient-to-r from-[var(--primary-blue)]/15 to-[var(--primary-yellow)]/15 text-[var(--primary-dark)] font-medium'
+                            // Use the new CSS class
+                            ? 'btn-selected-gradient' 
                             : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                         }`}
                         onClick={() => {
@@ -170,7 +171,8 @@ int main() {
                         key={option.value}
                         className={`px-2 py-1 rounded-md flex items-center space-x-1.5 transition-all ${
                           method === option.value
-                            ? 'bg-gradient-to-r from-[var(--primary-blue)]/15 to-[var(--primary-yellow)]/15 text-[var(--primary-dark)] font-medium'
+                            // Use the new CSS class
+                            ? 'btn-selected-gradient' 
                             : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                         }`}
                         onClick={() => setMethod(option.value as Method)}

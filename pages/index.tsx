@@ -119,6 +119,49 @@ export default function LibUrlParserDocumentation() {
               <FontAwesomeIcon icon={faTrophy} className="text-[var(--primary-yellow)] mr-3" />
               Performance Comparison
             </h2>
+            {/* START: Restore Performance Section Content */}
+            <p className="text-gray-700 mb-6">
+              LibUrlParser outperforms other domain extraction libraries in both host and URL parsing:
+            </p>
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-medium text-[var(--primary-blue)] mb-4">Extract From Host (10 million domains)</h3>
+                <div className="overflow-x-auto rounded-lg shadow border border-gray-200">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Library
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Function
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Time
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {performanceData.map((item, index) => (
+                        <tr key={index} className={item.highlight ? 'bg-gradient-to-r from-[var(--primary-blue)]/5 to-[var(--primary-yellow)]/5' : ''}>
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${item.highlight ? 'text-[var(--primary-dark)]' : 'text-gray-900'}`}>
+                            {item.library}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {item.function}
+                          </td>
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm ${item.highlight ? 'text-[var(--primary-dark)] font-semibold' : 'text-gray-500'}`}>
+                            {item.time}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              {/* Add other performance comparisons here if needed */}
+            </div>
+            {/* END: Restore Performance Section Content */}
           </div>
         </Container>
 

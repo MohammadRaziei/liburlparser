@@ -94,6 +94,10 @@
     @apply p-3 bg-gradient-to-br from-[#3871a2]/10 to-[#ffd340]/10 rounded-lg transition-colors hover:from-[#3871a2]/20 hover:to-[#ffd340]/20;
   }
 
+  .btn-selected-gradient {
+    @apply bg-gradient-to-br from-[#3871a2]/10 to-[#ffd340]/10 text-[#231f20] font-medium;
+  }
+
   .code-block {
     @apply bg-[#231f20] text-white p-5 rounded-md overflow-x-auto;
   }
