@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCode, faCopy, faCheck, faLightbulb } from '@fortawesome/free-solid-svg-icons';
+// Add faTerminal
+import { faCode, faCopy, faCheck, faLightbulb, faTerminal } from '@fortawesome/free-solid-svg-icons'; 
 import { faPython } from '@fortawesome/free-brands-svg-icons';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import Container from './Container'; // Import the new Container
 
-type Language = 'python' | 'cpp';
+// Add 'bash' to Language type
+type Language = 'python' | 'cpp' | 'bash'; 
 
 const UsageExampleGuide: React.FC = () => {
   const [language, setLanguage] = useState<Language>('python');
@@ -15,6 +17,8 @@ const UsageExampleGuide: React.FC = () => {
   const languageOptions = [
     { value: 'python', label: 'Python', icon: <FontAwesomeIcon icon={faPython} /> },
     { value: 'cpp', label: 'C++', icon: <FontAwesomeIcon icon={faCode} /> },
+    // Add Bash option
+    { value: 'bash', label: 'Bash CLI', icon: <FontAwesomeIcon icon={faTerminal} /> }, 
   ];
 
   const usageExamples = {
@@ -41,6 +45,15 @@ int main() {
     
     return 0;
 }`,
+    // Add Bash CLI example
+    bash: `# Parse a URL and print specific parts (e.g., domain, suffix)
+python -m liburlparser --url "https://user:pass@www.example.co.uk:8080/path/to/file.html?query=1#fragment" --parts domain suffix
+
+# Parse a host and print specific parts
+python -m liburlparser --host "sub.example.co.uk" --parts domain suffix
+
+# Get all parts of a URL as JSON
+python -m liburlparser --url "https://www.example.com/path?q=test" --json`, 
   };
 
   const copyToClipboard = (text: string) => {
@@ -107,7 +120,8 @@ int main() {
           </button>
         </div>
         <SyntaxHighlighter
-          language={language}
+          // Set language prop dynamically
+          language={language === 'bash' ? 'bash' : language} 
           style={vscDarkPlus}
           customStyle={{ margin: 0, padding: '0.5rem', borderRadius: '0 0 0.375rem 0.375rem' }}
           wrapLongLines={true}
