@@ -52,7 +52,7 @@ export default function LibUrlParserDocumentation() {
     // Make main a flex column to push footer down
     <main className="bg-gray-50 min-h-screen flex flex-col"> 
       <Head>
-        <title>LibUrlParser - Fastest Domain Extractor Library</title>
+        <title>liburlparser - Fastest Domain Extractor Library</title>
         <meta name="description" content="Fastest domain extractor library written in C++ with Python binding" />
       </Head>
 
@@ -68,14 +68,14 @@ export default function LibUrlParserDocumentation() {
           <div className="hero-container"> 
             <img
               width={180}
-              src="https://github.com/MohammadRaziei/liburlparser/raw/master/docs/images/logo/liburlparser-logo-1.svg"
-              alt="LibUrlParser Logo"
+              src="https://raw.githubusercontent.com/MohammadRaziei/liburlparser/master/docs/images/logo/liburlparser-logo-1.svg"
+              alt="liburlparser Logo"
               className="mb-6 mx-auto"
             />
 
             {/* Replace var(--primary-dark) with #231f20 */}
             <h1 className="text-5xl font-bold text-[#231f20] mb-4">
-              LibUrlParser
+              liburlparser
             </h1>
 
             <p className="mt-4 text-xl text-gray-700 max-w-2xl mx-auto">

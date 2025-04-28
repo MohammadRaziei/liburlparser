@@ -16,8 +16,8 @@ const Navbar: React.FC = () => {
               <Link href="/" className="flex items-center">
                 <img 
                   className="h-10 w-auto" 
-                  src="https://github.com/MohammadRaziei/liburlparser/raw/master/docs/images/logo/liburlparser-logo-1.svg" 
-                  alt="LibUrlParser" 
+                  src="https://raw.githubusercontent.com/MohammadRaziei/liburlparser/master/docs/images/logo/liburlparser-logo-1.svg" 
+                  alt="liburlparser" 
                 />
                 <span className="ml-3 text-xl font-bold text-[var(--primary-dark)]">LibUrlParser</span>
               </Link>
