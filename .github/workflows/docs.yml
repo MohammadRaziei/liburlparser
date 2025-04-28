@@ -29,10 +29,20 @@ jobs:
         run: |
           cd docs/python
           mkdocs build
+          mkdir out && mkdir out/docs && mv site docs/python/
 
-      - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          folder: docs/python/site
-          branch: gh-pages
-          target-folder: docs/python
+          path: ./out
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: python-docs
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
