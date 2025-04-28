@@ -2,10 +2,13 @@ import Head from 'next/head';
 import * as React from 'react';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCode, faTrophy, faLightbulb, faBars } from '@fortawesome/free-solid-svg-icons';
+// Make sure faLightbulb is imported if needed by UsageExampleGuide, or keep it here if used elsewhere
+import { faCode, faTrophy, faLightbulb, faBars } from '@fortawesome/free-solid-svg-icons'; 
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
 import FeaturesSection from '../components/FeaturesSection';
 import InstallationGuide from '../components/InstallationGuide';
+// Import the new component
+import UsageExampleGuide from '../components/UsageExampleGuide'; 
 
 export default function LibUrlParserDocumentation() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -189,6 +192,9 @@ export default function LibUrlParserDocumentation() {
 
         {/* Replace the Quick Start Section with the InstallationGuide component */}
         <InstallationGuide />
+
+        {/* Render Usage Example Guide */}
+        <UsageExampleGuide />
 
         <footer className="mt-auto pt-16 pb-8 text-center text-gray-500 text-sm w-full bg-[var(--primary-dark)]/5">
           <div className="max-w-4xl mx-auto px-4">

@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCode, faCopy, faCheck } from '@fortawesome/free-solid-svg-icons';
+// Removed faLightbulb if not used elsewhere in this file
+import { faCode, faCopy, faCheck, faTag } from '@fortawesome/free-solid-svg-icons'; 
 import { faGithub, faPython } from '@fortawesome/free-brands-svg-icons';
-// Import the syntax highlighter and a style
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-// Change the import path from /esm/ to /cjs/ for the style
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism'; 
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
 
 type Language = 'python' | 'cpp';
 type Method = 'pip' | 'git' | 'cmake' | 'sub_directory';
+type Version = 'latest' | '1.0.0'; // Example versions, adjust as needed
 
 const InstallationGuide: React.FC = () => {
   const [language, setLanguage] = useState<Language>('python');
-  // Initialize C++ method to 'cmake' if 'cpp' is selected initially (or adjust as needed)
-  const [method, setMethod] = useState<Method>('pip'); 
+  const [method, setMethod] = useState<Method>('pip');
+  const [version, setVersion] = useState<Version>('latest'); 
   const [copied, setCopied] = useState(false);
 
   const languageOptions = [
@@ -99,7 +99,7 @@ int main() {
 
 
   // Helper function to get the correct command safely
-  const getCommand = (lang: Language, meth: Method): string => {
+  const getCommand = (lang: Language, meth: Method, ver: Version): string => {
     if (lang === 'python' && (meth === 'pip' || meth === 'git')) {
       return installationCommands.python[meth];
     }
@@ -112,8 +112,8 @@ int main() {
     return "Error: Invalid selection";
   };
 
-  const currentCommand = getCommand(language, method);
-  const currentUsageExample = usageExamples[language];
+  const currentCommand = getCommand(language, method, version); 
+  // REMOVED currentUsageExample variable
 
   return (
     <div className="section-container">
@@ -190,45 +190,25 @@ int main() {
           <div className="flex justify-between items-center bg-gray-50 text-[var(--primary-dark)] px-2 py-1">
             <h3 className="font-medium">Installation Commands</h3>
             <button 
-              onClick={() => copyToClipboard(currentCommand)} // Use the helper function result
+              onClick={() => copyToClipboard(currentCommand)} 
               className="flex items-center space-x-1 text-xs bg-white hover:bg-gray-100 rounded px-1.5 py-0.5 transition-colors text-[var(--primary-dark)] border border-gray-200"
             >
               <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
               <span>{copied ? "Copied!" : "Copy"}</span>
             </button>
           </div>
-          {/* Replace pre/code with SyntaxHighlighter */}
           <SyntaxHighlighter 
-            language="bash" // Installation commands are usually shell commands
+            language="bash" 
             style={vscDarkPlus} 
-            customStyle={{ margin: 0, padding: '0.5rem', borderRadius: '0 0 0.375rem 0.375rem' }} // Adjust padding/margin as needed
+            customStyle={{ margin: 0, padding: '0.5rem', borderRadius: '0 0 0.375rem 0.375rem' }} 
             wrapLongLines={true}
           >
             {currentCommand}
           </SyntaxHighlighter>
         </div>
         
-        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-          <div className="flex justify-between items-center bg-gray-50 text-[var(--primary-dark)] px-2 py-1">
-            <h3 className="font-medium">Basic Usage Example</h3>
-            <button 
-              onClick={() => copyToClipboard(currentUsageExample)} // Use the pre-calculated example
-              className="flex items-center space-x-1 text-xs bg-white hover:bg-gray-100 rounded px-1.5 py-0.5 transition-colors text-[var(--primary-dark)] border border-gray-200"
-            >
-              <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
-              <span>{copied ? "Copied!" : "Copy"}</span>
-            </button>
-          </div>
-           {/* Replace pre/code with SyntaxHighlighter */}
-          <SyntaxHighlighter 
-            language={language} // Use the selected language (python or cpp)
-            style={vscDarkPlus} 
-            customStyle={{ margin: 0, padding: '0.5rem', borderRadius: '0 0 0.375rem 0.375rem' }} // Adjust padding/margin as needed
-            wrapLongLines={true}
-          >
-            {currentUsageExample}
-          </SyntaxHighlighter>
-        </div>
+        {/* REMOVED the entire div block for Basic Usage Example */}
+        
       </div>
     </div>
   );
