@@ -92,3 +92,4 @@ jobs:
           folder: out
           branch: gh-pages
           clean: false  # This will remove any files in the branch that aren't in the out folder
+          token: ${{ secrets.PAT }}
