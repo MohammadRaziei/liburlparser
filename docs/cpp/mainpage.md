@@ -1,8 +1,8 @@
-# URL Parser Library
+# liburlparser Library
 
 ## Introduction
 
-URL Parser is a high-performance C++ library designed for parsing and analyzing URLs. It provides robust functionality to extract various components of a URL such as protocol, domain, subdomain, suffix, path, and query parameters. This library is optimized for speed and efficiency, making it ideal for applications that need to process large numbers of URLs.
+liburlparser is a high-performance C++ library designed for parsing and analyzing URLs. It provides robust functionality to extract various components of a URL such as protocol, domain, subdomain, suffix, path, and query parameters. This library is optimized for speed and efficiency, making it ideal for applications that need to process large numbers of URLs.
 
 ## Key Features
 
