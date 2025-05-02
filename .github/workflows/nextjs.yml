@@ -91,5 +91,5 @@ jobs:
         with:
           folder: out
           branch: gh-pages
-          clean: false  # This will remove any files in the branch that aren't in the out folder
-          token: ${{ secrets.GITHUB_TOKEN }}  # Use the built-in token
+          clean: false  # Keep existing files in the branch
+          token: ${{ secrets.ACCESS_TOKEN }}  # Use the built-in token
