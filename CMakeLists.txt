@@ -214,7 +214,7 @@ message(STATUS "Doxygen_FOUND : ${Doxygen_FOUND}")
 # Find Doxygen package
 if (Doxygen_FOUND)
     # Configure Doxyfile.in template
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/docs/cpp/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
 
     # Add target to generate documentation
     add_custom_target(docs

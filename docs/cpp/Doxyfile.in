@@ -1,0 +1,45 @@
+# Doxyfile.in
+
+# Project information
+PROJECT_NAME           = @PROJECT_NAME@
+OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+
+# Source code
+INPUT                  = @PROJECT_SOURCE_DIR@/include/urlparser.h 
+FILE_PATTERNS          = *.cpp *.h
+RECURSIVE              = NO
+EXCLUDE_PATTERNS       = */tests*/* */build/* */dist/*
+
+# Documentation settings
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_PACKAGE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+HIDE_SCOPE_NAMES       = NO
+SHOW_INCLUDE_FILES     = YES
+SHOW_GROUPED_MEMB_INC  = YES
+SORT_MEMBER_DOCS       = YES
+SORT_BRIEF_DOCS        = YES
+SORT_MEMBERS_CTORS_1ST = YES
+SORT_GROUP_NAMES       = YES
+
+# Diagrams and graphs
+HAVE_DOT               = YES
+UML_LOOK               = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+DOT_IMAGE_FORMAT       = SVG
+INTERACTIVE_SVG        = YES
+
+# HTML output
+HTML_DYNAMIC_SECTIONS  = YES
+HTML_TIMESTAMP         = YES
+SEARCHENGINE           = YES
+GENERATE_TREEVIEW      = YES
+
+# End of Doxyfile.in
