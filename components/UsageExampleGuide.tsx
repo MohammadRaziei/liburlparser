@@ -31,29 +31,26 @@ print(url.suffix, url.domain, url.fragment)
 # Parse host
 host = Host("ee.aut.ac.ir")
 print(host.domain, host.suffix)`,
-    cpp: `#include <iostream>
-#include <liburlparser/url.h>
-
-int main() {
-    // Parse URL
-    liburlparser::Url url("https://ee.aut.ac.ir/#id");
-    std::cout << url.suffix() << " " << url.domain() << " " << url.fragment() << std::endl;
-    
-    // Parse host
-    liburlparser::Host host("ee.aut.ac.ir");
-    std::cout << host.domain() << " " << host.suffix() << std::endl;
-    
-    return 0;
-}`,
+    cpp: `#include "urlparser.h"
+...
+/// for parsing url
+TLD::Url url("https://ee.aut.ac.ir/about");
+std::string domain = url.domain(); // also for subdomain, port, params, ...
+/// for parsing host
+TLD::Host host("ee.aut.ac.ir");
+// or
+TLD::Host host = url.host();
+// or
+TLD::Host host = TLD::Host::fromUrl("https://ee.aut.ac.ir/about");`,
     // Add Bash CLI example
     bash: `# Parse a URL and print specific parts (e.g., domain, suffix)
 python -m liburlparser --url "https://user:pass@www.example.co.uk:8080/path/to/file.html?query=1#fragment" --parts domain suffix
 
 # Parse a host and print specific parts
-python -m liburlparser --host "sub.example.co.uk" --parts domain suffix
+python -m liburlparser --host "sub.example.co.uk" | jq
 
 # Get all parts of a URL as JSON
-python -m liburlparser --url "https://www.example.com/path?q=test" --json`, 
+python -m liburlparser --url "https://www.example.com/path?q=test" | jq`, 
   };
 
   const copyToClipboard = (text: string) => {
