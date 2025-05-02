@@ -2,14 +2,15 @@
 
 # Project information
 PROJECT_NAME           = @PROJECT_NAME@
+PROJECT_VERSION        = @PyProject_VERSION@
 OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@
 GENERATE_HTML          = YES
 GENERATE_LATEX         = NO
 
 # Source code
-INPUT                  = @PROJECT_SOURCE_DIR@/include/urlparser.h 
-FILE_PATTERNS          = *.cpp *.h
-RECURSIVE              = NO
+INPUT                  = @PROJECT_SOURCE_DIR@/include/urlparser.h @PROJECT_SOURCE_DIR@/include @PROJECT_SOURCE_DIR@/docs/cpp/mainpage.md
+FILE_PATTERNS          = *.cpp *.h *.hpp *.md
+RECURSIVE              = YES
 EXCLUDE_PATTERNS       = */tests*/* */build/* */dist/*
 
 # Documentation settings
@@ -41,5 +42,6 @@ HTML_DYNAMIC_SECTIONS  = YES
 HTML_TIMESTAMP         = YES
 SEARCHENGINE           = YES
 GENERATE_TREEVIEW      = YES
+USE_MDFILE_AS_MAINPAGE = @PROJECT_SOURCE_DIR@/docs/cpp/mainpage.md
 
 # End of Doxyfile.in
