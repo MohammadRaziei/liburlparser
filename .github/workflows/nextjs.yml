@@ -78,18 +78,42 @@ jobs:
       - name: Static HTML export with Next.js
         run: ${{ steps.detect-package-manager.outputs.runner }} next export
   
+      - name: Fetch Python docs from gh-pages branch
+        run: |
+          git clone --branch gh-pages "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" out-docs
+          mv out-docs/* out
+
       - name: Beautifier - tidy format output html
         run: |
           sudo apt-get install tidy -qq -y 1> /dev/null
           find ./out -name "*.html" -exec sh -c 'echo "Processing {} ..."; tidy -config .tidy.conf -o {} {}; cat _header.html {} > {}.tmp && mv {}.tmp {}' \;
+      
       - name: Preview deploy files
         run: tree --du -shaC ./out
-      
-      # Replace the upload artifact with direct deployment to gh-pages branch
-      - name: Deploy to gh-pages branch
-        uses: JamesIves/github-pages-deploy-action@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          folder: out
-          branch: gh-pages
-          clean: false  # Keep existing files in the branch
-          token: ${{ secrets.ACCESS_TOKEN }}  # Use the built-in token
+          path: ./out
+      
+      # # Replace the upload artifact with direct deployment to gh-pages branch
+      # - name: Deploy to gh-pages branch
+      #   uses: JamesIves/github-pages-deploy-action@v4
+      #   with:
+      #     folder: out
+      #     branch: gh-pages
+      #     clean: false  # Keep existing files in the branch
+      #     token: ${{ secrets.ACCESS_TOKEN }}  # Use the built-in token
+
+
+  # Deployment job
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
