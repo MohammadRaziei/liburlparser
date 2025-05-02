@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Mohammad Raziei" /><link rel="canonical" href="https://mohammadraziei.github.io/liburlparser/installation/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Installation - liburlparser</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Installation";
+        var mkdocs_page_input_path = "installation.md";
+        var mkdocs_page_url = "/liburlparser/installation/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> liburlparser
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Installation</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#using-pip-recommended">Using pip (Recommended)</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#install-from-github">Install from GitHub</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#manual-installation">Manual Installation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#verifying-installation">Verifying Installation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#dependencies">Dependencies</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#platform-support">Platform Support</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../usage/basic/">Basic Usage</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../usage/advanced/">Advanced Usage</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../usage/cli/">Command Line</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../api/host/">Host</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../api/url/">Url</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../api/psl/">PSL</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../examples/">Examples</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../performance/">Performance</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">liburlparser</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Installation</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
+<p>liburlparser requires Python 3.8 or higher.</p>
+<h2 id="using-pip-recommended">Using pip (Recommended)<a class="headerlink" href="#using-pip-recommended" title="Permanent link">&para;</a></h2>
+<p>Install from PyPI:</p>
+<pre class="codehilite"><code class="language-bash">pip install liburlparser
+</code></pre>
+
+<p>If you want to use the <code>psl.update</code> feature to update the public suffix list, install the <code>online</code> version:</p>
+<pre class="codehilite"><code class="language-bash">pip install &quot;liburlparser[online]&quot;
+</code></pre>
+
+<h2 id="install-from-github">Install from GitHub<a class="headerlink" href="#install-from-github" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-bash">pip install git+https://github.com/mohammadraziei/liburlparser
+</code></pre>
+
+<h2 id="manual-installation">Manual Installation<a class="headerlink" href="#manual-installation" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-bash">git clone https://github.com/mohammadraziei/liburlparser
+pip install ./liburlparser
+</code></pre>
+
+<h2 id="verifying-installation">Verifying Installation<a class="headerlink" href="#verifying-installation" title="Permanent link">&para;</a></h2>
+<p>After installation, you can verify that liburlparser is working correctly:</p>
+<pre class="codehilite"><code class="language-python">import liburlparser
+print(liburlparser.__version__)
+
+# Try parsing a URL
+from liburlparser import Url
+url = Url(&quot;https://example.com&quot;)
+print(url.domain)  # Should output: example
+</code></pre>
+
+<h2 id="dependencies">Dependencies<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h2>
+<p>liburlparser has minimal dependencies:</p>
+<ul>
+<li>Python 3.8 or higher</li>
+</ul>
+<p>The <code>online</code> version additionally requires:
+- requests (for updating the Public Suffix List)</p>
+<h2 id="platform-support">Platform Support<a class="headerlink" href="#platform-support" title="Permanent link">&para;</a></h2>
+<p>liburlparser works on:</p>
+<ul>
+<li>Windows</li>
+<li>macOS</li>
+<li>Linux</li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<p>If you encounter any issues during installation:</p>
+<ol>
+<li>
+<p>Make sure you have Python 3.8 or higher:
+   <code>bash
+   python --version</code></p>
+</li>
+<li>
+<p>Ensure you have the latest pip:
+   <code>bash
+   pip install --upgrade pip</code></p>
+</li>
+<li>
+<p>If you're on Windows and encounter build issues, you may need to install Visual C++ build tools:
+   <code>bash
+   pip install --upgrade setuptools wheel</code></p>
+</li>
+<li>
+<p>If you're on Linux and encounter build issues, you may need to install development tools:
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get install python3-dev build-essential</p>
+</li>
+</ol>
+<p># Fedora/RHEL/CentOS
+   sudo dnf install python3-devel gcc
+   ```</p>
+<p>If you continue to experience issues, please <a href="https://github.com/mohammadraziei/liburlparser/issues">open an issue on GitHub</a>.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href=".." class="btn btn-neutral float-left" title="Home"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../usage/basic/" class="btn btn-neutral float-right" title="Basic Usage">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mohammadraziei/liburlparser" class="fa fa-code-fork" style="color: #fcfcfc"> mohammadraziei/liburlparser</a>
+        </span>
+    
+    
+      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../usage/basic/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

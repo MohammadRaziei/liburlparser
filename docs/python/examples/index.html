@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Mohammad Raziei" /><link rel="canonical" href="https://mohammadraziei.github.io/liburlparser/examples/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Examples - liburlparser</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Examples";
+        var mkdocs_page_input_path = "examples.md";
+        var mkdocs_page_url = "/liburlparser/examples/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> liburlparser
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../usage/basic/">Basic Usage</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../usage/advanced/">Advanced Usage</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../usage/cli/">Command Line</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../api/host/">Host</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../api/url/">Url</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../api/psl/">PSL</a>
+                  </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Examples</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#basic-url-parsing">Basic URL Parsing</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#host-parsing">Host Parsing</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#extracting-host-from-url">Extracting Host from URL</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#ignoring-www-subdomain">Ignoring "www" Subdomain</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#converting-to-dictionary-or-json">Converting to Dictionary or JSON</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#quick-domain-extraction">Quick Domain Extraction</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#batch-processing-urls">Batch Processing URLs</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#error-handling">Error Handling</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#working-with-international-domain-names-idns">Working with International Domain Names (IDNs)</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../performance/">Performance</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">liburlparser</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Examples</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h1>
+<p>This page provides practical examples of using liburlparser in Python for various URL parsing tasks.</p>
+<h2 id="basic-url-parsing">Basic URL Parsing<a class="headerlink" href="#basic-url-parsing" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-python">from liburlparser import Url
+
+# Parse a simple URL
+url = Url(&quot;https://www.example.com&quot;)
+print(f&quot;Domain: {url.domain}&quot;)        # Domain: example
+print(f&quot;Suffix: {url.suffix}&quot;)        # Suffix: com
+print(f&quot;Subdomain: {url.subdomain}&quot;)  # Subdomain: www
+
+# Parse a more complex URL
+url = Url(&quot;https://user:pass@mail.google.com:8080/path/to/page?q=test&amp;lang=en#section&quot;)
+print(f&quot;Protocol: {url.protocol}&quot;)    # Protocol: https
+print(f&quot;Userinfo: {url.userinfo}&quot;)    # Userinfo: user:pass
+print(f&quot;Domain: {url.domain}&quot;)        # Domain: google
+print(f&quot;Subdomain: {url.subdomain}&quot;)  # Subdomain: mail
+print(f&quot;Port: {url.port}&quot;)            # Port: 8080
+print(f&quot;Query: {url.query}&quot;)          # Query: q=test&amp;lang=en
+print(f&quot;Fragment: {url.fragment}&quot;)    # Fragment: section
+</code></pre>
+
+<h2 id="host-parsing">Host Parsing<a class="headerlink" href="#host-parsing" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-python">from liburlparser import Host
+
+# Parse a simple hostname
+host = Host(&quot;example.com&quot;)
+print(f&quot;Domain: {host.domain}&quot;)        # Domain: example
+print(f&quot;Suffix: {host.suffix}&quot;)        # Suffix: com
+print(f&quot;Subdomain: {host.subdomain}&quot;)  # Subdomain: (empty string)
+
+# Parse a hostname with subdomain
+host = Host(&quot;blog.example.co.uk&quot;)
+print(f&quot;Domain: {host.domain}&quot;)        # Domain: example
+print(f&quot;Suffix: {host.suffix}&quot;)        # Suffix: co.uk
+print(f&quot;Subdomain: {host.subdomain}&quot;)  # Subdomain: blog
+
+# Parse a hostname with multiple subdomain levels
+host = Host(&quot;a.b.c.example.com&quot;)
+print(f&quot;Domain: {host.domain}&quot;)        # Domain: example
+print(f&quot;Suffix: {host.suffix}&quot;)        # Suffix: com
+print(f&quot;Subdomain: {host.subdomain}&quot;)  # Subdomain: a.b.c
+</code></pre>
+
+<h2 id="extracting-host-from-url">Extracting Host from URL<a class="headerlink" href="#extracting-host-from-url" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-python">from liburlparser import Url, Host
+
+# Method 1: Get the host from a URL object
+url = Url(&quot;https://mail.google.com/about&quot;)
+host = url.host
+print(f&quot;Host: {host}&quot;)  # Host: &lt;Host :'mail.google.com'&gt;
+
+# Method 2: Use the Host.from_url static method
+host = Host.from_url(&quot;https://mail.google.com/about&quot;)
+print(f&quot;Domain: {host.domain}&quot;)  # Domain: google
+
+# Method 3: Just extract the host string (fastest)
+host_str = Url.extract_host(&quot;https://mail.google.com/about&quot;)
+print(f&quot;Host string: {host_str}&quot;)  # Host string: mail.google.com
+</code></pre>
+
+<h2 id="ignoring-www-subdomain">Ignoring "www" Subdomain<a class="headerlink" href="#ignoring-www-subdomain" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-python">from liburlparser import Url, Host
+
+# Default behavior
+host = Host(&quot;www.example.com&quot;)
+print(f&quot;Subdomain: '{host.subdomain}'&quot;)  # Subdomain: 'www'
+print(f&quot;Domain: {host.domain}&quot;)          # Domain: example
+
+# Ignore www
+host = Host(&quot;www.example.com&quot;, ignore_www=True)
+print(f&quot;Subdomain: '{host.subdomain}'&quot;)  # Subdomain: ''
+print(f&quot;Domain: {host.domain}&quot;)          # Domain: example
+
+# Same for URLs
+url = Url(&quot;https://www.example.com/about&quot;, ignore_www=True)
+print(f&quot;Subdomain: '{url.subdomain}'&quot;)   # Subdomain: ''
+print(f&quot;Domain: {url.domain}&quot;)           # Domain: example
+</code></pre>
+
+<h2 id="converting-to-dictionary-or-json">Converting to Dictionary or JSON<a class="headerlink" href="#converting-to-dictionary-or-json" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-python">from liburlparser import Url, Host
+import json
+
+# URL to dictionary
+url = Url(&quot;https://mail.google.com/about?q=test#section&quot;)
+url_dict = url.to_dict()
+print(json.dumps(url_dict, indent=2))
+# Output:
+# {
+#   &quot;str&quot;: &quot;https://mail.google.com/about?q=test#section&quot;,
+#   &quot;protocol&quot;: &quot;https&quot;,
+#   &quot;userinfo&quot;: &quot;&quot;,
+#   &quot;host&quot;: {
+#     &quot;str&quot;: &quot;mail.google.com&quot;,
+#     &quot;subdomain&quot;: &quot;mail&quot;,
+#     &quot;domain&quot;: &quot;google&quot;,
+#     &quot;domain_name&quot;: &quot;google&quot;,
+#     &quot;suffix&quot;: &quot;com&quot;
+#   },
+#   &quot;port&quot;: 0,
+#   &quot;query&quot;: &quot;q=test&quot;,
+#   &quot;fragment&quot;: &quot;section&quot;
+# }
+
+# URL to JSON
+url_json = url.to_json()
+print(url_json)
+# Output: {&quot;str&quot;: &quot;https://mail.google.com/about?q=test#section&quot;, &quot;protocol&quot;: &quot;https&quot;, &quot;userinfo&quot;: &quot;&quot;, &quot;host&quot;: {&quot;str&quot;: &quot;mail.google.com&quot;, &quot;subdomain&quot;: &quot;mail&quot;, &quot;domain&quot;: &quot;google&quot;, &quot;domain_name&quot;: &quot;google&quot;, &quot;suffix&quot;: &quot;com&quot;}, &quot;port&quot;: 0, &quot;query&quot;: &quot;q=test&quot;, &quot;fragment&quot;: &quot;section&quot;}
+
+# Host to dictionary
+host = Host(&quot;mail.google.com&quot;)
+host_dict = host.to_dict()
+print(json.dumps(host_dict, indent=2))
+# Output:
+# {
+#   &quot;str&quot;: &quot;mail.google.com&quot;,
+#   &quot;subdomain&quot;: &quot;mail&quot;,
+#   &quot;domain&quot;: &quot;google&quot;,
+#   &quot;domain_name&quot;: &quot;google&quot;,
+#   &quot;suffix&quot;: &quot;com&quot;
+# }
+
+# Host to JSON
+host_json = host.to_json()
+print(host_json)
+# Output: {&quot;str&quot;: &quot;mail.google.com&quot;, &quot;subdomain&quot;: &quot;mail&quot;, &quot;domain&quot;: &quot;google&quot;, &quot;domain_name&quot;: &quot;google&quot;, &quot;suffix&quot;: &quot;com&quot;}
+</code></pre>
+
+<h2 id="quick-domain-extraction">Quick Domain Extraction<a class="headerlink" href="#quick-domain-extraction" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-python">from liburlparser import Host
+
+# From a host string
+result = Host.extract(&quot;mail.google.com&quot;)
+print(result)  # {'suffix': 'com', 'domain': 'google', 'subdomain': 'mail'}
+
+# From a URL string
+result = Host.extract_from_url(&quot;https://mail.google.com/about&quot;)
+print(result)  # {'suffix': 'com', 'domain': 'google', 'subdomain': 'mail'}
+</code></pre>
+
+<h2 id="batch-processing-urls">Batch Processing URLs<a class="headerlink" href="#batch-processing-urls" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-python">from liburlparser import Host
+import csv
+
+def extract_domains_from_csv(input_file, url_column, output_file):
+    with open(input_file, 'r') as infile, open(output_file, 'w', newline='') as outfile:
+        reader = csv.DictReader(infile)
+        fieldnames = list(reader.fieldnames) + ['domain', 'suffix', 'subdomain']
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for row in reader:
+            url = row[url_column]
+            try:
+                # Use the fast extract_from_url method
+                domain_info = Host.extract_from_url(url)
+                row['domain'] = domain_info['domain']
+                row['suffix'] = domain_info['suffix']
+                row['subdomain'] = domain_info['subdomain']
+            except Exception:
+                row['domain'] = ''
+                row['suffix'] = ''
+                row['subdomain'] = ''
+
+            writer.writerow(row)
+
+# Example usage
+# extract_domains_from_csv('urls.csv', 'url_column', 'output.csv')
+</code></pre>
+
+<h2 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-python">from liburlparser import Url, Host
+
+def safe_parse_url(url_str):
+    try:
+        url = Url(url_str)
+        return url
+    except Exception as e:
+        print(f&quot;Error parsing URL '{url_str}': {e}&quot;)
+        return None
+
+def safe_parse_host(host_str):
+    try:
+        host = Host(host_str)
+        return host
+    except Exception as e:
+        print(f&quot;Error parsing host '{host_str}': {e}&quot;)
+        return None
+
+# Test with valid and invalid URLs
+urls = [
+    &quot;https://example.com&quot;,
+    &quot;invalid://example.com&quot;,
+    &quot;https://example.com:invalid&quot;,
+    &quot;not a url&quot;
+]
+
+for url_str in urls:
+    url = safe_parse_url(url_str)
+    if url:
+        print(f&quot;Successfully parsed: {url.domain}&quot;)
+</code></pre>
+
+<h2 id="working-with-international-domain-names-idns">Working with International Domain Names (IDNs)<a class="headerlink" href="#working-with-international-domain-names-idns" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-python">from liburlparser import Url, Host
+
+# Parse an IDN
+url = Url(&quot;https://例子.测试&quot;)
+print(f&quot;Domain: {url.domain}&quot;)  # Domain: 例子
+print(f&quot;Suffix: {url.suffix}&quot;)  # Suffix: 测试
+
+host = Host(&quot;例子.测试&quot;)
+print(f&quot;Domain: {host.domain}&quot;)  # Domain: 例子
+print(f&quot;Suffix: {host.suffix}&quot;)  # Suffix: 测试
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../api/psl/" class="btn btn-neutral float-left" title="PSL"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../performance/" class="btn btn-neutral float-right" title="Performance">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mohammadraziei/liburlparser" class="fa fa-code-fork" style="color: #fcfcfc"> mohammadraziei/liburlparser</a>
+        </span>
+    
+    
+      <span><a href="../api/psl/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../performance/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

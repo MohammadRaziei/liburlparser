@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Mohammad Raziei" /><link rel="canonical" href="https://mohammadraziei.github.io/liburlparser/api/url/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Url - liburlparser</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Url";
+        var mkdocs_page_input_path = "api/url.md";
+        var mkdocs_page_url = "/liburlparser/api/url/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> liburlparser
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../installation/">Installation</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/basic/">Basic Usage</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/advanced/">Advanced Usage</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/cli/">Command Line</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API Reference</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../host/">Host</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Url</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#import">Import</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#constructor">Constructor</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#example">Example</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#class-methods">Class Methods</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#extract_host">extract_host</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#parameters_1">Parameters</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#returns">Returns</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#example_1">Example</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#properties">Properties</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#protocol">protocol</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#userinfo">userinfo</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#host">host</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#subdomain">subdomain</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#domain">domain</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#fulldomain">fulldomain</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#domain_name">domain_name</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#suffix">suffix</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#port">port</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#params">params</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#query">query</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#fragment">fragment</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#methods">Methods</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#to_dict">to_dict</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#returns_1">Returns</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#example_2">Example</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#to_json">to_json</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#returns_2">Returns</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#example_3">Example</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#str">str</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#returns_3">Returns</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#example_4">Example</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#repr">repr</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#returns_4">Returns</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#example_5">Example</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#complete-example">Complete Example</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../psl/">PSL</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../examples/">Examples</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../performance/">Performance</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">liburlparser</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">API Reference</li>
+      <li class="breadcrumb-item active">Url</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="url-class-api-reference">Url Class API Reference<a class="headerlink" href="#url-class-api-reference" title="Permanent link">&para;</a></h1>
+<p>The <code>Url</code> class is used to parse and extract information from URLs.</p>
+<h2 id="import">Import<a class="headerlink" href="#import" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-python">from liburlparser import Url
+</code></pre>
+
+<h2 id="constructor">Constructor<a class="headerlink" href="#constructor" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-python">Url(urlstr, ignore_www=False)
+</code></pre>
+
+<h3 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>urlstr</code> (str): The URL string to parse</li>
+<li><code>ignore_www</code> (bool, optional): Whether to ignore "www" in the subdomain. Default is <code>False</code>.</li>
+</ul>
+<h3 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
+<pre class="codehilite"><code class="language-python"># Create a Url object
+url = Url(&quot;https://mail.google.com/about&quot;)
+
+# Create a Url object, ignoring &quot;www&quot; if present
+url = Url(&quot;https://www.example.com/about&quot;, ignore_www=True)
+</code></pre>
+
+<h2 id="class-methods">Class Methods<a class="headerlink" href="#class-methods" title="Permanent link">&para;</a></h2>
+<h3 id="extract_host">extract_host<a class="headerlink" href="#extract_host" title="Permanent link">&para;</a></h3>
+<pre class="codehilite"><code class="language-python">@classmethod
+def extract_host(cls, urlstr)
+</code></pre>
+
+<p>Extract the host part from a URL string.</p>
+<h4 id="parameters_1">Parameters<a class="headerlink" href="#parameters_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>urlstr</code> (str): The URL string to parse</li>
+</ul>
+<h4 id="returns">Returns<a class="headerlink" href="#returns" title="Permanent link">&para;</a></h4>
+<ul>
+<li>The hostname as a string</li>
+</ul>
+<h4 id="example_1">Example<a class="headerlink" href="#example_1" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-python">host_str = Url.extract_host(&quot;https://mail.google.com/about&quot;)
+print(host_str)  # mail.google.com
+</code></pre>
+
+<h2 id="properties">Properties<a class="headerlink" href="#properties" title="Permanent link">&para;</a></h2>
+<h3 id="protocol">protocol<a class="headerlink" href="#protocol" title="Permanent link">&para;</a></h3>
+<p>The protocol part of the URL (e.g., "http", "https").</p>
+<pre class="codehilite"><code class="language-python">url = Url(&quot;https://mail.google.com/about&quot;)
+print(url.protocol)  # https
+</code></pre>
+
+<h3 id="userinfo">userinfo<a class="headerlink" href="#userinfo" title="Permanent link">&para;</a></h3>
+<p>The userinfo part of the URL (username and password).</p>
+<pre class="codehilite"><code class="language-python">url = Url(&quot;https://user:pass@example.com&quot;)
+print(url.userinfo)  # user:pass
+</code></pre>
+
+<h3 id="host">host<a class="headerlink" href="#host" title="Permanent link">&para;</a></h3>
+<p>The host part of the URL as a <code>Host</code> object.</p>
+<pre class="codehilite"><code class="language-python">url = Url(&quot;https://mail.google.com/about&quot;)
+print(url.host)  # &lt;Host :'mail.google.com'&gt;
+</code></pre>
+
+<h3 id="subdomain">subdomain<a class="headerlink" href="#subdomain" title="Permanent link">&para;</a></h3>
+<p>The subdomain part of the hostname.</p>
+<pre class="codehilite"><code class="language-python">url = Url(&quot;https://mail.google.com/about&quot;)
+print(url.subdomain)  # mail
+</code></pre>
+
+<h3 id="domain">domain<a class="headerlink" href="#domain" title="Permanent link">&para;</a></h3>
+<p>The domain part of the hostname.</p>
+<pre class="codehilite"><code class="language-python">url = Url(&quot;https://mail.google.com/about&quot;)
+print(url.domain)  # google
+</code></pre>
+
+<h3 id="fulldomain">fulldomain<a class="headerlink" href="#fulldomain" title="Permanent link">&para;</a></h3>
+<p>The full domain (domain + suffix).</p>
+<pre class="codehilite"><code class="language-python">url = Url(&quot;https://mail.google.com/about&quot;)
+print(url.fulldomain)  # google.com
+</code></pre>
+
+<h3 id="domain_name">domain_name<a class="headerlink" href="#domain_name" title="Permanent link">&para;</a></h3>
+<p>The domain name (same as domain).</p>
+<pre class="codehilite"><code class="language-python">url = Url(&quot;https://mail.google.com/about&quot;)
+print(url.domain_name)  # google
+</code></pre>
+
+<h3 id="suffix">suffix<a class="headerlink" href="#suffix" title="Permanent link">&para;</a></h3>
+<p>The suffix part of the hostname.</p>
+<pre class="codehilite"><code class="language-python">url = Url(&quot;https://mail.google.com/about&quot;)
+print(url.suffix)  # com
+</code></pre>
+
+<h3 id="port">port<a class="headerlink" href="#port" title="Permanent link">&para;</a></h3>
+<p>The port number (0 if not specified).</p>
+<pre class="codehilite"><code class="language-python">url = Url(&quot;https://example.com:8080&quot;)
+print(url.port)  # 8080
+
+url = Url(&quot;https://example.com&quot;)
+print(url.port)  # 0
+</code></pre>
+
+<h3 id="params">params<a class="headerlink" href="#params" title="Permanent link">&para;</a></h3>
+<p>The parameters part of the URL.</p>
+<pre class="codehilite"><code class="language-python">url = Url(&quot;https://example.com/path;param1=value1;param2=value2&quot;)
+print(url.params)  # param1=value1;param2=value2
+</code></pre>
+
+<h3 id="query">query<a class="headerlink" href="#query" title="Permanent link">&para;</a></h3>
+<p>The query part of the URL.</p>
+<pre class="codehilite"><code class="language-python">url = Url(&quot;https://example.com/path?q=test&amp;page=1&quot;)
+print(url.query)  # q=test&amp;page=1
+</code></pre>
+
+<h3 id="fragment">fragment<a class="headerlink" href="#fragment" title="Permanent link">&para;</a></h3>
+<p>The fragment part of the URL.</p>
+<pre class="codehilite"><code class="language-python">url = Url(&quot;https://example.com/path#section&quot;)
+print(url.fragment)  # section
+</code></pre>
+
+<h2 id="methods">Methods<a class="headerlink" href="#methods" title="Permanent link">&para;</a></h2>
+<h3 id="to_dict">to_dict<a class="headerlink" href="#to_dict" title="Permanent link">&para;</a></h3>
+<p>Convert the Url object to a dictionary.</p>
+<pre class="codehilite"><code class="language-python">url.to_dict()
+</code></pre>
+
+<h4 id="returns_1">Returns<a class="headerlink" href="#returns_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li>A dictionary with keys 'str', 'protocol', 'userinfo', 'host', 'port', 'query', and 'fragment'</li>
+</ul>
+<h4 id="example_2">Example<a class="headerlink" href="#example_2" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-python">url = Url(&quot;https://mail.google.com/about?q=test#section&quot;)
+url_dict = url.to_dict()
+print(url_dict)
+# {'str': 'https://mail.google.com/about?q=test#section', 'protocol': 'https', 'userinfo': '', 'host': {'str': 'mail.google.com', 'subdomain': 'mail', 'domain': 'google', 'domain_name': 'google', 'suffix': 'com'}, 'port': 0, 'query': 'q=test', 'fragment': 'section'}
+</code></pre>
+
+<h3 id="to_json">to_json<a class="headerlink" href="#to_json" title="Permanent link">&para;</a></h3>
+<p>Convert the Url object to a JSON string.</p>
+<pre class="codehilite"><code class="language-python">url.to_json()
+</code></pre>
+
+<h4 id="returns_2">Returns<a class="headerlink" href="#returns_2" title="Permanent link">&para;</a></h4>
+<ul>
+<li>A JSON string representation of the Url object</li>
+</ul>
+<h4 id="example_3">Example<a class="headerlink" href="#example_3" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-python">url = Url(&quot;https://mail.google.com/about?q=test#section&quot;)
+url_json = url.to_json()
+print(url_json)
+# {&quot;str&quot;: &quot;https://mail.google.com/about?q=test#section&quot;, &quot;protocol&quot;: &quot;https&quot;, &quot;userinfo&quot;: &quot;&quot;, &quot;host&quot;: {&quot;str&quot;: &quot;mail.google.com&quot;, &quot;subdomain&quot;: &quot;mail&quot;, &quot;domain&quot;: &quot;google&quot;, &quot;domain_name&quot;: &quot;google&quot;, &quot;suffix&quot;: &quot;com&quot;}, &quot;port&quot;: 0, &quot;query&quot;: &quot;q=test&quot;, &quot;fragment&quot;: &quot;section&quot;}
+</code></pre>
+
+<h3 id="str"><strong>str</strong><a class="headerlink" href="#str" title="Permanent link">&para;</a></h3>
+<p>Get the string representation of the URL.</p>
+<pre class="codehilite"><code class="language-python">str(url)
+</code></pre>
+
+<h4 id="returns_3">Returns<a class="headerlink" href="#returns_3" title="Permanent link">&para;</a></h4>
+<ul>
+<li>The URL as a string</li>
+</ul>
+<h4 id="example_4">Example<a class="headerlink" href="#example_4" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-python">url = Url(&quot;https://mail.google.com/about&quot;)
+print(str(url))  # https://mail.google.com/about
+</code></pre>
+
+<h3 id="repr"><strong>repr</strong><a class="headerlink" href="#repr" title="Permanent link">&para;</a></h3>
+<p>Get the representation of the Url object.</p>
+<pre class="codehilite"><code class="language-python">repr(url)
+</code></pre>
+
+<h4 id="returns_4">Returns<a class="headerlink" href="#returns_4" title="Permanent link">&para;</a></h4>
+<ul>
+<li>A string like <code>&lt;Url :'https://example.com'&gt;</code></li>
+</ul>
+<h4 id="example_5">Example<a class="headerlink" href="#example_5" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-python">url = Url(&quot;https://mail.google.com/about&quot;)
+print(repr(url))  # &lt;Url :'https://mail.google.com/about'&gt;
+</code></pre>
+
+<h2 id="complete-example">Complete Example<a class="headerlink" href="#complete-example" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-python">from liburlparser import Url
+
+# Parse a complex URL
+url = Url(&quot;https://user:pass@sub.example.co.uk:8080/path/to/page?q=test&amp;lang=en#section&quot;)
+
+# Access all properties
+print(f&quot;Full URL: {url}&quot;)
+print(f&quot;Protocol: {url.protocol}&quot;)
+print(f&quot;Userinfo: {url.userinfo}&quot;)
+print(f&quot;Host: {url.host}&quot;)
+print(f&quot;Subdomain: {url.subdomain}&quot;)
+print(f&quot;Domain: {url.domain}&quot;)
+print(f&quot;Suffix: {url.suffix}&quot;)
+print(f&quot;Full Domain: {url.fulldomain}&quot;)
+print(f&quot;Port: {url.port}&quot;)
+print(f&quot;Query: {url.query}&quot;)
+print(f&quot;Fragment: {url.fragment}&quot;)
+
+# Convert to dictionary and JSON
+print(f&quot;Dictionary: {url.to_dict()}&quot;)
+print(f&quot;JSON: {url.to_json()}&quot;)
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../host/" class="btn btn-neutral float-left" title="Host"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../psl/" class="btn btn-neutral float-right" title="PSL">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mohammadraziei/liburlparser" class="fa fa-code-fork" style="color: #fcfcfc"> mohammadraziei/liburlparser</a>
+        </span>
+    
+    
+      <span><a href="../host/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../psl/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

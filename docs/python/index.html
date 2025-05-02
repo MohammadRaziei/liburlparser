@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="description" content="Fastest domain extractor library for Python" /><meta name="author" content="Mohammad Raziei" /><link rel="canonical" href="https://mohammadraziei.github.io/liburlparser/" />
+      <link rel="shortcut icon" href="img/favicon.ico" />
+    <title>liburlparser</title>
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Home";
+        var mkdocs_page_input_path = "index.md";
+        var mkdocs_page_url = "/liburlparser/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="." class="icon icon-home"> liburlparser
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Home</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#key-features">Key Features</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#quick-start">Quick Start</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#command-line">Command Line</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#why-liburlparser">Why liburlparser?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#performance-comparison">Performance Comparison</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#extract-from-host">Extract From Host</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#extract-from-url">Extract From URL</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="installation/">Installation</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/basic/">Basic Usage</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/advanced/">Advanced Usage</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="usage/cli/">Command Line</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="api/host/">Host</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="api/url/">Url</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="api/psl/">PSL</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="examples/">Examples</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="performance/">Performance</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href=".">liburlparser</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Home</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="liburlparser-for-python">liburlparser for Python<a class="headerlink" href="#liburlparser-for-python" title="Permanent link">&para;</a></h1>
+<p align="center">
+  <img src="https://github.com/MohammadRaziei/liburlparser/raw/master/docs/images/logo/liburlparser-logo-1.svg" alt="Logo">
+  <h3 align="center">
+    Fastest domain extractor library for Python
+  </h3>
+  <h4 align="center">
+    Complete library for parsing URLs with Python and Command Line
+  </h4>
+</p>
+
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p><strong>liburlparser</strong> is a powerful domain extractor library written in C++ with Python bindings. It provides efficient URL parsing capabilities for Python, making it a valuable tool for projects that involve working with web addresses.</p>
+<h3 id="key-features">Key Features<a class="headerlink" href="#key-features" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>High Performance</strong>: Significantly faster than pure Python alternatives</li>
+<li><strong>Intuitive Interface</strong>: Simple, easy-to-use API</li>
+<li><strong>Clean Code Design</strong>: Separate <code>Url</code> and <code>Host</code> classes for organized code</li>
+<li><strong>Public Suffix List Support</strong>: Handles known combinatorial suffixes (e.g., "ac.ir")</li>
+<li><strong>Unknown Suffix Support</strong>: Can handle unknown suffixes (e.g., "comm" in "google.comm")</li>
+<li><strong>Automatic PSL Updates</strong>: Updates the public_suffix_list automatically</li>
+<li><strong>Comprehensive Properties</strong>: Access all parts of URLs and hosts with simple property access</li>
+<li><strong>Command Line Interface</strong>: Parse URLs directly from the command line</li>
+</ul>
+<h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-python">from liburlparser import Url, Host
+
+# Parse a URL
+url = Url(&quot;https://mail.google.com/about&quot;)
+print(url.domain)  # Output: google
+print(url.suffix)  # Output: com
+print(url.protocol)  # Output: https
+
+# Parse a host
+host = Host(&quot;mail.google.com&quot;)
+print(host.subdomain)  # Output: mail
+print(host.domain)  # Output: google
+print(host.suffix)  # Output: com
+</code></pre>
+
+<h2 id="command-line">Command Line<a class="headerlink" href="#command-line" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-bash">python -m liburlparser --url &quot;https://mail.google.com/about&quot; | jq
+python -m liburlparser --host &quot;mail.google.com&quot; | jq
+</code></pre>
+
+<h2 id="why-liburlparser">Why liburlparser?<a class="headerlink" href="#why-liburlparser" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Performance</strong>: Significantly faster than other domain extraction libraries</li>
+<li><strong>Ease of Use</strong>: Simple, intuitive API</li>
+<li><strong>Comprehensive</strong>: Handles all parts of URLs and hosts</li>
+<li><strong>Reliable</strong>: Built on the Public Suffix List for accurate domain extraction</li>
+</ul>
+<p>Check out the <a href="installation/">Installation</a> guide to get started, or dive into the <a href="usage/basic/">Basic Usage</a> documentation to learn more.</p>
+<h2 id="performance-comparison">Performance Comparison<a class="headerlink" href="#performance-comparison" title="Permanent link">&para;</a></h2>
+<h3 id="extract-from-host">Extract From Host<a class="headerlink" href="#extract-from-host" title="Permanent link">&para;</a></h3>
+<p>Tests were run on a file containing 10 million random domains from various top-level domains:</p>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th>Function</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>liburlparser</strong></td>
+<td>liburlparser.Host</td>
+<td><strong>1.12s</strong></td>
+</tr>
+<tr>
+<td>PyDomainExtractor</td>
+<td>pydomainextractor.extract</td>
+<td>1.50s</td>
+</tr>
+<tr>
+<td>publicsuffix2</td>
+<td>publicsuffix2.get_sld</td>
+<td>9.92s</td>
+</tr>
+<tr>
+<td>tldextract</td>
+<td>__call__</td>
+<td>29.23s</td>
+</tr>
+<tr>
+<td>tld</td>
+<td>tld.parse_tld</td>
+<td>34.48s</td>
+</tr>
+</tbody>
+</table>
+<h3 id="extract-from-url">Extract From URL<a class="headerlink" href="#extract-from-url" title="Permanent link">&para;</a></h3>
+<p>Tests were run on a file containing 1 million random URLs:</p>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th>Function</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>liburlparser</strong></td>
+<td>liburlparser.Host.from_url</td>
+<td><strong>2.10s</strong></td>
+</tr>
+<tr>
+<td>PyDomainExtractor</td>
+<td>pydomainextractor.extract_from_url</td>
+<td>2.24s</td>
+</tr>
+<tr>
+<td>publicsuffix2</td>
+<td>publicsuffix2.get_sld</td>
+<td>10.84s</td>
+</tr>
+<tr>
+<td>tldextract</td>
+<td>__call__</td>
+<td>36.04s</td>
+</tr>
+<tr>
+<td>tld</td>
+<td>tld.parse_tld</td>
+<td>57.87s</td>
+</tr>
+</tbody>
+</table>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="installation/" class="btn btn-neutral float-right" title="Installation">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mohammadraziei/liburlparser" class="fa fa-code-fork" style="color: #fcfcfc"> mohammadraziei/liburlparser</a>
+        </span>
+    
+    
+    
+      <span><a href="installation/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = ".";</script>
+    <script src="js/theme_extra.js"></script>
+    <script src="js/theme.js"></script>
+      <script src="search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
+
+<!--
+MkDocs version : 1.6.1
+Build Date UTC : 2025-05-02 14:28:49.461070+00:00
+-->

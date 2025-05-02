@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Mohammad Raziei" /><link rel="canonical" href="https://mohammadraziei.github.io/liburlparser/performance/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Performance - liburlparser</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Performance";
+        var mkdocs_page_input_path = "performance.md";
+        var mkdocs_page_url = "/liburlparser/performance/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> liburlparser
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../usage/basic/">Basic Usage</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../usage/advanced/">Advanced Usage</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../usage/cli/">Command Line</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../api/host/">Host</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../api/url/">Url</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../api/psl/">PSL</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../examples/">Examples</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Performance</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#benchmarks">Benchmarks</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#extract-from-host">Extract From Host</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#extract-from-url">Extract From URL</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#performance-optimization-tips">Performance Optimization Tips</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#1-choose-the-right-method">1. Choose the Right Method</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#2-batch-processing">2. Batch Processing</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#3-memory-optimization">3. Memory Optimization</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#4-profiling-your-code">4. Profiling Your Code</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#comparison-with-other-libraries">Comparison with Other Libraries</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">liburlparser</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Performance</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h1>
+<p>liburlparser is designed to be extremely fast and efficient. This page provides performance benchmarks and tips for optimizing your code when working with liburlparser.</p>
+<h2 id="benchmarks">Benchmarks<a class="headerlink" href="#benchmarks" title="Permanent link">&para;</a></h2>
+<h3 id="extract-from-host">Extract From Host<a class="headerlink" href="#extract-from-host" title="Permanent link">&para;</a></h3>
+<p>Tests were run on a file containing 10 million random domains from various top-level domains:</p>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th>Function</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>liburlparser</strong></td>
+<td>liburlparser.Host</td>
+<td><strong>1.12s</strong></td>
+</tr>
+<tr>
+<td>PyDomainExtractor</td>
+<td>pydomainextractor.extract</td>
+<td>1.50s</td>
+</tr>
+<tr>
+<td>publicsuffix2</td>
+<td>publicsuffix2.get_sld</td>
+<td>9.92s</td>
+</tr>
+<tr>
+<td>tldextract</td>
+<td>__call__</td>
+<td>29.23s</td>
+</tr>
+<tr>
+<td>tld</td>
+<td>tld.parse_tld</td>
+<td>34.48s</td>
+</tr>
+</tbody>
+</table>
+<h3 id="extract-from-url">Extract From URL<a class="headerlink" href="#extract-from-url" title="Permanent link">&para;</a></h3>
+<p>Tests were run on a file containing 1 million random URLs:</p>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th>Function</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>liburlparser</strong></td>
+<td>liburlparser.Host.from_url</td>
+<td><strong>2.10s</strong></td>
+</tr>
+<tr>
+<td>PyDomainExtractor</td>
+<td>pydomainextractor.extract_from_url</td>
+<td>2.24s</td>
+</tr>
+<tr>
+<td>publicsuffix2</td>
+<td>publicsuffix2.get_sld</td>
+<td>10.84s</td>
+</tr>
+<tr>
+<td>tldextract</td>
+<td>__call__</td>
+<td>36.04s</td>
+</tr>
+<tr>
+<td>tld</td>
+<td>tld.parse_tld</td>
+<td>57.87s</td>
+</tr>
+</tbody>
+</table>
+<h2 id="performance-optimization-tips">Performance Optimization Tips<a class="headerlink" href="#performance-optimization-tips" title="Permanent link">&para;</a></h2>
+<h3 id="1-choose-the-right-method">1. Choose the Right Method<a class="headerlink" href="#1-choose-the-right-method" title="Permanent link">&para;</a></h3>
+<p>liburlparser provides several methods for extracting domain information, each with different performance characteristics:</p>
+<pre class="codehilite"><code class="language-python">from liburlparser import Url, Host
+import time
+
+url_str = &quot;https://mail.google.com/about&quot;
+
+# Method 1: Full Url object creation (slowest, but provides all URL components)
+start = time.time()
+url = Url(url_str)
+domain = url.domain
+print(f&quot;Method 1 time: {time.time() - start:.6f}s&quot;)
+
+# Method 2: Host object from URL (faster, provides all host components)
+start = time.time()
+host = Host.from_url(url_str)
+domain = host.domain
+print(f&quot;Method 2 time: {time.time() - start:.6f}s&quot;)
+
+# Method 3: Extract host string only (very fast)
+start = time.time()
+host_str = Url.extract_host(url_str)
+print(f&quot;Method 3 time: {time.time() - start:.6f}s&quot;)
+
+# Method 4: Extract components directly (fastest for domain extraction)
+start = time.time()
+components = Host.extract_from_url(url_str)
+domain = components[&quot;domain&quot;]
+print(f&quot;Method 4 time: {time.time() - start:.6f}s&quot;)
+</code></pre>
+
+<h3 id="2-batch-processing">2. Batch Processing<a class="headerlink" href="#2-batch-processing" title="Permanent link">&para;</a></h3>
+<p>For processing large numbers of URLs, use the fastest method appropriate for your needs:</p>
+<pre class="codehilite"><code class="language-python">from liburlparser import Host
+import time
+
+# Sample list of URLs
+urls = [&quot;https://example.com&quot;, &quot;https://google.com&quot;, &quot;https://github.com&quot;] * 1000
+
+# Method 1: Creating full Host objects
+start = time.time()
+domains1 = []
+for url in urls:
+    host = Host.from_url(url)
+    domains1.append(host.domain)
+print(f&quot;Method 1 time: {time.time() - start:.4f}s&quot;)
+
+# Method 2: Using extract_from_url (faster)
+start = time.time()
+domains2 = []
+for url in urls:
+    info = Host.extract_from_url(url)
+    domains2.append(info[&quot;domain&quot;])
+print(f&quot;Method 2 time: {time.time() - start:.4f}s&quot;)
+</code></pre>
+
+<h3 id="3-memory-optimization">3. Memory Optimization<a class="headerlink" href="#3-memory-optimization" title="Permanent link">&para;</a></h3>
+<p>If you're processing millions of URLs and memory usage is a concern, use the extraction methods instead of creating full objects:</p>
+<pre class="codehilite"><code class="language-python"># Memory-efficient processing
+from liburlparser import Host
+
+def process_url_file(input_file, output_file):
+    with open(input_file, 'r') as infile, open(output_file, 'w') as outfile:
+        for line in infile:
+            url = line.strip()
+            try:
+                # Use extract_from_url instead of creating Host objects
+                info = Host.extract_from_url(url)
+                outfile.write(f&quot;{url},{info['domain']},{info['suffix']}\n&quot;)
+            except Exception:
+                outfile.write(f&quot;{url},error,error\n&quot;)
+</code></pre>
+
+<h3 id="4-profiling-your-code">4. Profiling Your Code<a class="headerlink" href="#4-profiling-your-code" title="Permanent link">&para;</a></h3>
+<p>You can use Python's built-in profiling tools to identify performance bottlenecks:</p>
+<pre class="codehilite"><code class="language-python">import cProfile
+from liburlparser import Host
+
+def process_urls(urls):
+    results = []
+    for url in urls:
+        info = Host.extract_from_url(url)
+        results.append(info[&quot;domain&quot;])
+    return results
+
+# Generate sample data
+urls = [&quot;https://example.com&quot;, &quot;https://google.com&quot;, &quot;https://github.com&quot;] * 1000
+
+# Profile the function
+cProfile.run('process_urls(urls)')
+</code></pre>
+
+<h2 id="comparison-with-other-libraries">Comparison with Other Libraries<a class="headerlink" href="#comparison-with-other-libraries" title="Permanent link">&para;</a></h2>
+<p>liburlparser is significantly faster than other Python domain extraction libraries because:</p>
+<ol>
+<li>It's implemented in C++ with Python bindings</li>
+<li>It uses efficient data structures for the Public Suffix List</li>
+<li>It provides specialized methods for different use cases</li>
+</ol>
+<p>If you're migrating from another library, here's how liburlparser compares:</p>
+<pre class="codehilite"><code class="language-python"># tldextract
+import tldextract
+extracted = tldextract.extract(&quot;mail.google.com&quot;)
+domain = extracted.domain
+suffix = extracted.suffix
+subdomain = extracted.subdomain
+
+# liburlparser equivalent (much faster)
+from liburlparser import Host
+host = Host(&quot;mail.google.com&quot;)
+domain = host.domain
+suffix = host.suffix
+subdomain = host.subdomain
+
+# publicsuffix2
+from publicsuffix2 import get_sld
+domain = get_sld(&quot;mail.google.com&quot;)
+
+# liburlparser equivalent
+from liburlparser import Host
+domain = Host(&quot;mail.google.com&quot;).domain
+
+# pydomainextractor
+import pydomainextractor
+extractor = pydomainextractor.DomainExtractor()
+result = extractor.extract(&quot;mail.google.com&quot;)
+
+# liburlparser equivalent
+from liburlparser import Host
+result = Host.extract(&quot;mail.google.com&quot;)
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../examples/" class="btn btn-neutral float-left" title="Examples"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mohammadraziei/liburlparser" class="fa fa-code-fork" style="color: #fcfcfc"> mohammadraziei/liburlparser</a>
+        </span>
+    
+    
+      <span><a href="../examples/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

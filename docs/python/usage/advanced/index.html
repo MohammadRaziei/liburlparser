@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Mohammad Raziei" /><link rel="canonical" href="https://mohammadraziei.github.io/liburlparser/usage/advanced/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Advanced Usage - liburlparser</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Advanced Usage";
+        var mkdocs_page_input_path = "usage/advanced.md";
+        var mkdocs_page_url = "/liburlparser/usage/advanced/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> liburlparser
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../installation/">Installation</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../basic/">Basic Usage</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Advanced Usage</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#working-with-the-public-suffix-list-psl">Working with the Public Suffix List (PSL)</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#ignoring-www-subdomain">Ignoring "www" Subdomain</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#removing-www-from-a-host-string">Removing "www" from a Host String</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#handling-complex-domains">Handling Complex Domains</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#compatibility-with-other-libraries">Compatibility with Other Libraries</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#error-handling">Error Handling</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#performance-optimization">Performance Optimization</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#working-with-international-domain-names-idns">Working with International Domain Names (IDNs)</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#batch-processing">Batch Processing</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#integration-with-other-libraries">Integration with Other Libraries</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#using-with-requests">Using with requests</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#using-with-pandas">Using with pandas</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#handling-edge-cases">Handling Edge Cases</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#custom-psl-rules">Custom PSL Rules</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#thread-safety">Thread Safety</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#memory-management">Memory Management</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#advanced-url-parsing">Advanced URL Parsing</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#benchmarking">Benchmarking</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#conclusion">Conclusion</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">Command Line</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../api/host/">Host</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../api/url/">Url</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../api/psl/">PSL</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../examples/">Examples</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../performance/">Performance</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">liburlparser</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Usage</li>
+      <li class="breadcrumb-item active">Advanced Usage</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="advanced-usage">Advanced Usage<a class="headerlink" href="#advanced-usage" title="Permanent link">&para;</a></h1>
+<p>This guide covers more advanced features and techniques for using liburlparser in Python.</p>
+<h2 id="working-with-the-public-suffix-list-psl">Working with the Public Suffix List (PSL)<a class="headerlink" href="#working-with-the-public-suffix-list-psl" title="Permanent link">&para;</a></h2>
+<p>liburlparser uses the Public Suffix List to accurately parse domain suffixes. You can interact with the PSL through the global <code>psl</code> object:</p>
+<pre class="codehilite"><code class="language-python">from liburlparser import psl
+
+# Check if PSL is loaded
+print(psl.is_loaded())  # True (by default)
+
+# Get PSL information
+print(psl.url)       # URL of the public suffix list
+print(psl.filename)  # Filename of the public suffix list
+
+# Load PSL from a custom path
+psl.load_from_path(&quot;/path/to/custom/public_suffix_list.dat&quot;)
+
+# Load PSL from a string
+with open(&quot;/path/to/custom/public_suffix_list.dat&quot;, &quot;r&quot;) as f:
+    psl_content = f.read()
+    psl.load_from_string(psl_content)
+</code></pre>
+
+<h2 id="ignoring-www-subdomain">Ignoring "www" Subdomain<a class="headerlink" href="#ignoring-www-subdomain" title="Permanent link">&para;</a></h2>
+<p>You can choose to ignore the "www" subdomain when parsing:</p>
+<pre class="codehilite"><code class="language-python"># Default behavior
+host = Host(&quot;www.example.com&quot;)
+print(host.subdomain)  # www
+print(host.domain)     # example
+
+# Ignore www
+host = Host(&quot;www.example.com&quot;, ignore_www=True)
+print(host.subdomain)  # (empty string)
+print(host.domain)     # example
+
+# Same for URLs
+url = Url(&quot;https://www.example.com/about&quot;, ignore_www=True)
+print(url.subdomain)   # (empty string)
+print(url.domain)      # example
+</code></pre>
+
+<h2 id="removing-www-from-a-host-string">Removing "www" from a Host String<a class="headerlink" href="#removing-www-from-a-host-string" title="Permanent link">&para;</a></h2>
+<p>If you just need to remove "www." from a hostname:</p>
+<pre class="codehilite"><code class="language-python">from liburlparser import Host
+
+host_str = Host.removeWWW(&quot;www.example.com&quot;)
+print(host_str)  # example.com
+</code></pre>
+
+<h2 id="handling-complex-domains">Handling Complex Domains<a class="headerlink" href="#handling-complex-domains" title="Permanent link">&para;</a></h2>
+<p>liburlparser can handle complex domain structures, including multi-part suffixes:</p>
+<pre class="codehilite"><code class="language-python"># Standard TLDs
+host = Host(&quot;example.com&quot;)
+print(host.domain)  # example
+print(host.suffix)  # com
+
+# Country-specific TLDs
+host = Host(&quot;example.co.uk&quot;)
+print(host.domain)  # example
+print(host.suffix)  # co.uk
+
+# Multi-level subdomains
+host = Host(&quot;a.b.c.example.com&quot;)
+print(host.subdomain)  # a.b.c
+print(host.domain)     # example
+print(host.suffix)     # com
+</code></pre>
+
+<h2 id="compatibility-with-other-libraries">Compatibility with Other Libraries<a class="headerlink" href="#compatibility-with-other-libraries" title="Permanent link">&para;</a></h2>
+<p>If you're migrating from pydomainextractor, liburlparser provides compatible methods:</p>
+<pre class="codehilite"><code class="language-python"># pydomainextractor style:
+import pydomainextractor
+extractor = pydomainextractor.DomainExtractor()
+result = extractor.extract(&quot;mail.google.com&quot;)
+result = extractor.extract_from_url(&quot;https://mail.google.com/about&quot;)
+
+# liburlparser equivalent:
+from liburlparser import Host
+result = Host.extract(&quot;mail.google.com&quot;)
+result = Host.extract_from_url(&quot;https://mail.google.com/about&quot;)
+</code></pre>
+
+<h2 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
+<p>liburlparser is designed to be robust and handle various edge cases:</p>
+<pre class="codehilite"><code class="language-python"># Empty or invalid URLs
+try:
+    url = Url(&quot;&quot;)
+except Exception as e:
+    print(f&quot;Error: {e}&quot;)
+
+# URLs without protocols
+url = Url(&quot;example.com&quot;)
+print(url.protocol)  # (empty string)
+print(url.domain)    # example
+
+# URLs with unusual formats
+url = Url(&quot;https://user:pass@example.com:8080/path?query=value#fragment&quot;)
+print(url.userinfo)  # user:pass
+print(url.port)      # 8080
+print(url.query)     # query=value
+</code></pre>
+
+<h2 id="performance-optimization">Performance Optimization<a class="headerlink" href="#performance-optimization" title="Permanent link">&para;</a></h2>
+<p>For high-performance applications, consider these techniques:</p>
+<ol>
+<li>Use <code>Host.from_url()</code> instead of creating a <code>Url</code> object when you only need host information:</li>
+</ol>
+<pre class="codehilite"><code class="language-python"># Slower (creates full Url object)
+url = Url(&quot;https://example.com/path&quot;)
+host = url.host
+
+# Faster (directly extracts host)
+host = Host.from_url(&quot;https://example.com/path&quot;)
+</code></pre>
+
+<ol>
+<li>Use <code>Url.extract_host()</code> when you only need the host string:</li>
+</ol>
+<pre class="codehilite"><code class="language-python"># Fastest (just extracts host string without parsing)
+host_str = Url.extract_host(&quot;https://example.com/path&quot;)
+</code></pre>
+
+<ol>
+<li>Use <code>Host.extract()</code> or <code>Host.extract_from_url()</code> when you only need domain components:</li>
+</ol>
+<pre class="codehilite"><code class="language-python"># Fast (returns just the components you need)
+components = Host.extract(&quot;example.com&quot;)
+components = Host.extract_from_url(&quot;https://example.com/path&quot;)
+</code></pre>
+
+<h2 id="working-with-international-domain-names-idns">Working with International Domain Names (IDNs)<a class="headerlink" href="#working-with-international-domain-names-idns" title="Permanent link">&para;</a></h2>
+<p>liburlparser has built-in support for International Domain Names (IDNs):</p>
+<pre class="codehilite"><code class="language-python"># Parse IDNs directly
+host = Host(&quot;例子.测试&quot;)
+print(host.domain)  # 例子
+print(host.suffix)  # 测试
+
+# IDNs in URLs
+url = Url(&quot;https://例子.测试/path&quot;)
+print(url.domain)  # 例子
+print(url.suffix)  # 测试
+
+# Mixed IDN and ASCII
+host = Host(&quot;subdomain.例子.测试&quot;)
+print(host.subdomain)  # subdomain
+print(host.domain)     # 例子
+print(host.suffix)     # 测试
+</code></pre>
+
+<h2 id="batch-processing">Batch Processing<a class="headerlink" href="#batch-processing" title="Permanent link">&para;</a></h2>
+<p>For processing large numbers of URLs efficiently:</p>
+<pre class="codehilite"><code class="language-python">from liburlparser import Host
+import csv
+
+def extract_domains_from_csv(csv_file, url_column, output_file):
+    with open(csv_file, 'r', encoding='utf-8') as infile, open(output_file, 'w', encoding='utf-8', newline='') as outfile:
+        reader = csv.DictReader(infile)
+        fieldnames = list(reader.fieldnames) + ['domain', 'suffix', 'subdomain']
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for row in reader:
+            url = row[url_column]
+            try:
+                # Use the fast extract_from_url method
+                domain_info = Host.extract_from_url(url)
+                row['domain'] = domain_info['domain']
+                row['suffix'] = domain_info['suffix']
+                row['subdomain'] = domain_info['subdomain']
+            except Exception:
+                row['domain'] = ''
+                row['suffix'] = ''
+                row['subdomain'] = ''
+
+            writer.writerow(row)
+
+# Example usage
+# extract_domains_from_csv('urls.csv', 'url_column', 'output.csv')
+</code></pre>
+
+<h2 id="integration-with-other-libraries">Integration with Other Libraries<a class="headerlink" href="#integration-with-other-libraries" title="Permanent link">&para;</a></h2>
+<h3 id="using-with-requests">Using with requests<a class="headerlink" href="#using-with-requests" title="Permanent link">&para;</a></h3>
+<pre class="codehilite"><code class="language-python">import requests
+from liburlparser import Url, Host
+
+def get_domain_info(url_str):
+    # Parse the URL first to validate it
+    url = Url(url_str)
+
+    # Make the request
+    response = requests.get(url_str)
+
+    # Check if there were redirects
+    if response.history:
+        final_url = response.url
+        final_domain = Host.from_url(final_url).domain
+        print(f&quot;Redirected from {url.domain} to {final_domain}&quot;)
+
+    return {
+        'original_domain': url.domain,
+        'final_domain': Host.from_url(response.url).domain,
+        'status_code': response.status_code
+    }
+
+# Example usage
+# info = get_domain_info(&quot;http://github.com&quot;)
+</code></pre>
+
+<h3 id="using-with-pandas">Using with pandas<a class="headerlink" href="#using-with-pandas" title="Permanent link">&para;</a></h3>
+<pre class="codehilite"><code class="language-python">import pandas as pd
+from liburlparser import Host
+
+def extract_domains(df, url_column):
+    # Create a function to extract domain info
+    def get_domain_info(url):
+        try:
+            info = Host.extract_from_url(url)
+            return pd.Series([
+                info['domain'],
+                info['suffix'],
+                info['subdomain']
+            ])
+        except:
+            return pd.Series(['', '', ''])
+
+    # Apply the function to the URL column
+    domain_info = df[url_column].apply(get_domain_info)
+    domain_info.columns = ['domain', 'suffix', 'subdomain']
+
+    # Join the results back to the original dataframe
+    return pd.concat([df, domain_info], axis=1)
+
+# Example usage
+# df = pd.read_csv('urls.csv')
+# df_with_domains = extract_domains(df, 'url_column')
+</code></pre>
+
+<h2 id="handling-edge-cases">Handling Edge Cases<a class="headerlink" href="#handling-edge-cases" title="Permanent link">&para;</a></h2>
+<p>liburlparser is designed to handle various edge cases:</p>
+<pre class="codehilite"><code class="language-python"># IP addresses as hosts
+url = Url(&quot;https://192.168.1.1/path&quot;)
+print(url.host)  # &lt;Host :'192.168.1.1'&gt;
+print(url.domain)  # (empty string, as IPs don't have domains)
+
+# Localhost
+url = Url(&quot;http://localhost:8080&quot;)
+print(url.host)  # &lt;Host :'localhost'&gt;
+print(url.domain)  # localhost
+print(url.suffix)  # (empty string)
+
+# URLs with unusual ports
+url = Url(&quot;https://example.com:65535/path&quot;)
+print(url.port)  # 65535
+
+# URLs with empty paths
+url = Url(&quot;https://example.com&quot;)
+print(url.path)  # (empty string)
+
+# URLs with query parameters but no path
+url = Url(&quot;https://example.com?param=value&quot;)
+print(url.query)  # param=value
+</code></pre>
+
+<h2 id="custom-psl-rules">Custom PSL Rules<a class="headerlink" href="#custom-psl-rules" title="Permanent link">&para;</a></h2>
+<p>You can create and use a custom Public Suffix List with additional rules:</p>
+<pre class="codehilite"><code class="language-python">from liburlparser import psl
+
+# Create a custom PSL with additional rules
+custom_psl = &quot;&quot;&quot;
+// Standard PSL rules
+com
+org
+net
+// Custom rules for internal domains
+internal
+local
+dev
+test
+&quot;&quot;&quot;
+
+# Load the custom PSL
+psl.load_from_string(custom_psl)
+
+# Now parse domains with custom suffixes
+host = Host(&quot;example.internal&quot;)
+print(host.domain)  # example
+print(host.suffix)  # internal
+
+host = Host(&quot;server.dev&quot;)
+print(host.domain)  # server
+print(host.suffix)  # dev
+</code></pre>
+
+<h2 id="thread-safety">Thread Safety<a class="headerlink" href="#thread-safety" title="Permanent link">&para;</a></h2>
+<p>liburlparser is thread-safe for parsing operations, but PSL loading should be done before spawning threads:</p>
+<pre class="codehilite"><code class="language-python">import threading
+from liburlparser import Host, psl
+import time
+
+# Make sure PSL is loaded before creating threads
+if not psl.is_loaded():
+    psl.load_from_path(&quot;/path/to/public_suffix_list.dat&quot;)
+
+def parse_hosts(hosts, results, thread_id):
+    for host_str in hosts:
+        try:
+            host = Host(host_str)
+            results.append({
+                'thread': thread_id,
+                'host': host_str,
+                'domain': host.domain,
+                'suffix': host.suffix
+            })
+        except Exception as e:
+            results.append({
+                'thread': thread_id,
+                'host': host_str,
+                'error': str(e)
+            })
+
+# Example usage
+def multi_threaded_parsing(all_hosts, num_threads=4):
+    threads = []
+    results = []
+
+    # Split hosts among threads
+    chunk_size = len(all_hosts) // num_threads
+    for i in range(num_threads):
+        start = i * chunk_size
+        end = start + chunk_size if i &lt; num_threads - 1 else len(all_hosts)
+        hosts_chunk = all_hosts[start:end]
+
+        thread = threading.Thread(
+            target=parse_hosts,
+            args=(hosts_chunk, results, i)
+        )
+        threads.append(thread)
+        thread.start()
+
+    # Wait for all threads to complete
+    for thread in threads:
+        thread.join()
+
+    return results
+
+# Example usage
+# hosts = [&quot;example.com&quot;, &quot;google.com&quot;, &quot;github.com&quot;, ...] * 1000
+# results = multi_threaded_parsing(hosts, num_threads=8)
+</code></pre>
+
+<h2 id="memory-management">Memory Management<a class="headerlink" href="#memory-management" title="Permanent link">&para;</a></h2>
+<p>For processing very large datasets with minimal memory usage:</p>
+<pre class="codehilite"><code class="language-python">from liburlparser import Host
+import csv
+
+def process_urls_streaming(input_file, output_file, batch_size=10000):
+    with open(input_file, 'r', encoding='utf-8') as infile, open(output_file, 'w', encoding='utf-8', newline='') as outfile:
+        reader = csv.reader(infile)
+        writer = csv.writer(outfile)
+        writer.writerow(['url', 'domain', 'suffix', 'subdomain'])
+
+        batch = []
+        for i, row in enumerate(reader):
+            if i == 0:  # Skip header
+                continue
+
+            url = row[0]
+            batch.append(url)
+
+            # Process in batches to avoid memory issues
+            if len(batch) &gt;= batch_size:
+                process_batch(batch, writer)
+                batch = []
+
+        # Process remaining URLs
+        if batch:
+            process_batch(batch, writer)
+
+def process_batch(urls, writer):
+    for url in urls:
+        try:
+            info = Host.extract_from_url(url)
+            writer.writerow([
+                url,
+                info['domain'],
+                info['suffix'],
+                info['subdomain']
+            ])
+        except Exception:
+            writer.writerow([url, '', '', ''])
+
+# Example usage
+# process_urls_streaming('millions_of_urls.csv', 'domains.csv', batch_size=50000)
+</code></pre>
+
+<h2 id="advanced-url-parsing">Advanced URL Parsing<a class="headerlink" href="#advanced-url-parsing" title="Permanent link">&para;</a></h2>
+<p>For more complex URL parsing needs:</p>
+<pre class="codehilite"><code class="language-python">from liburlparser import Url
+import urllib.parse
+
+def parse_query_params(url_str):
+    url = Url(url_str)
+    query = url.query
+
+    # Parse query parameters
+    params = urllib.parse.parse_qs(query)
+
+    return {
+        'url': url_str,
+        'domain': url.domain,
+        'path': url.path,
+        'params': params
+    }
+
+# Example
+result = parse_query_params(&quot;https://example.com/search?q=test&amp;page=1&amp;filter=active&quot;)
+print(result)
+# {
+#   'url': 'https://example.com/search?q=test&amp;page=1&amp;filter=active',
+#   'domain': 'example',
+#   'path': '/search',
+#   'params': {'q': ['test'], 'page': ['1'], 'filter': ['active']}
+# }
+</code></pre>
+
+<h2 id="benchmarking">Benchmarking<a class="headerlink" href="#benchmarking" title="Permanent link">&para;</a></h2>
+<p>You can benchmark liburlparser against other libraries:</p>
+<pre class="codehilite"><code class="language-python">import time
+from liburlparser import Host
+
+# Try to import other libraries
+try:
+    import tldextract
+    has_tldextract = True
+except ImportError:
+    has_tldextract = False
+
+try:
+    import publicsuffix2
+    has_publicsuffix2 = True
+except ImportError:
+    has_publicsuffix2 = False
+
+def benchmark(urls, iterations=3):
+    results = {}
+
+    # Benchmark liburlparser
+    total_time = 0
+    for _ in range(iterations):
+        start = time.time()
+        for url in urls:
+            Host.extract_from_url(url)
+        total_time += time.time() - start
+    results['liburlparser'] = total_time / iterations
+
+    # Benchmark tldextract if available
+    if has_tldextract:
+        total_time = 0
+        for _ in range(iterations):
+            start = time.time()
+            for url in urls:
+                tldextract.extract(url)
+            total_time += time.time() - start
+        results['tldextract'] = total_time / iterations
+
+    # Benchmark publicsuffix2 if available
+    if has_publicsuffix2:
+        total_time = 0
+        for _ in range(iterations):
+            start = time.time()
+            for url in urls:
+                try:
+                    publicsuffix2.get_sld(url)
+                except:
+                    pass
+            total_time += time.time() - start
+        results['publicsuffix2'] = total_time / iterations
+
+    return results
+
+# Example usage
+# urls = [&quot;https://example.com&quot;, &quot;https://mail.google.com&quot;, ...] * 1000
+# results = benchmark(urls)
+# print(results)
+</code></pre>
+
+<h2 id="conclusion">Conclusion<a class="headerlink" href="#conclusion" title="Permanent link">&para;</a></h2>
+<p>This advanced guide covers the more complex aspects of using liburlparser in Python. By leveraging these techniques, you can build high-performance applications that efficiently process and analyze URLs and domains.</p>
+<p>For more information, check out the <a href="../../api/host/">API Reference</a> or the <a href="../../examples/">Examples</a> page.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../basic/" class="btn btn-neutral float-left" title="Basic Usage"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../cli/" class="btn btn-neutral float-right" title="Command Line">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mohammadraziei/liburlparser" class="fa fa-code-fork" style="color: #fcfcfc"> mohammadraziei/liburlparser</a>
+        </span>
+    
+    
+      <span><a href="../basic/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../cli/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Mohammad Raziei" /><link rel="canonical" href="https://mohammadraziei.github.io/liburlparser/api/psl/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>PSL - liburlparser</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "PSL";
+        var mkdocs_page_input_path = "api/psl.md";
+        var mkdocs_page_url = "/liburlparser/api/psl/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> liburlparser
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../installation/">Installation</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/basic/">Basic Usage</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/advanced/">Advanced Usage</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../usage/cli/">Command Line</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API Reference</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../host/">Host</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../url/">Url</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">PSL</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#global-object">Global Object</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#properties">Properties</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#url">url</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#filename">filename</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#methods">Methods</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#is_loaded">is_loaded</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#load_from_path">load_from_path</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#load_from_string">load_from_string</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#example-usage">Example Usage</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#updating-the-psl-online-version-only">Updating the PSL (Online Version Only)</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../examples/">Examples</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../performance/">Performance</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">liburlparser</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">API Reference</li>
+      <li class="breadcrumb-item active">PSL</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="psl-api-reference">PSL API Reference<a class="headerlink" href="#psl-api-reference" title="Permanent link">&para;</a></h1>
+<p>The Public Suffix List (PSL) functionality in liburlparser is accessed through the global <code>psl</code> object.</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>The Public Suffix List is a list of all known public suffixes, such as ".com", ".co.uk", etc. liburlparser uses this list to accurately parse domain names and determine the correct domain and suffix parts.</p>
+<h2 id="global-object">Global Object<a class="headerlink" href="#global-object" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-python">from liburlparser import psl
+</code></pre>
+
+<p>The <code>psl</code> object is a global instance of the <code>Psl</code> class that is automatically created when you import liburlparser.</p>
+<h2 id="properties">Properties<a class="headerlink" href="#properties" title="Permanent link">&para;</a></h2>
+<h3 id="url">url<a class="headerlink" href="#url" title="Permanent link">&para;</a></h3>
+<p>The URL of the Public Suffix List.</p>
+<pre class="codehilite"><code class="language-python">from liburlparser import psl
+print(psl.url)  # https://publicsuffix.org/list/public_suffix_list.dat
+</code></pre>
+
+<h3 id="filename">filename<a class="headerlink" href="#filename" title="Permanent link">&para;</a></h3>
+<p>The filename of the Public Suffix List.</p>
+<pre class="codehilite"><code class="language-python">from liburlparser import psl
+print(psl.filename)  # public_suffix_list.dat
+</code></pre>
+
+<h2 id="methods">Methods<a class="headerlink" href="#methods" title="Permanent link">&para;</a></h2>
+<h3 id="is_loaded">is_loaded<a class="headerlink" href="#is_loaded" title="Permanent link">&para;</a></h3>
+<p>Check if the Public Suffix List is loaded.</p>
+<pre class="codehilite"><code class="language-python">from liburlparser import psl
+is_loaded = psl.is_loaded()
+print(f&quot;PSL loaded: {is_loaded}&quot;)  # PSL loaded: True
+</code></pre>
+
+<h3 id="load_from_path">load_from_path<a class="headerlink" href="#load_from_path" title="Permanent link">&para;</a></h3>
+<p>Load the Public Suffix List from a file.</p>
+<pre class="codehilite"><code class="language-python">from liburlparser import psl
+psl.load_from_path(&quot;/path/to/custom/public_suffix_list.dat&quot;)
+</code></pre>
+
+<h3 id="load_from_string">load_from_string<a class="headerlink" href="#load_from_string" title="Permanent link">&para;</a></h3>
+<p>Load the Public Suffix List from a string.</p>
+<pre class="codehilite"><code class="language-python">from liburlparser import psl
+with open(&quot;/path/to/custom/public_suffix_list.dat&quot;, &quot;r&quot;) as f:
+    psl_content = f.read()
+    psl.load_from_string(psl_content)
+</code></pre>
+
+<h2 id="example-usage">Example Usage<a class="headerlink" href="#example-usage" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code class="language-python">from liburlparser import psl
+
+# Check if PSL is loaded
+if psl.is_loaded():
+    print(f&quot;PSL is loaded from {psl.filename}&quot;)
+else:
+    print(&quot;PSL is not loaded, loading from custom path...&quot;)
+    psl.load_from_path(&quot;/path/to/custom/public_suffix_list.dat&quot;)
+
+# Print PSL information
+print(f&quot;PSL URL: {psl.url}&quot;)
+print(f&quot;PSL Filename: {psl.filename}&quot;)
+</code></pre>
+
+<h2 id="updating-the-psl-online-version-only">Updating the PSL (Online Version Only)<a class="headerlink" href="#updating-the-psl-online-version-only" title="Permanent link">&para;</a></h2>
+<p>If you installed the online version (<code>pip install "liburlparser[online]"</code>), you can update the PSL:</p>
+<pre class="codehilite"><code class="language-python"># This feature is only available if you installed with:
+# pip install &quot;liburlparser[online]&quot;
+from liburlparser import psl_updater
+
+# Update the PSL
+psl_updater.update()
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../url/" class="btn btn-neutral float-left" title="Url"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../examples/" class="btn btn-neutral float-right" title="Examples">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mohammadraziei/liburlparser" class="fa fa-code-fork" style="color: #fcfcfc"> mohammadraziei/liburlparser</a>
+        </span>
+    
+    
+      <span><a href="../url/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../examples/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
