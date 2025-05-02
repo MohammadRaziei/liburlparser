@@ -56,14 +56,10 @@ jobs:
       - name: Generate Doxygen documentation
         run: cmake --build build --target docs
         
-      - name: Find documentation directory
-        run: |
-          echo "DOC_DIR=$(find build -type d -path "*/html" | head -n 1)" >> $GITHUB_ENV
-        
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: ${{ env.DOC_DIR || 'build/html' }}
+          folder: build/html
           branch: gh-pages
           target-folder: docs/cpp
 
