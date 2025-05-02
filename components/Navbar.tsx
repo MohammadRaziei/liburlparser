@@ -19,7 +19,7 @@ const Navbar: React.FC = () => {
                   src="https://raw.githubusercontent.com/MohammadRaziei/liburlparser/master/docs/images/logo/liburlparser-logo-1.svg" 
                   alt="liburlparser" 
                 />
-                <span className="ml-3 text-xl font-bold text-[var(--primary-dark)]">LibUrlParser</span>
+                <span className="ml-3 text-xl font-bold text-[#231f20]">liburlparser</span>
               </Link>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
@@ -37,7 +37,7 @@ const Navbar: React.FC = () => {
           <div className="-mr-2 flex items-center sm:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--primary-blue)]"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#3871a2]"
             >
               <span className="sr-only">Open main menu</span>
               <FontAwesomeIcon icon={faBars} className="block h-6 w-6" />

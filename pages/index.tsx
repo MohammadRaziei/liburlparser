@@ -21,14 +21,14 @@ export default function LibUrlParserDocumentation() {
       href: "docs/cpp",
       label: "C++ Documentation",
       icon: <FontAwesomeIcon icon={faCode} />,
-      className: "btn-primary",
+      className: "btn-secondary",
       external: false
     },
     {
       href: "docs/python",
       label: "Python Documentation",
       icon: <FontAwesomeIcon icon={faCode} />,
-      className: "btn-secondary",
+      className: "btn-primary",
       external: false
     },
     {

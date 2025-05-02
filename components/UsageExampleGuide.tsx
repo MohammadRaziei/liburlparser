@@ -64,7 +64,7 @@ python -m liburlparser --url "https://www.example.com/path?q=test" | jq`,
     // Use Container, add vertical padding (e.g., py-12 or py-16)
     <Container className="py-12"> 
         <h2 className="section-title">
-          <FontAwesomeIcon icon={faLightbulb} className="text-[var(--primary-yellow)] mr-3" />
+          <FontAwesomeIcon icon={faLightbulb} className="text-[#ffd340] mr-3" />
           Basic Usage Example
         </h2>
 
@@ -75,7 +75,7 @@ python -m liburlparser --url "https://www.example.com/path?q=test" | jq`,
            <tbody>
              <tr className="border-b border-gray-200">
                <td className="bg-gray-50 font-medium p-1.5 w-1/4 border-r border-gray-200">
-                 <div className="text-[var(--primary-dark)]">Select Language</div>
+                 <div className="text-[#231f20]">Select Language</div>
                </td>
                <td className="p-1.5">
                  <div className="flex space-x-2">

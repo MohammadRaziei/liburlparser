@@ -150,7 +150,7 @@ int main() {
     <Container className="py-12"> 
       <div> 
         <h2 className="section-title">
-          <FontAwesomeIcon icon={faCode} className="text-[var(--primary-blue)] mr-3" />
+          <FontAwesomeIcon icon={faCode} className="text-[#3871a2] mr-3" />
           Installation Guide
         </h2>
         
@@ -160,7 +160,7 @@ int main() {
               {/* Row 1: Language Selection */}
               <tr className="border-b border-gray-200">
                 <td className="bg-gray-50 font-medium p-1.5 w-1/4 border-r border-gray-200">
-                  <div className="text-[var(--primary-dark)]">Step 1: Select Language</div>
+                  <div className="text-[#231f20]">Step 1: Select Language</div>
                 </td>
                 <td className="p-1.5">
                   <div className="flex space-x-2">
