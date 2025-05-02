@@ -44,4 +44,16 @@ SEARCHENGINE           = YES
 GENERATE_TREEVIEW      = YES
 USE_MDFILE_AS_MAINPAGE = @PROJECT_SOURCE_DIR@/docs/cpp/mainpage.md
 
+# HTML styling with awesome-css
+HTML_EXTRA_STYLESHEET  = @PROJECT_SOURCE_DIR@/docs/cpp/doxygen-awesome-css/doxygen-awesome.css \
+                         @PROJECT_SOURCE_DIR@/docs/cpp/doxygen-awesome-css/doxygen-awesome-sidebar-only.css \
+                         @PROJECT_SOURCE_DIR@/docs/cpp/doxygen-awesome-css/doxygen-awesome-sidebar-only-darkmode-toggle.css
+
+HTML_EXTRA_FILES       = @PROJECT_SOURCE_DIR@/docs/cpp/doxygen-awesome-css/doxygen-awesome-darkmode-toggle.js \
+                         @PROJECT_SOURCE_DIR@/docs/cpp/doxygen-awesome-css/doxygen-awesome-fragment-copy-button.js \
+                         @PROJECT_SOURCE_DIR@/docs/cpp/doxygen-awesome-css/doxygen-awesome-paragraph-link.js \
+                         @PROJECT_SOURCE_DIR@/docs/cpp/doxygen-awesome-css/doxygen-awesome-interactive-toc.js
+
+HTML_HEADER            = @PROJECT_SOURCE_DIR@/docs/cpp/header.html
+
 # End of Doxyfile.in
