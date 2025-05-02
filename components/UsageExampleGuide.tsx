@@ -17,7 +17,6 @@ const UsageExampleGuide: React.FC = () => {
   const languageOptions = [
     { value: 'python', label: 'Python', icon: <FontAwesomeIcon icon={faPython} /> },
     { value: 'cpp', label: 'C++', icon: <FontAwesomeIcon icon={faCode} /> },
-    // Add Bash option
     { value: 'bash', label: 'Bash CLI', icon: <FontAwesomeIcon icon={faTerminal} /> }, 
   ];
 
@@ -107,7 +106,9 @@ python -m liburlparser --url "https://www.example.com/path?q=test" | jq`,
       {/* Usage Example Code Block */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
         <div className="flex justify-between items-center bg-gray-50 text-[var(--primary-dark)] px-2 py-1">
-          <h3 className="font-medium">Example Code ({language === 'python' ? 'Python' : 'C++'})</h3>
+          <h3 className="font-medium">
+            Example Code ({languageOptions.find(opt => opt.value === language)?.label})
+          </h3>
           <button
             onClick={() => copyToClipboard(currentUsageExample)}
             className="flex items-center space-x-1 text-xs bg-white hover:bg-gray-100 rounded px-1.5 py-0.5 transition-colors text-[var(--primary-dark)] border border-gray-200"
@@ -117,8 +118,7 @@ python -m liburlparser --url "https://www.example.com/path?q=test" | jq`,
           </button>
         </div>
         <SyntaxHighlighter
-          // Set language prop dynamically
-          language={language === 'bash' ? 'bash' : language} 
+          language={language === 'bash' ? 'bash' : language}
           style={vscDarkPlus}
           customStyle={{ margin: 0, padding: '0.5rem', borderRadius: '0 0 0.375rem 0.375rem' }}
           wrapLongLines={true}
