@@ -6,6 +6,7 @@ import sys
 
 from . import Host, Url, __doc__, __version__
 
+
 def flatten_dict(d, parent_key=''):
     items = []
     for k, v in d.items():
@@ -18,7 +19,7 @@ def flatten_dict(d, parent_key=''):
 
 def show_if_not_none(_str, _class, _parts):
     if _str is not None:
-        parsed = _class(_str) 
+        parsed = _class(_str)
         parsed_dict = flatten_dict(parsed.to_dict())
         try:
             output_string = " ".join([parsed_dict[part] for part in _parts]) if _parts else parsed.to_json()
