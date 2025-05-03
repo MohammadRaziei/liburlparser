@@ -6,19 +6,37 @@ import sys
 
 from . import Host, Url, __doc__, __version__
 
+def flatten_dict(d, parent_key=''):
+    items = []
+    for k, v in d.items():
+        if isinstance(v, dict):
+            items.append((k, v.pop("str", None)))
+            items.extend(flatten_dict(v, k).items())
+        else:
+            items.append((k, v))
+    return dict(items)
 
-def show_if_not_none(_str, _class):
+def show_if_not_none(_str, _class, _parts):
     if _str is not None:
-        print(_class(_str).to_json())
+        parsed = _class(_str) 
+        parsed_dict = flatten_dict(parsed.to_dict())
+        try:
+            output_string = " ".join([parsed_dict[part] for part in _parts]) if _parts else parsed.to_json()
+        except KeyError as e:
+            sys.stderr.write(f"Error: Invalid part '{e.args[0]}' specified\n")
+            sys.exit(1)
+        sys.stdout.write(output_string)
 
 
 def main(args):
-    show_if_not_none(args.url, Url)
-    show_if_not_none(args.host, Host)
+    if not args.url and not args.host:
+        sys.stderr.write("Error: Either --url or --host argument must be provided\n")
+    show_if_not_none(args.url, Url, args.parts)
+    show_if_not_none(args.host, Host, args.parts)
     if args.version:
-        print(__version__)
+        sys.stdout.write(__version__)
     if args.doc:
-        print(__doc__)
+        sys.stdout.write(__doc__)
 
 
 if __name__ == '__main__':
@@ -28,6 +46,7 @@ if __name__ == '__main__':
     parser.add_argument("--host", type=str, default=None,
                         help="enter just host part of url (for example: \"google.com\")")
     parser.add_argument('-v', '--version', action='store_true', help="showing version of module")
+    parser.add_argument('--parts', type=str, nargs='+', help="list of parts to display")
     parser.add_argument('--doc', action='store_true', help="showing version of module")
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
     main(args)
