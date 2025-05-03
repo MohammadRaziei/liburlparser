@@ -1,14 +1,18 @@
 # liburlparser Library
 
-<p align="center">
-  <img src="https://github.com/MohammadRaziei/liburlparser/raw/master/docs/images/logo/liburlparser-logo-1.svg" alt="Logo">
+
+<div align="center" style="text-align: center; display: block; margin: 0 auto;">
+  <div style="max-width: 38rem; margin: 0 auto; display: block;">
+    <img src="https://github.com/MohammadRaziei/liburlparser/raw/master/docs/images/logo/liburlparser-logo-1.svg" alt="Logo">
+
   <h3 align="center">
     Fastest domain extractor library for C++
   </h3>
   <h4 align="center">
     Complete library for parsing URLs with C++, Python and Command Line 
   </h4>
-</p>
+  </div>
+</div>
 
 ## Introduction
 
