@@ -2,7 +2,18 @@
 
 ## Introduction
 
-liburlparser is a high-performance C++ library designed for parsing and analyzing URLs. It provides robust functionality to extract various components of a URL such as protocol, domain, subdomain, suffix, path, and query parameters. This library is optimized for speed and efficiency, making it ideal for applications that need to process large numbers of URLs.
+liburlparser is a high-performance URL parsing library written in C++ with Python bindings. It provides efficient URL parsing and domain extraction capabilities while maintaining a consistent interface across both C++ and Python. This page introduces the core concepts, architecture, and features of liburlparser.
+
+For installation instructions, see Installation. For usage examples, see Quick Start Guide.
+
+## Purpose and Scope
+
+The primary purpose of liburlparser is to parse URLs and extract their components with a focus on accurate domain extraction. The library is designed to:
+
+- Parse URLs into their component parts (protocol, host, path, query parameters, etc.)
+- Extract domain information from hostnames, correctly handling public suffixes
+- Provide a consistent API across both C++ and Python
+- Offer superior performance compared to other URL parsing solutions
 
 ## Key Features
 
@@ -13,11 +24,27 @@ liburlparser is a high-performance C++ library designed for parsing and analyzin
 - **Cross-Platform Compatibility**: Works on Windows, Linux, and macOS
 - **Automatic PSL Updates**: Updates the public suffix list automatically during build
 
-## Core Classes
+## URL Parsing Process
+
+When parsing a URL, the library follows this general flow:
+
+![URL Parsing Process](url-parsing-process.svg)
+
+## Core Components
+
+The library is built around two primary classes that work together to provide URL parsing functionality:
 
 ### TLD::Url Class
 
-The `TLD::Url` class is the main class for parsing and analyzing complete URLs. It provides methods to access all components of a URL.
+The `TLD::Url` class is responsible for parsing complete URLs and extracting all their components. It provides methods to access:
+
+- Protocol (e.g., "https")
+- User information
+- Host (which is represented as a Host object)
+- Port
+- Path
+- Query parameters
+- Fragment
 
 #### Key Methods and Properties
 
@@ -33,7 +60,12 @@ The `TLD::Url` class is the main class for parsing and analyzing complete URLs. 
 
 ### TLD::Host Class
 
-The `TLD::Host` class is used for parsing and analyzing the host part of a URL.
+The `TLD::Host` class focuses on parsing and extracting domain information from hostnames. It leverages the Public Suffix List (PSL) to correctly handle domain extraction, even for complex cases like "co.uk". It provides methods to access:
+
+- Subdomain (e.g., "www" in "www.example.com")
+- Domain (e.g., "example" in "www.example.com")
+- Domain name (the combination of domain and suffix)
+- Suffix (e.g., "com" in "www.example.com" or "co.uk" in "example.co.uk")
 
 #### Key Methods and Properties
 
@@ -44,6 +76,12 @@ The `TLD::Host` class is used for parsing and analyzing the host part of a URL.
 - `fulldomain()`: Returns the full domain (subdomain + domain + suffix)
 - `str()`: Returns the host as a string
 - `static fromUrl(const std::string& url, bool ignore_www = false)`: Creates a Host object from a URL
+
+## System Architecture
+
+liburlparser follows a layered architecture with C++ core components providing the parsing functionality and language bindings making this functionality available in Python.
+
+![Architecture Diagram](interface-arch.svg)
 
 ## Usage Examples
 
@@ -131,42 +169,6 @@ int main() {
     // Get the host object
     TLD::Host host = url.host();
     std::cout << "Full Domain: " << host.fulldomain() << std::endl;
-    
-    return 0;
-}
-```
-
-### Performance Benchmarking
-
-```cpp
-#include <iostream>
-#include <chrono>
-#include "urlparser.h"
-
-// Simple timing macro
-#define TIME_FUNCTION(func) \
-    { \
-        auto start = std::chrono::high_resolution_clock::now(); \
-        func; \
-        auto end = std::chrono::high_resolution_clock::now(); \
-        std::chrono::duration<double, std::milli> elapsed = end - start; \
-        std::cout << "Time taken: " << elapsed.count() << " ms" << std::endl; \
-    }
-
-int main() {
-    // Benchmark Host creation
-    TIME_FUNCTION({
-        for (int i = 0; i < 1'000'000; ++i) {
-            TLD::Host host("www.example.com");
-        }
-    });
-    
-    // Benchmark Host creation from URL
-    TIME_FUNCTION({
-        for (int i = 0; i < 1'000'000; ++i) {
-            TLD::Host::fromUrl("https://www.example.com/path?param=value");
-        }
-    });
     
     return 0;
 }
