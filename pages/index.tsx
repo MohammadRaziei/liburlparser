@@ -1,21 +1,19 @@
 import Head from 'next/head';
-import * as React from 'react'; // Keep React import
-import Link from 'next/link';
+import * as React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// Remove faBars if no longer used here, keep others
-import { faCode, faTrophy, faLightbulb } from '@fortawesome/free-solid-svg-icons'; 
+import { faCode } from '@fortawesome/free-solid-svg-icons';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
 import FeaturesSection from '../components/FeaturesSection';
 import InstallationGuide from '../components/InstallationGuide';
-import UsageExampleGuide from '../components/UsageExampleGuide'; 
-import Container from '../components/Container'; 
-import Navbar from '../components/Navbar'; 
-import SponsorSection from '../components/SponsorSection'; // Import the new component
+import UsageExampleGuide from '../components/UsageExampleGuide';
+import Navbar from '../components/Navbar';
+import HeroSection from '../components/HeroSection';
+import DescriptionSection from '../components/DescriptionSection';
+import PerformanceSection from '../components/PerformanceSection';
+import Footer from '../components/Footer';
+// import SponsorSection from '../components/SponsorSection';
 
 export default function LibUrlParserDocumentation() {
-  // Remove isMenuOpen state
-  // const [isMenuOpen, setIsMenuOpen] = React.useState(false); 
-  
   const navigationButtons = [
     {
       href: "docs/cpp",
@@ -49,156 +47,26 @@ export default function LibUrlParserDocumentation() {
   ];
 
   return (
-    <main className="bg-gray-50 min-h-screen flex flex-col"> 
+    <main className="bg-gray-50 min-h-screen flex flex-col">
       <Head>
         <title>liburlparser - Fastest Domain Extractor Library</title>
         <meta name="description" content="Fastest domain extractor library written in C++ with Python binding" />
       </Head>
 
-      <Navbar /> 
+      <Navbar />
 
       {/* Main content area */}
-      <section className="flex-grow w-full"> 
-        {/* Hero Section */}
-        <Container className="py-12 text-center">  
-          <div className="hero-container"> 
-            <img
-              width={180}
-              src="https://raw.githubusercontent.com/MohammadRaziei/liburlparser/master/docs/images/logo/liburlparser-logo-1.svg"
-              alt="liburlparser Logo"
-              className="mb-6 mx-auto"
-            />
-
-            <h1 className="text-5xl font-bold text-[#231f20] mb-4">
-              liburlparser
-            </h1>
-
-            <p className="mt-4 text-xl text-gray-700 max-w-2xl mx-auto">
-              Fastest domain extractor library written in C++ with Python binding.
-              First and complete library for parsing URL in C++, Python, and Command Line.
-            </p>
-
-            <div className="mt-10 flex flex-wrap justify-center gap-4">
-              {navigationButtons.map((button, index) => {
-                return button.external ? (
-                  <a
-                    key={index}
-                    href={button.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`btn ${button.className}`}
-                  >
-                    {button.icon} {button.label}
-                  </a>
-                ) : (
-                  <Link
-                    key={index}
-                    href={button.href}
-                    className={`btn ${button.className}`}
-                  >
-                    {button.icon} {button.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        </Container>
-
-        {/* Description Section */}
-        <Container className="py-8">
-          <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
-            <h2 className="text-2xl font-semibold text-[#3871a2] mb-4">Why liburlparser?</h2>
-            <div className="text-gray-700">
-              <p className="mb-3">
-                liburlparser is a simple, lightweight, and fast library for parsing URLs and hosts that:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 mb-4">
-                <li>Extracts components like protocol, host, fragment, query, and path</li>
-                <li>Processes hosts to extract subdomain, domain, domain-name, and suffix</li>
-                <li>Functions as a top-level domain extractor, correctly identifying that in "ee.aut.ac.ir", the entire "ac.ir" is the suffix, not just ".ir"</li>
-                <li>Supports international domain names and non-ASCII characters</li>
-                <li>Written in C++ but provides easy-to-use interfaces for Python and Command Line</li>
-                <li>Practical and clean design for efficient implementation</li>
-              </ul>
-            </div>
-          </div>
-        </Container>
-
-        {/* Features Section */}
+      <section className="flex-grow w-full">
+        <HeroSection navigationButtons={navigationButtons} />
+        <DescriptionSection />
         <FeaturesSection />
-
-        {/* Add the Sponsor Section here */}
-        {/* <SponsorSection />  */}
-
-        {/* Features Section */}
-        <FeaturesSection />
-
-        {/* Performance Section */}
-        <Container className="py-12"> 
-          <div> 
-            <h2 className="section-title">
-              <FontAwesomeIcon icon={faTrophy} className="text-[#ffd340] mr-3" />
-              Performance Comparison
-            </h2>
-            <p className="text-gray-700 mb-6">
-              LibUrlParser outperforms other domain extraction libraries in both host and URL parsing:
-            </p>
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-medium text-[#3871a2] mb-4">Extract From Host (10 million domains)</h3>
-                <div className="overflow-x-auto rounded-lg shadow border border-gray-200">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Library
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Function
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Time
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {performanceData.map((item, index) => (
-                        <tr key={index} className={item.highlight ? 'bg-gradient-to-r from-[#3871a2]/10 to-[#ffd340]/10' : ''}> 
-                          <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${item.highlight ? 'text-[#231f20]' : 'text-gray-900'}`}>
-                            {item.library}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {item.function}
-                          </td>
-                          <td className={`px-6 py-4 whitespace-nowrap text-sm ${item.highlight ? 'text-[#231f20] font-semibold' : 'text-gray-500'}`}>
-                            {item.time}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Container>
-
+        {/* <SponsorSection /> */}
+        <PerformanceSection performanceData={performanceData} />
         <InstallationGuide />
-
         <UsageExampleGuide />
+      </section>
 
-      </section> {/* End main content section */}
-
-      <footer className="mt-auto pt-16 pb-8 text-center text-gray-500 text-sm w-full bg-[#231f20]/5">
-        <Container> 
-          <div> 
-            <p>© {new Date().getFullYear()} LibUrlParser. All rights reserved.</p>
-            <p className="mt-2">
-              Created by <a href="https://github.com/MohammadRaziei" className="text-[#3871a2] hover:underline">Mohammad Raziei</a>
-            </p>
-          </div>
-        </Container>
-      </footer>
+      <Footer />
     </main>
   );
 }
