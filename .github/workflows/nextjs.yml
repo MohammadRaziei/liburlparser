@@ -80,11 +80,13 @@ jobs:
       - name: Beautifier - tidy format output html
         run: |
           sudo apt-get install tidy -qq -y 1> /dev/null
-          find ./out -name "*.html" -exec sh -c 'echo "Processing {} ..."; tidy -config .tidy.conf -o {} {}; cat _header.html {} > {}.tmp && mv {}.tmp {}' \;
+          find ./out -name "*.html" -exec sh -c 'echo "Processing {} ..."; tidy -config .tidy.conf -o {} {} \;
       - name: Fetch Python docs from gh-pages branch
         run: |
           git clone --branch gh-pages "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" out-docs
           mv out-docs/* out
+      - name: Add Header to Pages
+        run: find ./out -name "*.html" -exec sh -c 'echo "Processing {} ..."; cat _header.html {} > {}.tmp && mv {}.tmp {}' \;
       - name: Preview deploy files
         run: tree --du -shaC ./out
 
