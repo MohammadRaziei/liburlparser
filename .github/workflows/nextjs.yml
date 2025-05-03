@@ -77,17 +77,14 @@ jobs:
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
       - name: Static HTML export with Next.js
         run: ${{ steps.detect-package-manager.outputs.runner }} next export
-  
-      - name: Fetch Python docs from gh-pages branch
-        run: |
-          git clone --branch gh-pages "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" out-docs
-          mv out-docs/* out
-
       - name: Beautifier - tidy format output html
         run: |
           sudo apt-get install tidy -qq -y 1> /dev/null
           find ./out -name "*.html" -exec sh -c 'echo "Processing {} ..."; tidy -config .tidy.conf -o {} {}; cat _header.html {} > {}.tmp && mv {}.tmp {}' \;
-      
+      - name: Fetch Python docs from gh-pages branch
+        run: |
+          git clone --branch gh-pages "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" out-docs
+          mv out-docs/* out
       - name: Preview deploy files
         run: tree --du -shaC ./out
 
