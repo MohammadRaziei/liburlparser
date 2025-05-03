@@ -1,5 +1,15 @@
 # liburlparser Library
 
+<p align="center">
+  <img src="https://github.com/MohammadRaziei/liburlparser/raw/master/docs/images/logo/liburlparser-logo-1.svg" alt="Logo">
+  <h3 align="center">
+    Fastest domain extractor library for C++
+  </h3>
+  <h4 align="center">
+    Complete library for parsing URLs with C++, Python and Command Line 
+  </h4>
+</p>
+
 ## Introduction
 
 liburlparser is a high-performance URL parsing library written in C++ with Python bindings. It provides efficient URL parsing and domain extraction capabilities while maintaining a consistent interface across both C++ and Python. This page introduces the core concepts, architecture, and features of liburlparser.
@@ -23,6 +33,15 @@ The primary purpose of liburlparser is to parse URLs and extract their component
 - **Clean API Design**: Separate `Url` and `Host` classes for better code organization
 - **Cross-Platform Compatibility**: Works on Windows, Linux, and macOS
 - **Automatic PSL Updates**: Updates the public suffix list automatically during build
+
+## System Architecture
+
+liburlparser follows a layered architecture with C++ core components providing the parsing functionality and language bindings making this functionality available in Python.
+
+<p align="center">
+  <img src="images/interface-arch.svg" alt="Architecture Diagram" width="70%">
+</p>  
+
 
 ## URL Parsing Process
 
@@ -76,12 +95,6 @@ The `TLD::Host` class focuses on parsing and extracting domain information from 
 - `fulldomain()`: Returns the full domain (subdomain + domain + suffix)
 - `str()`: Returns the host as a string
 - `static fromUrl(const std::string& url, bool ignore_www = false)`: Creates a Host object from a URL
-
-## System Architecture
-
-liburlparser follows a layered architecture with C++ core components providing the parsing functionality and language bindings making this functionality available in Python.
-
-![Architecture Diagram](images/interface-arch.svg)
 
 ## Usage Examples
 
