@@ -93,8 +93,18 @@ $(document).ready(function(){initNavTree('index.html',''); initResizable(); });
 <div class="textblock"><p><a class="anchor" id="md__2home_2runner_2work_2liburlparser_2liburlparser_2docs_2cpp_2mainpage"></a> </p>
 <h1><a class="anchor" id="autotoc_md1"></a>
 Introduction</h1>
-<p>liburlparser is a high-performance C++ library designed for parsing and analyzing URLs. It provides robust functionality to extract various components of a URL such as protocol, domain, subdomain, suffix, path, and query parameters. This library is optimized for speed and efficiency, making it ideal for applications that need to process large numbers of URLs.</p>
+<p>liburlparser is a high-performance URL parsing library written in C++ with Python bindings. It provides efficient URL parsing and domain extraction capabilities while maintaining a consistent interface across both C++ and Python. This page introduces the core concepts, architecture, and features of liburlparser.</p>
+<p>For installation instructions, see Installation. For usage examples, see Quick Start Guide.</p>
 <h1><a class="anchor" id="autotoc_md2"></a>
+Purpose and Scope</h1>
+<p>The primary purpose of liburlparser is to parse URLs and extract their components with a focus on accurate domain extraction. The library is designed to:</p>
+<ul>
+<li>Parse URLs into their component parts (protocol, host, path, query parameters, etc.)</li>
+<li>Extract domain information from hostnames, correctly handling public suffixes</li>
+<li>Provide a consistent API across both C++ and Python</li>
+<li>Offer superior performance compared to other URL parsing solutions</li>
+</ul>
+<h1><a class="anchor" id="autotoc_md3"></a>
 Key Features</h1>
 <ul>
 <li><b>High Performance</b>: Optimized C++ implementation for fast URL parsing</li>
@@ -104,12 +114,26 @@ Key Features</h1>
 <li><b>Cross-Platform Compatibility</b>: Works on Windows, Linux, and macOS</li>
 <li><b>Automatic PSL Updates</b>: Updates the public suffix list automatically during build</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md3"></a>
-Core Classes</h1>
-<h2><a class="anchor" id="autotoc_md4"></a>
+<h1><a class="anchor" id="autotoc_md4"></a>
+URL Parsing Process</h1>
+<p>When parsing a URL, the library follows this general flow:</p>
+<p><img src="url-parsing-process.svg" alt="URL Parsing Process" style="pointer-events: none;" class="inline"/></p>
+<h1><a class="anchor" id="autotoc_md5"></a>
+Core Components</h1>
+<p>The library is built around two primary classes that work together to provide URL parsing functionality:</p>
+<h2><a class="anchor" id="autotoc_md6"></a>
 TLD::Url Class</h2>
-<p>The <code><a class="el" href="classTLD_1_1Url.html" title="Represents a URL.">TLD::Url</a></code> class is the main class for parsing and analyzing complete URLs. It provides methods to access all components of a URL.</p>
-<h3><a class="anchor" id="autotoc_md5"></a>
+<p>The <code><a class="el" href="classTLD_1_1Url.html" title="Represents a URL.">TLD::Url</a></code> class is responsible for parsing complete URLs and extracting all their components. It provides methods to access:</p>
+<ul>
+<li>Protocol (e.g., "https")</li>
+<li>User information</li>
+<li>Host (which is represented as a Host object)</li>
+<li>Port</li>
+<li>Path</li>
+<li>Query parameters</li>
+<li>Fragment</li>
+</ul>
+<h3><a class="anchor" id="autotoc_md7"></a>
 Key Methods and Properties</h3>
 <ul>
 <li><code>protocol()</code>: Returns the protocol (e.g., "http", "https")</li>
@@ -122,10 +146,16 @@ Key Methods and Properties</h3>
 <li><code>fragment()</code>: Returns the fragment (anchor)</li>
 <li><code>str()</code>: Returns the complete URL as a string</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md6"></a>
+<h2><a class="anchor" id="autotoc_md8"></a>
 TLD::Host Class</h2>
-<p>The <code><a class="el" href="classTLD_1_1Host.html" title="Represents a Host part of a URL.">TLD::Host</a></code> class is used for parsing and analyzing the host part of a URL.</p>
-<h3><a class="anchor" id="autotoc_md7"></a>
+<p>The <code><a class="el" href="classTLD_1_1Host.html" title="Represents a Host part of a URL.">TLD::Host</a></code> class focuses on parsing and extracting domain information from hostnames. It leverages the Public Suffix List (PSL) to correctly handle domain extraction, even for complex cases like "co.uk". It provides methods to access:</p>
+<ul>
+<li>Subdomain (e.g., "www" in "www.example.com")</li>
+<li>Domain (e.g., "example" in "www.example.com")</li>
+<li>Domain name (the combination of domain and suffix)</li>
+<li>Suffix (e.g., "com" in "www.example.com" or "co.uk" in "example.co.uk")</li>
+</ul>
+<h3><a class="anchor" id="autotoc_md9"></a>
 Key Methods and Properties</h3>
 <ul>
 <li><code>domain()</code>: Returns the domain part</li>
@@ -136,9 +166,13 @@ Key Methods and Properties</h3>
 <li><code>str()</code>: Returns the host as a string</li>
 <li><code>static fromUrl(const std::string&amp; url, bool ignore_www = false)</code>: Creates a Host object from a URL</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md8"></a>
+<h1><a class="anchor" id="autotoc_md10"></a>
+System Architecture</h1>
+<p>liburlparser follows a layered architecture with C++ core components providing the parsing functionality and language bindings making this functionality available in Python.</p>
+<p><img src="interface-arch.svg" alt="Architecture Diagram" style="pointer-events: none;" class="inline"/></p>
+<h1><a class="anchor" id="autotoc_md11"></a>
 Usage Examples</h1>
-<h2><a class="anchor" id="autotoc_md9"></a>
+<h2><a class="anchor" id="autotoc_md12"></a>
 Basic URL Parsing</h2>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;iostream&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="urlparser_8h.html">urlparser.h</a>&quot;</span></div>
@@ -160,7 +194,7 @@ Basic URL Parsing</h2>
 <div class="line">}</div>
 <div class="ttc" id="aclassTLD_1_1Url_html"><div class="ttname"><a href="classTLD_1_1Url.html">TLD::Url</a></div><div class="ttdoc">Represents a URL.</div><div class="ttdef"><b>Definition</b> urlparser.h:67</div></div>
 <div class="ttc" id="aurlparser_8h_html"><div class="ttname"><a href="urlparser_8h.html">urlparser.h</a></div><div class="ttdoc">Defines classes for parsing and handling URLs and hosts.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md10"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md13"></a>
 Working with Hosts</h2>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;iostream&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="urlparser_8h.html">urlparser.h</a>&quot;</span></div>
@@ -187,7 +221,7 @@ Working with Hosts</h2>
 <div class="line">}</div>
 <div class="ttc" id="aclassTLD_1_1Host_html"><div class="ttname"><a href="classTLD_1_1Host.html">TLD::Host</a></div><div class="ttdoc">Represents a Host part of a URL.</div><div class="ttdef"><b>Definition</b> urlparser.h:200</div></div>
 <div class="ttc" id="aclassTLD_1_1Host_html_a093c6d2dc1fc783f991db28270eb0bb5"><div class="ttname"><a href="classTLD_1_1Host.html#a093c6d2dc1fc783f991db28270eb0bb5">TLD::Host::fromUrl</a></div><div class="ttdeci">static Host fromUrl(const std::string &amp;url, const bool ignore_www=DEFAULT_IGNORE_WWW)</div><div class="ttdoc">Create a Host object from a URL string.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md11"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md14"></a>
 Advanced Example</h2>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;iostream&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="urlparser_8h.html">urlparser.h</a>&quot;</span></div>
@@ -223,40 +257,7 @@ Advanced Example</h2>
 <div class="line">    <span class="keywordflow">return</span> 0;</div>
 <div class="line">}</div>
 <div class="ttc" id="aclassTLD_1_1Host_html_acf1821768e5debcd0abb0c7bdb5afb5d"><div class="ttname"><a href="classTLD_1_1Host.html#acf1821768e5debcd0abb0c7bdb5afb5d">TLD::Host::fulldomain</a></div><div class="ttdeci">const std::string &amp; fulldomain() const noexcept</div><div class="ttdoc">Get the full domain of the host.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md12"></a>
-Performance Benchmarking</h2>
-<div class="fragment"><div class="line"><span class="preprocessor">#include &lt;iostream&gt;</span></div>
-<div class="line"><span class="preprocessor">#include &lt;chrono&gt;</span></div>
-<div class="line"><span class="preprocessor">#include &quot;<a class="code" href="urlparser_8h.html">urlparser.h</a>&quot;</span></div>
-<div class="line"> </div>
-<div class="line"><span class="comment">// Simple timing macro</span></div>
-<div class="line"><span class="preprocessor">#define TIME_FUNCTION(func) \</span></div>
-<div class="line"><span class="preprocessor">    { \</span></div>
-<div class="line"><span class="preprocessor">        auto start = std::chrono::high_resolution_clock::now(); \</span></div>
-<div class="line"><span class="preprocessor">        func; \</span></div>
-<div class="line"><span class="preprocessor">        auto end = std::chrono::high_resolution_clock::now(); \</span></div>
-<div class="line"><span class="preprocessor">        std::chrono::duration&lt;double, std::milli&gt; elapsed = end - start; \</span></div>
-<div class="line"><span class="preprocessor">        std::cout &lt;&lt; &quot;Time taken: &quot; &lt;&lt; elapsed.count() &lt;&lt; &quot; ms&quot; &lt;&lt; std::endl; \</span></div>
-<div class="line"><span class="preprocessor">    }</span></div>
-<div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> main() {</div>
-<div class="line">    <span class="comment">// Benchmark Host creation</span></div>
-<div class="line">    TIME_FUNCTION({</div>
-<div class="line">        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 1&#39;000&#39;000; ++i) {</div>
-<div class="line">            <a class="code hl_class" href="classTLD_1_1Host.html">TLD::Host</a> host(<span class="stringliteral">&quot;www.example.com&quot;</span>);</div>
-<div class="line">        }</div>
-<div class="line">    });</div>
-<div class="line">    </div>
-<div class="line">    <span class="comment">// Benchmark Host creation from URL</span></div>
-<div class="line">    TIME_FUNCTION({</div>
-<div class="line">        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 1&#39;000&#39;000; ++i) {</div>
-<div class="line">            <a class="code hl_function" href="classTLD_1_1Host.html#a093c6d2dc1fc783f991db28270eb0bb5">TLD::Host::fromUrl</a>(<span class="stringliteral">&quot;https://www.example.com/path?param=value&quot;</span>);</div>
-<div class="line">        }</div>
-<div class="line">    });</div>
-<div class="line">    </div>
-<div class="line">    <span class="keywordflow">return</span> 0;</div>
-<div class="line">}</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md13"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md15"></a>
 Public Suffix List</h1>
 <p>The library uses the Public Suffix List (PSL) to accurately identify domain suffixes. The PSL is automatically downloaded during the build process, but you can also load it manually:</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="urlparser_8h.html">urlparser.h</a>&quot;</span></div>
@@ -279,28 +280,28 @@ Public Suffix List</h1>
 <div class="ttc" id="aclassTLD_1_1Host_html_a9d3ae56d7efea3d96b642326f2724cfa"><div class="ttname"><a href="classTLD_1_1Host.html#a9d3ae56d7efea3d96b642326f2724cfa">TLD::Host::loadPslFromPath</a></div><div class="ttdeci">static void loadPslFromPath(const std::string &amp;filepath)</div><div class="ttdoc">Load the Public Suffix List from a file.</div></div>
 <div class="ttc" id="aclassTLD_1_1Host_html_ab6d1c1bde77407fa4c5020db5c08ae86"><div class="ttname"><a href="classTLD_1_1Host.html#ab6d1c1bde77407fa4c5020db5c08ae86">TLD::Host::loadPslFromString</a></div><div class="ttdeci">static void loadPslFromString(const std::string &amp;filestr)</div><div class="ttdoc">Load the Public Suffix List from a string.</div></div>
 <div class="ttc" id="aclassTLD_1_1Host_html_aff7125526099471dc8afd3c552db5c83"><div class="ttname"><a href="classTLD_1_1Host.html#aff7125526099471dc8afd3c552db5c83">TLD::Host::isPslLoaded</a></div><div class="ttdeci">static bool isPslLoaded() noexcept</div><div class="ttdoc">Check if the Public Suffix List (PSL) is loaded.</div></div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md14"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md16"></a>
 Building and Installation</h1>
-<h2><a class="anchor" id="autotoc_md15"></a>
+<h2><a class="anchor" id="autotoc_md17"></a>
 Prerequisites</h2>
 <ul>
 <li>C++17 compatible compiler</li>
 <li>CMake 3.19 or higher</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md16"></a>
+<h2><a class="anchor" id="autotoc_md18"></a>
 Build Steps</h2>
 <div class="fragment"><div class="line">git clone https://github.com/mohammadraziei/liburlparser</div>
 <div class="line">mkdir -p build &amp;&amp; cd build</div>
 <div class="line">cmake ..</div>
 <div class="line">make</div>
 <div class="line">sudo make install</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md17"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md19"></a>
 Running Tests</h2>
 <div class="fragment"><div class="line">make test</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md18"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md20"></a>
 Generating Documentation</h2>
 <div class="fragment"><div class="line">make docs</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md19"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md21"></a>
 Performance Comparison</h1>
 <p>URL Parser is designed for high performance. In benchmarks, it consistently outperforms other URL parsing libraries:</p>
 <table class="markdownTable">
@@ -312,7 +313,7 @@ Performance Comparison</h1>
 <td class="markdownTableBodyNone">Other libraries   </td><td class="markdownTableBodyNone">-   </td><td class="markdownTableBodyNone">1.50s - 34.48s   </td><td class="markdownTableBodyNone">2.24s - 57.87s   </td></tr>
 </table>
 <p><em>Tests were run on a file containing 10 million random domains and 1 million random URLs.</em></p>
-<h1><a class="anchor" id="autotoc_md20"></a>
+<h1><a class="anchor" id="autotoc_md22"></a>
 License</h1>
 <p>This library is distributed under the MIT License. See the LICENSE file for more information. </p>
 </div></div><!-- PageDoc -->
@@ -321,7 +322,7 @@ License</h1>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Fri May 2 2025 14:29:02 for liburlparser by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8 </li>
+    <li class="footer">Generated on Sat May 3 2025 08:06:07 for liburlparser by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8 </li>
   </ul>
 </div>
 </body>
