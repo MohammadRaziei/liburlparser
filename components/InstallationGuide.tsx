@@ -186,7 +186,6 @@ int main() {
                 </td>
               </tr>
               
-              {/* Row 2: Installation Method - Conditionally render or adjust based on language */}
               {/* Only show method selection if not Bash, or adjust options */}
               {language !== 'bash' && ( // Simple approach: hide for Bash
                 <tr className="border-b border-gray-200">
@@ -196,7 +195,6 @@ int main() {
                   </td>
                   <td className="p-1.5">
                     <div className="flex flex-wrap gap-2">
-                      {/* Ensure methodOptions[language] exists before mapping */}
                       {methodOptions[language] && methodOptions[language].map((option) => ( 
                         <button
                           key={option.value}
@@ -207,7 +205,6 @@ int main() {
                           }`}
                           onClick={() => setMethod(option.value as Method)}
                         >
-                          {/* Replace var() with hex codes */}
                           <div className={`text-base ${method === option.value ? 'text-[#3871a2]' : 'text-[#231f20]'}`}>
                             {option.icon}
                           </div>
@@ -218,7 +215,6 @@ int main() {
                   </td>
                 </tr>
               )}
-              {/* You could add a row here specifically for Bash if needed, */}
               {/* e.g., to confirm 'pip' is the method */}
 
             </tbody>
