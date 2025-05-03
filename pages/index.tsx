@@ -65,7 +65,7 @@ export default function LibUrlParserDocumentation() {
         <InstallationGuide />
         <UsageExampleGuide />
       </section>
-
+      
       <Footer />
     </main>
   );
