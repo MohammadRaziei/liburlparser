@@ -34,7 +34,7 @@ The primary purpose of liburlparser is to parse URLs and extract their component
 - **High Performance**: Optimized C++ implementation for fast URL parsing
 - **Comprehensive URL Parsing**: Extract all components of a URL including protocol, domain, subdomain, suffix, path, query parameters, and fragments
 - **Public Suffix List Support**: Accurate domain recognition using the public suffix list
-- **Clean API Design**: Separate `Url` and `Host` classes for better code organization
+- **Clean API Design**: Separate `TLD::Url` and `TLD::Host` classes for better code organization
 - **Cross-Platform Compatibility**: Works on Windows, Linux, and macOS
 - **Automatic PSL Updates**: Updates the public suffix list automatically during build
 
