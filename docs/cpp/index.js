@@ -3,16 +3,16 @@ var index =
     [ "Introduction", "index.html#autotoc_md1", null ],
     [ "Purpose and Scope", "index.html#autotoc_md2", null ],
     [ "Key Features", "index.html#autotoc_md3", null ],
-    [ "URL Parsing Process", "index.html#autotoc_md4", null ],
-    [ "Core Components", "index.html#autotoc_md5", [
-      [ "TLD::Url Class", "index.html#autotoc_md6", [
-        [ "Key Methods and Properties", "index.html#autotoc_md7", null ]
+    [ "System Architecture", "index.html#autotoc_md4", null ],
+    [ "URL Parsing Process", "index.html#autotoc_md5", null ],
+    [ "Core Components", "index.html#autotoc_md6", [
+      [ "TLD::Url Class", "index.html#autotoc_md7", [
+        [ "Key Methods and Properties", "index.html#autotoc_md8", null ]
       ] ],
-      [ "TLD::Host Class", "index.html#autotoc_md8", [
-        [ "Key Methods and Properties", "index.html#autotoc_md9", null ]
+      [ "TLD::Host Class", "index.html#autotoc_md9", [
+        [ "Key Methods and Properties", "index.html#autotoc_md10", null ]
       ] ]
     ] ],
-    [ "System Architecture", "index.html#autotoc_md10", null ],
     [ "Usage Examples", "index.html#autotoc_md11", [
       [ "Basic URL Parsing", "index.html#autotoc_md12", null ],
       [ "Working with Hosts", "index.html#autotoc_md13", null ],

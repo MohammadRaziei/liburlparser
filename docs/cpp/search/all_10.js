@@ -6,5 +6,5 @@ var searchData=
   ['subdomain_3',['subdomain',['../classTLD_1_1Url.html#ad234dbc6b4715bb18af9168454e27397',1,'TLD::Url::subdomain()'],['../classTLD_1_1Host.html#a0c5fbc09bd98dd7c1e0ce9f6c6a7bd97',1,'TLD::Host::subdomain()']]],
   ['suffix_4',['suffix',['../classTLD_1_1Url.html#a56308d6052eccf91cf440bda15735245',1,'TLD::Url::suffix()'],['../classTLD_1_1Host.html#aa3dea1d0f84737102e54faec72b56da3',1,'TLD::Host::suffix()']]],
   ['suffix_20list_5',['Public Suffix List',['../index.html#autotoc_md15',1,'']]],
-  ['system_20architecture_6',['System Architecture',['../index.html#autotoc_md10',1,'']]]
+  ['system_20architecture_6',['System Architecture',['../index.html#autotoc_md4',1,'']]]
 ];
