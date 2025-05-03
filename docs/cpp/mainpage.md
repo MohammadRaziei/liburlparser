@@ -39,7 +39,7 @@ The primary purpose of liburlparser is to parse URLs and extract their component
 liburlparser follows a layered architecture with C++ core components providing the parsing functionality and language bindings making this functionality available in Python.
 
 <p align="center">
-  <img src="images/interface-arch.svg" alt="Architecture Diagram" width="70%">
+  <img src="https://raw.githubusercontent.com/MohammadRaziei/liburlparser/refs/heads/master/docs/cpp/images/interface-arch.svg" alt="Architecture Diagram" width="70%">
 </p>  
 
 
