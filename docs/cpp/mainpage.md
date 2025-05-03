@@ -28,7 +28,7 @@ The primary purpose of liburlparser is to parse URLs and extract their component
 
 When parsing a URL, the library follows this general flow:
 
-![URL Parsing Process](url-parsing-process.svg)
+![URL Parsing Process](images/url-parsing-process.svg)
 
 ## Core Components
 
@@ -81,7 +81,7 @@ The `TLD::Host` class focuses on parsing and extracting domain information from 
 
 liburlparser follows a layered architecture with C++ core components providing the parsing functionality and language bindings making this functionality available in Python.
 
-![Architecture Diagram](interface-arch.svg)
+![Architecture Diagram](images/interface-arch.svg)
 
 ## Usage Examples
 

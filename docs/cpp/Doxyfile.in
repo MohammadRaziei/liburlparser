@@ -8,8 +8,8 @@ GENERATE_HTML          = YES
 GENERATE_LATEX         = NO
 
 # Source code
-INPUT                  = @PROJECT_SOURCE_DIR@/include/urlparser.h @PROJECT_SOURCE_DIR@/include @PROJECT_SOURCE_DIR@/docs/cpp/mainpage.md
-FILE_PATTERNS          = *.cpp *.h *.hpp *.md
+INPUT                  = @PROJECT_SOURCE_DIR@/include/urlparser.h @PROJECT_SOURCE_DIR@/include @PROJECT_SOURCE_DIR@/docs/cpp/mainpage.md @PROJECT_SOURCE_DIR@/docs/cpp/images
+FILE_PATTERNS          = *.cpp *.h *.hpp *.md *.svg
 RECURSIVE              = YES
 EXCLUDE_PATTERNS       = */tests*/* */build/* */dist/*
 
@@ -47,6 +47,9 @@ FULL_SIDEBAR           = NO
 HTML_COLORSTYLE        = LIGHT # required with Doxygen >= 1.9.5
 
 USE_MDFILE_AS_MAINPAGE = @PROJECT_SOURCE_DIR@/docs/cpp/mainpage.md
+
+# Image handling
+IMAGE_PATH             = @PROJECT_SOURCE_DIR@/docs/cpp/images
 
 # HTML styling with awesome-css
 HTML_EXTRA_STYLESHEET  = @PROJECT_SOURCE_DIR@/third_party/doxygen-awesome-css/doxygen-awesome.css
