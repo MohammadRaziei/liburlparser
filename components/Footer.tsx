@@ -8,7 +8,7 @@ const Footer: React.FC = () => {
         <div>
           <p>© {new Date().getFullYear()} liburlparser. All rights reserved.</p>
           <p className="mt-2">
-            Created by <a href="https://github.com/MohammadRaziei" className="text-[#3871a2] hover:underline">Mohammad Raziei</a>
+            Created by <a href="https://mohammadraziei.github.io/" className="text-[#3871a2] hover:underline">Mohammad Raziei</a>
           </p>
         </div>
       </Container>
