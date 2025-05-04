@@ -4,14 +4,13 @@ from __future__ import annotations
 import argparse
 import sys
 
-from . import Host, Url, __doc__, __version__
-from . import utils
+from . import Host, Url, __doc__, __version__, utils
 
 
 def show_if_not_none(_str, _class, _parts):
     if _str is not None:
         parsed = _class(_str)
-        parsed_dict = utils.flatten_dict(parsed.to_dict())
+        parsed_dict = utils.to_dict(parsed, flatten=True)
         try:
             output_string = " ".join([parsed_dict[part] for part in _parts]) if _parts else parsed.to_json()
         except KeyError as e:
@@ -21,8 +20,9 @@ def show_if_not_none(_str, _class, _parts):
 
 
 def main(args):
-    if not args.url and not args.host:
+    if args.url and args.host:
         sys.stderr.write("Error: Either --url or --host argument must be provided\n")
+        exit(1)
     show_if_not_none(args.url, Url, args.parts)
     show_if_not_none(args.host, Host, args.parts)
     if args.version:

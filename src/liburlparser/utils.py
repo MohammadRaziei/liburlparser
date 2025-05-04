@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def flatten_dict(d: dict):
     items = []
     for k, v in d.items():
@@ -13,4 +16,3 @@ def to_dict(obj, flatten=False):
     if flatten:
         out_dict = flatten_dict(out_dict)
     return out_dict
-    
