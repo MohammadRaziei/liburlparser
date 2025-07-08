@@ -32,12 +32,48 @@ jobs:
         with:
           options: BUILD_PYTHON=on
 
+            # Step 3: Determine release type
+
       - name: Build the project
         run: cmake --build build
 
       - name: Test the project
         run: ctest --test-dir build -V
 
-      - uses: actions/upload-artifact@v4
+      # - uses: actions/upload-artifact@v4
+      #   with:
+      #     path: build/*urlparser*
+
+      - name: Create ZIP archive
+        uses: vimtor/action-zip@v1.2
         with:
-          path: build/*urlparser*
+            files: build/*urlparser*
+            recursive: true
+            dest: liburlparser-build-ubuntu.zip 
+
+
+      - name: Determine release type
+        id: release_type
+        run: |
+          if [[ "${{ github.ref }}" =~ ^refs/tags/v.*$ ]]; then
+            echo "RELEASE_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+            echo "IS_TAG=true" >> $GITHUB_ENV
+          else
+            echo "RELEASE_NAME=__beta__" >> $GITHUB_ENV
+            echo "IS_TAG=false" >> $GITHUB_ENV
+          fi
+        shell: bash # Use bash for all platforms
+
+
+
+      # Step 4: Create or update release
+      - name: Create or update release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_NAME }}
+          name: ${{ env.RELEASE_NAME }}
+          draft: false
+          prerelease: ${{ env.IS_TAG == 'false' }}
+          files: dist/*
+          token: ${{ secrets.GITHUB_TOKEN }}
