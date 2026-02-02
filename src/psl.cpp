@@ -15,7 +15,9 @@ namespace Url
         while (std::getline(stream, line))
         {
             // Only take up to the first whitespace.
-            auto it = std::find_if(line.begin(), line.end(), ::isspace);
+            auto it = std::find_if(line.begin(), line.end(), [](char c) {
+                return std::isspace(static_cast<unsigned char>(c));
+            });
             line.resize(it - line.begin());
 
             // Skip blank lines

@@ -24,6 +24,15 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" CACHE STRING "" FORCE)
 project(${PyProject_NAME} LANGUAGES CXX VERSION ${PyProject_VERSION})
 message(STATUS "Project: ${PROJECT_NAME}@v${PROJECT_VERSION}")
 
+if (MSVC)
+    add_compile_options(/EHsc)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+if (CYGWIN OR UNIX)
+    add_compile_definitions(_GNU_SOURCE)
+endif()
+
+
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 if(DEFINED SKBUILD)
@@ -192,8 +201,9 @@ enable_testing()
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest)
 file(GLOB TEST_SOURCES ${PROJECT_SOURCE_DIR}/tests/cpp/*.cpp)
 
+find_package(Threads REQUIRED)
 add_executable(test_liburlparser ${TEST_SOURCES})
-target_link_libraries(test_liburlparser PRIVATE url::base gtest gtest_main pthread)
+target_link_libraries(test_liburlparser PRIVATE url::base gtest gtest_main  Threads::Threads)
 target_include_directories(test_liburlparser PRIVATE ${PROJECT_SOURCE_DIR}/tests/cpp)
 add_test(NAME unitTests COMMAND test_liburlparser)
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -V DEPENDS test_liburlparser)
