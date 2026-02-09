@@ -18,11 +18,9 @@
 ![Python](https://img.shields.io/badge/Python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11-blue)
 ![Cpp](https://img.shields.io/badge/C++-17-blue)
 
-
 [![GitHub release](https://img.shields.io/github/release/mohammadraziei/liburlparser?include_prereleases=&sort=semver&color=purple)](https://github.com/mohammadraziei/liburlparser/releases/)
 [![License](https://img.shields.io/badge/License-MIT-purple)](#license)
 [![issues - liburlparser](https://img.shields.io/github/issues/mohammadraziei/liburlparser)](https://github.com/mohammadraziei/liburlparser/issues)
-
 
 [![SonarCloud](https://sonarcloud.io/images/project_badges/sonarcloud-white.svg)](https://sonarcloud.io/summary/new_code?id=MohammadRaziei_liburlparser)
 
@@ -30,9 +28,7 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/mohammadraziei/liburlparser/badge/master)](https://www.codefactor.io/repository/github/mohammadraziei/liburlparser/overview/master)
 [![snyk.io](https://snyk.io/advisor/python/liburlparser/badge.svg)](https://snyk.io/advisor/python/liburlparser)
 
-[//]: # ([![View site - GH Pages]&#40;https://img.shields.io/badge/View_site-GH_Pages-2ea44f?style=for-the-badge&#41;]&#40;https://mohammadraziei.github.io/liburlparser/&#41;)
-
-
+[//]: # "[![View site - GH Pages](https://img.shields.io/badge/View_site-GH_Pages-2ea44f?style=for-the-badge)](https://mohammadraziei.github.io/liburlparser/)"
 
 <!--
 ![Build](https://github.com/Intsights/PyDomainExtractor/workflows/Build/badge.svg)
@@ -63,7 +59,6 @@
 
 ### Features
 
-
 Here are some key features of **liburlparser**:
 
 1. **Multiple Language Support**:
@@ -86,7 +81,6 @@ Here are some key features of **liburlparser**:
 
 6. **URL Properties**:
    - The `Url` class provides properties like protocol, userinfo, host (and all host properties), port, path, query parameters, and fragment.
-
 
 <!--
 * Multiple programming language supported such as `Python`, `C++` and `Shell`
@@ -114,6 +108,7 @@ Here are some key features of **liburlparser**:
 ## Usage
 
 ### Command Line
+
 ```sh
 python -m liburlparser --help # show help section
 python -m liburlparser --version # show version
@@ -121,12 +116,12 @@ python -m liburlparser --url "https://mail.google.com/about" | jq #return as jso
 python -m liburlparser --host "mail.google.com" | jq # return as json
 ```
 
-
 ### Python
 
 you can use liburlparser so intutively
 
 all of classes has help section
+
 ```python
 import liburlparser
 help(liburlparser)
@@ -138,6 +133,7 @@ help(Host)
 ```
 
 parse url and host
+
 ```python
 from liburlparser import Url, Host
 ## parse url:
@@ -147,18 +143,21 @@ print(url, url.suffix, url.domain, url.fragment, url.host, url.to_dict(), url.to
 host = url.host # ee.aut.ac.ir
 # or
 host = Host("ee.aut.ac.ir")
-# or 
+# or
 host = Host.from_url("https://ee.aut.ac.ir/#id") # the fastest way for parsing host from url
-# all of these methods return an object of Host class which already parse the host part of url 
+# all of these methods return an object of Host class which already parse the host part of url
 print(host, host.domain, host.suffix, host.to_dict(), host.to_json())
 ```
+
 Also there is some helping api to get better performance for some small tasks
 
 ```python
-# if you need to extract the host of url as a string without any parsing 
+# if you need to extract the host of url as a string without any parsing
 host_str = Url.extract_host("https://ee.aut.ac.ir/about") # very fast
 ```
-if you are fan of  `pydomainextractor`, there is some interface similar to it
+
+if you are fan of `pydomainextractor`, there is some interface similar to it
+
 ```python
 import pydomainextractor
 extractor = pydomainextractor.DomainExtractor()
@@ -173,6 +172,7 @@ Host.extract_from_url("https://ee.aut.ac.ir/about") # from url
 ```
 
 ### C++
+
 there is some examples in [examples](https://github.com/MohammadRaziei/liburlparser/tree/master/examples) folder
 
 ```c++
@@ -188,95 +188,121 @@ TLD::Host host = url.host();
 // or
 TLD::Host host = TLD::Host::fromUrl("https://ee.aut.ac.ir/about");
 ```
+
 you can see all methods in python we can use in c++ very easily
 
-
-
 ## Installation
+
 ### C++:
 
 #### build steps:
+
 ```sh
-git clone https://github.com/mohammadraziei/liburlparser
-mkdir -p build; cd build
-cmake ..
-# Build the project:
-make
-# [Optional] run tests:
-make test
-# [Optional] make documents:
-make docs
-# [Optional] Run examples:
-./example
-# Make install
-sudo make install
+# 1. Clone the repository with submodules (recursive)
+# --recursive is essential to download third-party libs like googletest
+git clone --recursive https://github.com/mohammadraziei/liburlparser
+cd liburlparser
+
+# 2. Configure the project
+# -B build tells CMake to create a 'build' directory and generate files there
+cmake -B build
+
+# 3. Build the project
+# --build abstracts the underlying build tool (Make, Ninja, MSBuild, etc.)
+cmake --build build --config Debug
+
+# 4. Run examples
+# Note: On Windows, the path might be ./build/Debug/example.exe
+./build/example
+
+# 5. Make install
+# --install handles the installation process
+sudo cmake --install build
 ```
 
-
-
 ### Python and Command Line:
+
 Be aware that it required `python>=3.8`
+
 #### Installation
+
+###### from source
+
+To install from source, you must ensure all submodules are cloned:
+
+```bash
+# 1. Clone recursively to get third-party dependencies
+git clone --recursive https://github.com/mohammadraziei/liburlparser
+cd liburlparser
+
+# 2. Install using pip
+pip install .
+
+# Optional: If you want to see build logs
+pip install . -v
+```
+
 ###### pip by [pypi](https://pypi.org/project/liburlparser/)
+
 ```sh
 pip install liburlparser
 ```
+
 if you want to use psl.update to update the public suffix list, you must install the `online` version
+
 ```sh
 pip install "liburlparser[online]"
 ```
 
-
 Or
+
 ###### pip by [git](https://github.com/mohammadraziei/liburlparser)
+
 ```sh
 pip install git+https://github.com/mohammadraziei/liburlparser
 ```
+
 Or
+
 ###### manually
+
 ```sh
 git clone https://github.com/mohammadraziei/liburlparser
 pip install ./liburlparser
 ```
 
-
-
 ### Performance
-
 
 #### Extract From Host
 
 Tests were run on a file containing 10 million random domains from various top-level domains (Mar. 13rd 2022)
 
-| Library  | Function | Time |
-| ------------- | ------------- | ------------- |
-| [liburlparser](https://github.com/mohammadraziei/liburlparser) | liburlparser.Host | 1.12s |
-| [PyDomainExtractor](https://github.com/Intsights/PyDomainExtractor) | pydomainextractor.extract | 1.50s |
-| [publicsuffix2](https://github.com/nexb/python-publicsuffix2) | publicsuffix2.get_sld | 9.92s |
-| [tldextract](https://github.com/john-kurkowski/tldextract) | \_\_call\_\_ | 29.23s |
-| [tld](https://github.com/barseghyanartur/tld) | tld.parse_tld | 34.48s |
-
+| Library                                                             | Function                  | Time   |
+| ------------------------------------------------------------------- | ------------------------- | ------ |
+| [liburlparser](https://github.com/mohammadraziei/liburlparser)      | liburlparser.Host         | 1.12s  |
+| [PyDomainExtractor](https://github.com/Intsights/PyDomainExtractor) | pydomainextractor.extract | 1.50s  |
+| [publicsuffix2](https://github.com/nexb/python-publicsuffix2)       | publicsuffix2.get_sld     | 9.92s  |
+| [tldextract](https://github.com/john-kurkowski/tldextract)          | \_\_call\_\_              | 29.23s |
+| [tld](https://github.com/barseghyanartur/tld)                       | tld.parse_tld             | 34.48s |
 
 #### Extract From URL
 
 The test was conducted on a file containing 1 million random urls (Mar. 13rd 2022)
 
-| Library                                                             | Function | Time   |
-|---------------------------------------------------------------------| ------------- |--------|
-| [liburlparser](https://github.com/mohammadraziei/liburlparser)      | liburlparser.Host.from_url | 2.10s  |
+| Library                                                             | Function                           | Time   |
+| ------------------------------------------------------------------- | ---------------------------------- | ------ |
+| [liburlparser](https://github.com/mohammadraziei/liburlparser)      | liburlparser.Host.from_url         | 2.10s  |
 | [PyDomainExtractor](https://github.com/Intsights/PyDomainExtractor) | pydomainextractor.extract_from_url | 2.24s  |
-| [publicsuffix2](https://github.com/nexb/python-publicsuffix2)       | publicsuffix2.get_sld | 10.84s |
-| [tldextract](https://github.com/john-kurkowski/tldextract)          | \_\_call\_\_ | 36.04s |
-| [tld](https://github.com/barseghyanartur/tld)                       | tld.parse_tld | 57.87s |
-
-
+| [publicsuffix2](https://github.com/nexb/python-publicsuffix2)       | publicsuffix2.get_sld              | 10.84s |
+| [tldextract](https://github.com/john-kurkowski/tldextract)          | \_\_call\_\_                       | 36.04s |
+| [tld](https://github.com/barseghyanartur/tld)                       | tld.parse_tld                      | 57.87s |
 
 ## License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
-
 ## Stats
+
 [![Stars](https://starchart.cc/mohammadraziei/liburlparser.svg?variant=adaptive)](https://starchart.cc/mohammadraziei/liburlparser)
 
 ## Contact
@@ -284,9 +310,8 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 <!-- Gal Ben David - gal@intsights.com -->
 
 Project Link:
+
 - [https://github.com/mohammadraziei/liburlparser](https://github.com/mohammadraziei/liburlparser)
 - [https://pypi.org/project/liburlparser](https://pypi.org/project/liburlparser)
-
-
 
 [license-shield]: https://img.shields.io/github/license/othneildrew/Best-README-Template.svg?style=flat-square
