@@ -198,13 +198,15 @@ install(TARGETS urlparser
 
 
 enable_testing()
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest)
 file(GLOB TEST_SOURCES ${PROJECT_SOURCE_DIR}/tests/cpp/*.cpp)
 
 find_package(Threads REQUIRED)
-add_executable(test_liburlparser ${TEST_SOURCES})
-target_link_libraries(test_liburlparser PRIVATE url::base gtest gtest_main  Threads::Threads)
-target_include_directories(test_liburlparser PRIVATE ${PROJECT_SOURCE_DIR}/tests/cpp)
+add_executable(test_liburlparser ${TEST_SOURCES} ${PROJECT_SOURCE_DIR}/tests/utest/utest_main.cxx)
+target_link_libraries(test_liburlparser PRIVATE url::base Threads::Threads)
+target_include_directories(test_liburlparser PRIVATE
+    ${PROJECT_SOURCE_DIR}/tests/cpp
+    ${PROJECT_SOURCE_DIR}/tests/utest
+)
 add_test(NAME unitTests COMMAND test_liburlparser)
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -V DEPENDS test_liburlparser)
 
@@ -223,6 +225,22 @@ find_package(Doxygen)
 message(STATUS "Doxygen_FOUND : ${Doxygen_FOUND}")
 # Find Doxygen package
 if (Doxygen_FOUND)
+    # Locate doxygen-awesome-css from the pip package (no git submodule needed)
+    find_package(Python3 COMPONENTS Interpreter)
+    set(AWESOME_CSS_DIR "")
+    if (Python3_FOUND)
+        execute_process(
+            COMMAND ${Python3_EXECUTABLE} -m doxygen_awesome_css --path
+            OUTPUT_VARIABLE AWESOME_CSS_DIR
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET
+        )
+    endif ()
+    if (NOT AWESOME_CSS_DIR OR NOT EXISTS "${AWESOME_CSS_DIR}/doxygen-awesome.css")
+        message(WARNING "doxygen-awesome-css not found (pip install doxygen-awesome-css) - docs will use the default Doxygen theme")
+        set(AWESOME_CSS_DIR "")
+    endif ()
+
     # Configure Doxyfile.in template
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/docs/cpp/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
 
@@ -234,7 +252,6 @@ if (Doxygen_FOUND)
         VERBATIM
     )
 endif ()
-
 
 
 

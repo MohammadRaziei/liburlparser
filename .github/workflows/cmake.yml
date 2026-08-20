@@ -21,11 +21,6 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
-        with:
-          submodules: true
-
-#      - name: Installing required packages
-#        run: sudo apt install -y build-essential cmake # libgtest-dev libgmock-dev
 
       - name: Configure the project
         uses: threeal/cmake-action@v1.3.0

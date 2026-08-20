@@ -51,12 +51,12 @@ USE_MDFILE_AS_MAINPAGE = @PROJECT_SOURCE_DIR@/docs/cpp/mainpage.md
 # Image handling
 IMAGE_PATH             = @PROJECT_SOURCE_DIR@/docs/cpp/images
 
-# HTML styling with awesome-css
-HTML_EXTRA_STYLESHEET  = @PROJECT_SOURCE_DIR@/third_party/doxygen-awesome-css/doxygen-awesome.css
-HTML_EXTRA_FILES       = @PROJECT_SOURCE_DIR@/third_party/doxygen-awesome-css/doxygen-awesome-darkmode-toggle.js \
-                         @PROJECT_SOURCE_DIR@/third_party/doxygen-awesome-css/doxygen-awesome-fragment-copy-button.js \
-                         @PROJECT_SOURCE_DIR@/third_party/doxygen-awesome-css/doxygen-awesome-paragraph-link.js \
-                         @PROJECT_SOURCE_DIR@/third_party/doxygen-awesome-css/doxygen-awesome-interactive-toc.js
+# HTML styling with awesome-css (installed via the `doxygen-awesome-css` pip package)
+HTML_EXTRA_STYLESHEET  = @AWESOME_CSS_DIR@/doxygen-awesome.css
+HTML_EXTRA_FILES       = @AWESOME_CSS_DIR@/doxygen-awesome-darkmode-toggle.js \
+                         @AWESOME_CSS_DIR@/doxygen-awesome-fragment-copy-button.js \
+                         @AWESOME_CSS_DIR@/doxygen-awesome-paragraph-link.js \
+                         @AWESOME_CSS_DIR@/doxygen-awesome-interactive-toc.js
 
 HTML_HEADER            = @PROJECT_SOURCE_DIR@/docs/cpp/header.html
 

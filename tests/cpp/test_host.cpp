@@ -1,4 +1,5 @@
-#include <gtest/gtest.h>
+#include "utest.h"
+#include <cstring>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -52,22 +53,30 @@ std::vector<HostData> load_host_data(const std::string& filename) {
     return host_data_list;
 }
 
-class CSVHostTest : public ::testing::TestWithParam<HostData> {};
 
-INSTANTIATE_TEST_SUITE_P(HostDataTestCases, CSVHostTest,
-                         ::testing::ValuesIn(load_host_data(
-                             makeAbsolutePath("data/host_data.csv"))));
-
-TEST(CSVHostTest, CheckPSLisLoaded){
-    ASSERT_TRUE(TLD::Host::isPslLoaded()) << "PSL is not loaded";
-}
-
-TEST_P(CSVHostTest, HostDataInput) {
-    const HostData& host_data = GetParam();
+// Runs all field checks for a single CSV row. Non-fatal (EXPECT_*) so every
+// mismatched field is reported, not just the first one.
+static void check_host_row(int *utest_result, const HostData& host_data) {
     TLD::Host host = TLD::Host::fromUrl(host_data.url, host_data.ignore_www);
-    EXPECT_EQ(host.str(), host_data.host);
-    EXPECT_EQ(host.domain(), host_data.domain);
-    EXPECT_EQ(host.domainName(), host_data.domain_name);
-    EXPECT_EQ(host.suffix(), host_data.suffix);
+    EXPECT_STREQ(host.str().c_str(), host_data.host.c_str());
+    EXPECT_STREQ(host.domain().c_str(), host_data.domain.c_str());
+    EXPECT_STREQ(host.domainName().c_str(), host_data.domain_name.c_str());
+    EXPECT_STREQ(host.suffix().c_str(), host_data.suffix.c_str());
 }
 
+UTEST(CSVHostTest, CheckPSLisLoaded){
+    ASSERT_TRUE(TLD::Host::isPslLoaded());
+}
+
+UTEST(CSVHostTest, HostDataInput) {
+    const std::vector<HostData> rows = load_host_data(makeAbsolutePath("data/host_data.csv"));
+    for (size_t i = 0; i < rows.size(); ++i) {
+        const HostData& row = rows[i];
+        int row_result = 0;
+        check_host_row(&row_result, row);
+        if (row_result) {
+            UTEST_PRINTF("  ^ failed on row %zu: %s\n", i, row.toString().c_str());
+            *utest_result = 1;
+        }
+    }
+}

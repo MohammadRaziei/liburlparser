@@ -1,4 +1,5 @@
-#include <gtest/gtest.h>
+#include "utest.h"
+#include <cstring>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -66,26 +67,33 @@ std::vector<UrlData> load_url_data(const std::string& filename) {
 }
 
 
-class CSVUrlTest : public ::testing::TestWithParam<UrlData> {};
-
-INSTANTIATE_TEST_SUITE_P(UrlDataTestCases, CSVUrlTest,
-                         ::testing::ValuesIn(load_url_data(
-                             makeAbsolutePath("data/url_data.csv"))));
-
-TEST(CSVUrlTest, CheckPSLisLoaded){
-    ASSERT_TRUE(TLD::Host::isPslLoaded()) << "PSL is not loaded";
-}
-
-TEST_P(CSVUrlTest, UrlDataInput) {
-    const UrlData& url_data = GetParam();
+// Runs all field checks for a single CSV row. Non-fatal (EXPECT_*) so every
+// mismatched field is reported, not just the first one.
+static void check_url_row(int *utest_result, const UrlData& url_data) {
     TLD::Url url(url_data.url, url_data.ignore_www);
-    EXPECT_EQ(url.protocol(), url_data.protocol);
-    EXPECT_EQ(url.userinfo(), url_data.userinfo);
-    EXPECT_EQ(url.fulldomain(), url_data.fulldomain);
-    EXPECT_EQ(url.host().str(), url_data.fulldomain);
-    EXPECT_EQ(url.suffix(), url_data.suffix);
+    EXPECT_STREQ(url.protocol().c_str(), url_data.protocol.c_str());
+    EXPECT_STREQ(url.userinfo().c_str(), url_data.userinfo.c_str());
+    EXPECT_STREQ(url.fulldomain().c_str(), url_data.fulldomain.c_str());
+    EXPECT_STREQ(url.host().str().c_str(), url_data.fulldomain.c_str());
+    EXPECT_STREQ(url.suffix().c_str(), url_data.suffix.c_str());
     EXPECT_EQ(url.port(), url_data.port);
-    EXPECT_EQ(url.query(), url_data.query);
-    EXPECT_EQ(url.fragment(), url_data.fragment);
+    EXPECT_STREQ(url.query().c_str(), url_data.query.c_str());
+    EXPECT_STREQ(url.fragment().c_str(), url_data.fragment.c_str());
 }
 
+UTEST(CSVUrlTest, CheckPSLisLoaded){
+    ASSERT_TRUE(TLD::Host::isPslLoaded());
+}
+
+UTEST(CSVUrlTest, UrlDataInput) {
+    const std::vector<UrlData> rows = load_url_data(makeAbsolutePath("data/url_data.csv"));
+    for (size_t i = 0; i < rows.size(); ++i) {
+        const UrlData& row = rows[i];
+        int row_result = 0;
+        check_url_row(&row_result, row);
+        if (row_result) {
+            UTEST_PRINTF("  ^ failed on row %zu: %s\n", i, row.toString().c_str());
+            *utest_result = 1;
+        }
+    }
+}
