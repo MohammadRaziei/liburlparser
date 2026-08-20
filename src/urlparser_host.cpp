@@ -41,8 +41,7 @@ class TLD::Host::Impl {
 #include "public_suffix_list_dat.h"
 
 URL::PSL initiate_static_psl() {
-    return URL::PSL::fromString(
-        std::string(PUBLIC_SUFFIX_LIST_DAT_CONTENT, PUBLIC_SUFFIX_LIST_DAT_CONTENT_len));
+    return URL::PSL::fromString(templates::public_suffix_list_dat);
 }
 URL::PSL TLD::Host::Impl::psl = initiate_static_psl();
 
