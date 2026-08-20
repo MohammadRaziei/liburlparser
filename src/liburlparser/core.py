@@ -2,14 +2,10 @@
 from __future__ import annotations
 
 import warnings
-from pathlib import Path
-from urllib.request import urlopen
-
-from filelock import FileLock
 
 from ._core import Host, Psl, Url, __doc__
 
-psl = Psl()  # psl
+psl = Psl()  # psl - already loaded from the data embedded into the compiled extension
 
 
 def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
@@ -18,22 +14,26 @@ def warning_on_one_line(message, category, filename, lineno, file=None, line=Non
 
 warnings.formatwarning = warning_on_one_line
 
-def psl_update():
-    """Download and load the current Public Suffix List."""
-    with urlopen(psl.url) as response:
-        psl.load_from_string(response.read().decode("utf-8"))
+try:
+    import urllib.error
+    import urllib.request
 
+    def psl_update():
+        with urllib.request.urlopen(psl.url) as resp:
+            charset = resp.headers.get_content_charset() or "utf-8"
+            text = resp.read().decode(charset)
+        psl.load_from_string(text)
 
-psl.update = psl_update
+    psl.update = psl_update
+
+except ImportError:
+    def psl_update():
+        raise NotImplementedError
+
+    psl.update = psl_update
 
 if not psl.is_loaded():
-    psl_filename = Path(__file__).parent / psl.filename
-    if psl_filename.exists():
-        with FileLock(psl_filename.with_suffix(".lock")):
-            psl.load_from_path(psl_filename.as_posix())
-    else:
-        warnings.warn(
-            f"Cannot find {psl_filename}. you must import it with \"psl.load_from_path\" or \"psl.load_from_string\" or \"psl.update\" functions",
-            RuntimeWarning, stacklevel=2)
-
-
+    warnings.warn(
+        "PSL data embedded in the compiled extension failed to load. "
+        "You can load it manually with \"psl.load_from_path\", \"psl.load_from_string\" or \"psl.update\".",
+        RuntimeWarning, stacklevel=2)

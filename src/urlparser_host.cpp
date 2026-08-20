@@ -38,20 +38,13 @@ class TLD::Host::Impl {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////
-#ifndef DONT_INIT_PSL
+#include "public_suffix_list_dat.h"
+
 URL::PSL initiate_static_psl() {
-    URL::PSL psl;
-    try {
-        psl = URL::PSL::fromPath(PUBLIC_SUFFIX_LIST_DAT);
-    } catch (const std::invalid_argument&) {
-        psl = URL::PSL::fromString("");
-    }
-    return psl;
+    return URL::PSL::fromString(
+        std::string(PUBLIC_SUFFIX_LIST_DAT_CONTENT, PUBLIC_SUFFIX_LIST_DAT_CONTENT_len));
 }
 URL::PSL TLD::Host::Impl::psl = initiate_static_psl();
-#else
-URL::PSL TLD::Host::Impl::psl = URL::PSL::fromString("");
-#endif
 
 inline void TLD::Host::Impl::loadPslFromPath(const std::string& filepath) {
     psl = URL::PSL::fromPath(filepath);

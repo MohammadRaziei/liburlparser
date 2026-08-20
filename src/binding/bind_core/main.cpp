@@ -15,7 +15,6 @@ class Psl{
 public:
     Psl() {};
     std::string url() const {return PUBLIC_SUFFIX_LIST_URL;}
-    std::string filename() const {return PUBLIC_SUFFIX_LIST_DAT;}
     void loadFromPath(const std::string& filename) {TLD::Host::loadPslFromPath(filename);}
     void loadFromString(const std::string& str) {TLD::Host::loadPslFromString(str);}
     bool isLoaded() const {return TLD::Host::isPslLoaded();}
@@ -142,7 +141,6 @@ NB_MODULE(NB_MODULE_NAME, m) {
 
     psl.def(nb::init<>())
        .def_prop_ro("url", &Psl::url)
-       .def_prop_ro("filename", &Psl::filename)
        .def("is_loaded", &Psl::isLoaded, "check whether psl is loaded or not")
        .def("load_from_path", &Psl::loadFromPath, nb::arg("filepath"), "load PSL from path")
        .def("load_from_string", &Psl::loadFromString, nb::arg("string"), "load PSL from string")

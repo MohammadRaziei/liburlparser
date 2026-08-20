@@ -42,10 +42,6 @@
 #include <string>
 #include <vector>
 
-#ifndef PUBLIC_SUFFIX_LIST_DAT
-#define PUBLIC_SUFFIX_LIST_DAT "public_suffix_list.dat"
-#endif
-
 namespace TLD {
 constexpr bool DEFAULT_IGNORE_WWW = false;
 
