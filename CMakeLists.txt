@@ -215,38 +215,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
 
 
-# Find Doxygen package
-find_package(Doxygen)
-message(STATUS "Doxygen_FOUND : ${Doxygen_FOUND}")
-# Find Doxygen package
-if (Doxygen_FOUND)
-    # Locate doxygen-awesome-css from the pip package (no git submodule needed)
-    find_package(Python3 COMPONENTS Interpreter)
-    set(AWESOME_CSS_DIR "")
-    if (Python3_FOUND)
-        execute_process(
-            COMMAND ${Python3_EXECUTABLE} -m doxygen_awesome_css --path
-            OUTPUT_VARIABLE AWESOME_CSS_DIR
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            ERROR_QUIET
-        )
-    endif ()
-    if (NOT AWESOME_CSS_DIR OR NOT EXISTS "${AWESOME_CSS_DIR}/doxygen-awesome.css")
-        message(WARNING "doxygen-awesome-css not found (pip install doxygen-awesome-css) - docs will use the default Doxygen theme")
-        set(AWESOME_CSS_DIR "")
-    endif ()
-
-    # Configure Doxyfile.in template
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/docs/cpp/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-
-    # Add target to generate documentation
-    add_custom_target(docs
-        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating Doxygen documentation"
-        VERBATIM
-    )
-endif ()
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/docs)
 
 
 

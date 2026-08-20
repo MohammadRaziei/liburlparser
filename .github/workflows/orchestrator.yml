@@ -1,0 +1,127 @@
+name: Orchestration & Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+    tags: [ "v*" ]
+
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    outputs:
+      release_name: ${{ steps.init.outputs.release_name }}
+      is_tag: ${{ steps.init.outputs.is_tag }}
+      version_string: ${{ steps.init.outputs.version_string }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initalize
+        id: init
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          export version_string="$(python version.py | tr -d '\n')"
+          echo "version_string=${version_string}" | tee -a "$GITHUB_OUTPUT"
+          if [[ "${{ github.ref }}" =~ ^refs/tags/v.*$ ]]; then
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+            [[ "${version_string}" == "${GITHUB_REF#refs/tags/v}" ]] || (echo "❌ Version mismatch!" && exit 1)
+            export release_name="$TAG_NAME"
+            export is_tag="true"
+          else
+            gh api repos/${{ github.repository }}/releases/tags/__beta__ --jq '.assets[].id' 2>/dev/null | xargs -r -I {} gh api repos/${{ github.repository }}/releases/assets/{} -X DELETE 2>/dev/null || true
+            export release_name="__beta__"
+            export is_tag="false"
+          fi
+          echo "release_name=${release_name}" | tee -a "$GITHUB_OUTPUT"
+          echo "is_tag=${is_tag}" | tee -a "$GITHUB_OUTPUT"
+          sed -i -e "s/RELEASE_NAME/${release_name}/g" -e "s/VERSION_STRING/${version_string}/g" .github/workflows/release_template.md
+
+
+      - name: Initialize release body
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.init.outputs.release_name }}
+          name: ${{ steps.init.outputs.release_name }}
+          draft: false
+          prerelease: ${{ steps.init.outputs.is_tag == 'false' }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body_path: .github/workflows/release_template.md
+
+  cmake:
+    uses: ./.github/workflows/cmake.yml
+    needs: [init]
+
+  wheel:
+    uses: ./.github/workflows/wheels.yml
+    needs: [init]
+
+
+  release-wheels:
+    needs: [wheel,init]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheelhouse-*
+          path: dist
+          merge-multiple: true
+
+      - name: List dist directory
+        run: ls -la dist
+
+      - name: create release body
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.init.outputs.release_name }}
+          name: ${{ needs.init.outputs.release_name }}
+          draft: false
+          prerelease: ${{ needs.init.outputs.is_tag == 'false' }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: dist/*
+
+      - name: Publishing to PyPi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          password: ${{ secrets.PYPI_PASSWORD }}
+          user: ${{ secrets.PYPI_USERNAME }}
+
+
+  deploy-pages:
+    needs: [cmake]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    steps:
+    - name: Download documentation artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: cmake-documentation
+        path: ./pages
+
+    - name: Download coverage artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: cmake-coverage-report
+        path: ./pages/coverage
+
+    - name: List pages directory
+      run: find pages -maxdepth 2
+
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ./pages
+
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4

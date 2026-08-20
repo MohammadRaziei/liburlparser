@@ -1,74 +1,131 @@
-name: CPP_BUILD_TEST_DOC
+name: cmake stuff
+
 on:
   workflow_dispatch:
+  workflow_call:
   pull_request:
-  push:
-    branches:
-     - master
-  release:
-    types:
-      - published
-
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [ master ]
 
 jobs:
-  build-project:
-    name: Build Project
-    runs-on: ubuntu-latest
+  build-and-test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
     steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Configure the project
-        uses: threeal/cmake-action@v1.3.0
-        with:
-          options: BUILD_PYTHON=on
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+        cache: "pip"
 
-            # Step 3: Determine release type
+    - name: Install python deps
+      run: pip install pytest pytest-xdist
 
-      - name: Build the project
-        run: cmake --build build
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_PYTHON=ON
 
-      - name: Test the project
-        run: ctest --test-dir build -V
+    - name: Build
+      run: cmake --build build -j4 --config Release
 
-      # - uses: actions/upload-artifact@v4
-      #   with:
-      #     path: build/*urlparser*
-
-      - name: Create ZIP archive
-        uses: vimtor/action-zip@v1.2
-        with:
-            files: build/*urlparser*
-            recursive: true
-            dest: liburlparser-build-ubuntu.zip 
+    - name: Run tests (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: ctest --test-dir build --output-on-failure --extra-verbose
 
 
-      - name: Determine release type
-        id: release_type
-        run: |
-          if [[ "${{ github.ref }}" =~ ^refs/tags/v.*$ ]]; then
-            echo "RELEASE_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-            echo "IS_TAG=true" >> $GITHUB_ENV
-          else
-            echo "RELEASE_NAME=__beta__" >> $GITHUB_ENV
-            echo "IS_TAG=false" >> $GITHUB_ENV
-          fi
-        shell: bash # Use bash for all platforms
+  build-docs:
+    needs: build-and-test
+    # if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
 
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
+    - name: Install apt dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y doxygen graphviz
 
-      # Step 4: Create or update release
-      - name: Create or update release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.RELEASE_NAME }}
-          name: ${{ env.RELEASE_NAME }}
-          draft: false
-          prerelease: ${{ env.IS_TAG == 'false' }}
-          files: dist/*
-          token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+        cache: "pip"
+
+    - name: Install doxygen-awesome-css
+      run: pip install doxygen-awesome-css
+
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_PYTHON=OFF
+
+    - name: Build documentation
+      run: cmake --build build --target urlparser_docs
+
+    - name: List docs directory
+      run: find build/docs/out -maxdepth 2
+
+    - name: Upload documentation artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: cmake-documentation
+        path: build/docs/out
+        retention-days: 5
+
+  build-coverage:
+    # needs: build-and-test
+    # if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+        cache: "pip"
+
+    - name: Install python dependencies
+      run: pip install pytest pytest-xdist coverage
+
+    - name: Install coverage tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y lcov
+
+    - name: Configure CMake with coverage
+      run: |
+        cmake -B build \
+          -DBUILD_PYTHON=ON
+
+    - name: Generate coverage report
+      run: cmake --build build --target urlparser_coverage
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        files: build/coverage/total/coverage.lcov
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+        verbose: true
+
+    - name: Upload coverage artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: cmake-coverage-report
+        path: build/coverage/
+        retention-days: 5

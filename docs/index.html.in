@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>liburlparser v@PROJECT_VERSION@ - Documentation</title>
+  <meta http-equiv="refresh" content="0; url=cpp/html/index.html">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 640px;
+      margin: 4rem auto;
+      padding: 0 1rem;
+      color: #24292f;
+    }
+    h1 { font-size: 1.5rem; }
+    ul { line-height: 2; }
+    a { color: #0366d6; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <h1>liburlparser v@PROJECT_VERSION@</h1>
+  <p>Redirecting to the C++ API documentation...</p>
+  <ul>
+    <li><a href="cpp/html/index.html">C++ API Reference (Doxygen)</a></li>
+    <li><a href="https://liburlparser.readthedocs.io/">Python documentation</a></li>
+    <li><a href="https://github.com/MohammadRaziei/liburlparser">GitHub Repository</a></li>
+  </ul>
+</body>
+</html>
