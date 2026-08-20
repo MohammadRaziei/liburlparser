@@ -2,20 +2,20 @@
 from __future__ import annotations
 
 import pytest
-import requests
+from urllib.error import URLError
 
 from liburlparser import psl
 
 
 @pytest.fixture
-def disable_requests_get(monkeypatch):
+def disable_urlopen(monkeypatch):
     def request_get(*args, **kwargs):
         msg = "Fake Connection Error :)"
-        raise requests.exceptions.ConnectionError(msg)
-    monkeypatch.setattr(requests, "get", request_get)
+        raise URLError(msg)
+    monkeypatch.setattr("liburlparser.core.urlopen", request_get)
 
-def test_psl_update(disable_requests_get):
-    with pytest.raises(requests.exceptions.ConnectionError):
+def test_psl_update(disable_urlopen):
+    with pytest.raises(URLError):
         psl.update()
 
 def test_psl_loaded():

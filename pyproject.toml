@@ -33,8 +33,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest-xdist", "requests"]
-online = ["requests"]
+test = ["pytest-xdist"]
+online = []
 docs = ["doxygen-awesome-css"]
 
 [project.urls]

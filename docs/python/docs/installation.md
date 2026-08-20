@@ -49,8 +49,8 @@ liburlparser has minimal dependencies:
 
 - Python 3.8 or higher
 
-The `online` version additionally requires:
-- requests (for updating the Public Suffix List)
+The `psl.update()` feature uses Python's built-in `urllib` module and has no
+additional runtime dependency.
 
 ## Platform Support
 

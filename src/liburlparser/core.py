@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import warnings
 from pathlib import Path
+from urllib.request import urlopen
 
 from filelock import FileLock
 
@@ -17,20 +18,13 @@ def warning_on_one_line(message, category, filename, lineno, file=None, line=Non
 
 warnings.formatwarning = warning_on_one_line
 
-try:
-    import requests
+def psl_update():
+    """Download and load the current Public Suffix List."""
+    with urlopen(psl.url) as response:
+        psl.load_from_string(response.read().decode("utf-8"))
 
-    def psl_update():
-        resp = requests.get(psl.url)
-        psl.load_from_string(resp.text)
 
-    psl.update = psl_update
-
-except ImportError:
-    def psl_update():
-        raise NotImplementedError
-
-    psl.update = psl_update
+psl.update = psl_update
 
 if not psl.is_loaded():
     psl_filename = Path(__file__).parent / psl.filename
@@ -41,6 +35,5 @@ if not psl.is_loaded():
         warnings.warn(
             f"Cannot find {psl_filename}. you must import it with \"psl.load_from_path\" or \"psl.load_from_string\" or \"psl.update\" functions",
             RuntimeWarning, stacklevel=2)
-
 
 

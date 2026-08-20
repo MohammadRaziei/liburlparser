@@ -248,7 +248,8 @@ pip install . -v
 pip install liburlparser
 ```
 
-if you want to use psl.update to update the public suffix list, you must install the `online` version
+if you want to use `psl.update` to update the public suffix list, you can install the
+`online` extra (the update uses Python's built-in `urllib` and has no extra runtime dependency)
 
 ```sh
 pip install "liburlparser[online]"

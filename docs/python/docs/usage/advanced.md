@@ -207,10 +207,10 @@ def extract_domains_from_csv(csv_file, url_column, output_file):
 
 ## Integration with Other Libraries
 
-### Using with requests
+### Using with urllib
 
 ```python
-import requests
+from urllib.request import urlopen
 from liburlparser import Url, Host
 
 def get_domain_info(url_str):
@@ -218,18 +218,19 @@ def get_domain_info(url_str):
     url = Url(url_str)
     
     # Make the request
-    response = requests.get(url_str)
+    with urlopen(url_str) as response:
+        final_url = response.geturl()
+        status_code = response.status
     
     # Check if there were redirects
-    if response.history:
-        final_url = response.url
+    if final_url != url_str:
         final_domain = Host.from_url(final_url).domain
         print(f"Redirected from {url.domain} to {final_domain}")
     
     return {
         'original_domain': url.domain,
-        'final_domain': Host.from_url(response.url).domain,
-        'status_code': response.status_code
+        'final_domain': Host.from_url(final_url).domain,
+        'status_code': status_code
     }
 
 # Example usage
