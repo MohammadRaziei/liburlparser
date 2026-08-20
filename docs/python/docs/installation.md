@@ -10,12 +10,6 @@ Install from PyPI:
 pip install liburlparser
 ```
 
-If you want to use the `psl.update` feature to update the public suffix list, install the `online` version:
-
-```bash
-pip install "liburlparser[online]"
-```
-
 ## Install from GitHub
 
 ```bash

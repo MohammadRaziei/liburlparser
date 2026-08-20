@@ -83,15 +83,14 @@ print(f"PSL URL: {psl.url}")
 print(f"PSL Filename: {psl.filename}")
 ```
 
-## Updating the PSL (Online Version Only)
+## Updating the PSL
 
-If you installed the online version (`pip install "liburlparser[online]"`), you can update the PSL:
+The `psl.update()` method downloads and loads the current Public Suffix List
+using Python's built-in `urllib` module. No extra package is required.
 
 ```python
-# This feature is only available if you installed with:
-# pip install "liburlparser[online]"
-from liburlparser import psl_updater
+from liburlparser import psl
 
 # Update the PSL
-psl_updater.update()
+psl.update()
 ```
