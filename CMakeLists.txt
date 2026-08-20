@@ -68,14 +68,20 @@ endif()
 
 
 
-# Download the public suffix list file from the internet
+# Locate the public suffix list file: prefer the copy already committed in
+# the repo (source dir); only download into the build dir if it's missing.
 set(PUBLIC_SUFFIX_LIST_URL "https://publicsuffix.org/list/public_suffix_list.dat")
-set(PUBLIC_SUFFIX_LIST_DAT "public_suffix_list.dat")
-if(NOT DEFINED SKBUILD)
-    set(PUBLIC_SUFFIX_LIST_DAT "${CMAKE_CURRENT_BINARY_DIR}/${PUBLIC_SUFFIX_LIST_DAT}")
+set(PUBLIC_SUFFIX_LIST_DAT_NAME "public_suffix_list.dat")
+
+if(EXISTS "${PROJECT_SOURCE_DIR}/${PUBLIC_SUFFIX_LIST_DAT_NAME}")
+    set(PUBLIC_SUFFIX_LIST_DAT "${PROJECT_SOURCE_DIR}/${PUBLIC_SUFFIX_LIST_DAT_NAME}")
+elseif(DEFINED SKBUILD)
+    set(PUBLIC_SUFFIX_LIST_DAT "${PUBLIC_SUFFIX_LIST_DAT_NAME}")
+else()
+    set(PUBLIC_SUFFIX_LIST_DAT "${CMAKE_CURRENT_BINARY_DIR}/${PUBLIC_SUFFIX_LIST_DAT_NAME}")
 endif()
 
-# Download the public suffix list file from the internet if not already exists
+# Download the public suffix list file from the internet if not already found
 if(EXISTS "${PUBLIC_SUFFIX_LIST_DAT}")
     message(STATUS "[DATA] ${PUBLIC_SUFFIX_LIST_DAT} is found.")
 else()
@@ -249,6 +255,3 @@ if (Doxygen_FOUND)
         VERBATIM
     )
 endif ()
-
-
-
