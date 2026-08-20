@@ -122,10 +122,6 @@
 <pre class="codehilite"><code class="language-bash">pip install liburlparser
 </code></pre>
 
-<p>If you want to use the <code>psl.update</code> feature to update the public suffix list, install the <code>online</code> version:</p>
-<pre class="codehilite"><code class="language-bash">pip install &quot;liburlparser[online]&quot;
-</code></pre>
-
 <h2 id="install-from-github">Install from GitHub<a class="headerlink" href="#install-from-github" title="Permanent link">&para;</a></h2>
 <pre class="codehilite"><code class="language-bash">pip install git+https://github.com/mohammadraziei/liburlparser
 </code></pre>
@@ -151,8 +147,8 @@ print(url.domain)  # Should output: example
 <ul>
 <li>Python 3.8 or higher</li>
 </ul>
-<p>The <code>online</code> version additionally requires:
-- requests (for updating the Public Suffix List)</p>
+<p>The <code>psl.update()</code> feature uses Python's built-in <code>urllib</code> module and has no
+additional runtime dependency.</p>
 <h2 id="platform-support">Platform Support<a class="headerlink" href="#platform-support" title="Permanent link">&para;</a></h2>
 <p>liburlparser works on:</p>
 <ul>

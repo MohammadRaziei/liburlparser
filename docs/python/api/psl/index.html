@@ -91,7 +91,7 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#example-usage">Example Usage</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#updating-the-psl-online-version-only">Updating the PSL (Online Version Only)</a>
+    <li class="toctree-l2"><a class="reference internal" href="#updating-the-psl">Updating the PSL</a>
     </li>
     </ul>
                   </li>
@@ -187,14 +187,13 @@ print(f&quot;PSL URL: {psl.url}&quot;)
 print(f&quot;PSL Filename: {psl.filename}&quot;)
 </code></pre>
 
-<h2 id="updating-the-psl-online-version-only">Updating the PSL (Online Version Only)<a class="headerlink" href="#updating-the-psl-online-version-only" title="Permanent link">&para;</a></h2>
-<p>If you installed the online version (<code>pip install "liburlparser[online]"</code>), you can update the PSL:</p>
-<pre class="codehilite"><code class="language-python"># This feature is only available if you installed with:
-# pip install &quot;liburlparser[online]&quot;
-from liburlparser import psl_updater
+<h2 id="updating-the-psl">Updating the PSL<a class="headerlink" href="#updating-the-psl" title="Permanent link">&para;</a></h2>
+<p>The <code>psl.update()</code> method downloads and loads the current Public Suffix List
+using Python's built-in <code>urllib</code> module. No extra package is required.</p>
+<pre class="codehilite"><code class="language-python">from liburlparser import psl
 
 # Update the PSL
-psl_updater.update()
+psl.update()
 </code></pre>
               
             </div>

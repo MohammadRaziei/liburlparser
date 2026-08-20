@@ -76,7 +76,7 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#integration-with-other-libraries">Integration with Other Libraries</a>
         <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#using-with-requests">Using with requests</a>
+    <li class="toctree-l3"><a class="reference internal" href="#using-with-urllib">Using with urllib</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#using-with-pandas">Using with pandas</a>
     </li>
@@ -322,8 +322,8 @@ def extract_domains_from_csv(csv_file, url_column, output_file):
 </code></pre>
 
 <h2 id="integration-with-other-libraries">Integration with Other Libraries<a class="headerlink" href="#integration-with-other-libraries" title="Permanent link">&para;</a></h2>
-<h3 id="using-with-requests">Using with requests<a class="headerlink" href="#using-with-requests" title="Permanent link">&para;</a></h3>
-<pre class="codehilite"><code class="language-python">import requests
+<h3 id="using-with-urllib">Using with urllib<a class="headerlink" href="#using-with-urllib" title="Permanent link">&para;</a></h3>
+<pre class="codehilite"><code class="language-python">from urllib.request import urlopen
 from liburlparser import Url, Host
 
 def get_domain_info(url_str):
@@ -331,18 +331,19 @@ def get_domain_info(url_str):
     url = Url(url_str)
 
     # Make the request
-    response = requests.get(url_str)
+    with urlopen(url_str) as response:
+        final_url = response.geturl()
+        status_code = response.status
 
     # Check if there were redirects
-    if response.history:
-        final_url = response.url
+    if final_url != url_str:
         final_domain = Host.from_url(final_url).domain
         print(f&quot;Redirected from {url.domain} to {final_domain}&quot;)
 
     return {
         'original_domain': url.domain,
-        'final_domain': Host.from_url(response.url).domain,
-        'status_code': response.status_code
+        'final_domain': Host.from_url(final_url).domain,
+        'status_code': status_code
     }
 
 # Example usage
