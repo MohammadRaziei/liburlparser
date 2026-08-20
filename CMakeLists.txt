@@ -198,25 +198,8 @@ install(TARGETS urlparser
 
 
 enable_testing()
-file(GLOB TEST_SOURCES ${PROJECT_SOURCE_DIR}/tests/cpp/*.cpp)
-
 find_package(Threads REQUIRED)
-add_executable(test_liburlparser ${TEST_SOURCES} ${PROJECT_SOURCE_DIR}/tests/utest/utest_main.cxx)
-target_link_libraries(test_liburlparser PRIVATE url::base Threads::Threads)
-target_include_directories(test_liburlparser PRIVATE
-    ${PROJECT_SOURCE_DIR}/tests/cpp
-    ${PROJECT_SOURCE_DIR}/tests/utest
-)
-add_test(NAME unitTests COMMAND test_liburlparser)
-add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -V DEPENDS test_liburlparser)
-
-
-if(BUILD_PYTHON)
-    add_test(NAME pythonTests
-            COMMAND ${Python3_EXECUTABLE} -m pytest -n auto ${PROJECT_SOURCE_DIR}/tests/python
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    )
-endif()
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
 
 

@@ -1,0 +1,241 @@
+/*
+ * genhtml.css — CToon coverage theme
+ * Aligned with ctoon-docs.css dark palette.
+ *
+ * Author  : Mohammad Raziei
+ * Email   : mohammadraziei1375@gmail.com
+ * License : MIT
+ */
+
+:root {
+    --bg:           #0f0f12;
+    --bg2:          #1a1a1f;
+    --bg3:          #242429;
+    --fg:           #e8e8f0;
+    --fg2:          #9090a0;
+    --fg3:          #606070;
+    --border:       #2a2a35;
+    --accent:       #4dabf7;
+    --accent-hover: #74c0fc;
+    --cov-high:     #40c057;
+    --cov-med:      #fcc419;
+    --cov-low:      #ff6b6b;
+    --font:         'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono:         'IBM Plex Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+}
+
+/* ── Reset ───────────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    margin: 0;
+    padding: 20px 20px 0 20px;
+    line-height: 1.6;
+}
+
+a:link    { color: var(--accent); text-decoration: none; }
+a:visited { color: var(--accent); text-decoration: none; }
+a:hover   { text-decoration: underline; color: var(--accent-hover); }
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--fg);
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+body > table {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.headerItem {
+    color: var(--fg2);
+    font-size: 0.9rem;
+    text-align: right;
+    min-width: 85px !important;
+    width: 5% !important;
+}
+
+.headerValue {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-align: left;
+    width: 40% !important;
+}
+
+.headerCovTableHead {
+    color: var(--fg);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* ── Coverage summary boxes ─────────────────────────────────────────────── */
+.headerCovTableEntryLo,
+.headerCovTableEntryMed,
+.headerCovTableEntryHi,
+.headerCovTableEntry {
+    background-color: var(--bg2);
+    padding: 4px 8px;
+    font-weight: 700;
+    text-align: right;
+    border: 1px solid var(--border);
+}
+
+.headerCovTableEntryLo  { color: var(--cov-low); }
+.headerCovTableEntryMed { color: var(--cov-med); }
+.headerCovTableEntryHi  { color: var(--cov-high); }
+.headerCovTableEntry    { color: var(--fg); }
+
+/* ── Main directory table ───────────────────────────────────────────────── */
+center > table {
+    width: 90%;
+    max-width: 1200px;
+    border-collapse: collapse;
+    background-color: var(--bg2);
+    border: 1px solid var(--border);
+    margin: 20px auto;
+}
+
+.tableHead {
+    background-color: var(--bg3);
+    color: var(--fg);
+    font-weight: 600;
+    padding: 10px 15px;
+    text-align: center;
+    border-bottom: 2px solid var(--border);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-family: var(--mono);
+}
+
+.tableHead a { color: var(--accent); text-decoration: none; }
+
+/* ── Table rows ─────────────────────────────────────────────────────────── */
+.coverFile,
+.coverFn {
+    padding: 8px 15px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+}
+
+.coverFile:hover,
+tr:has(td.coverFile):hover,
+.coverFn:hover,
+tr:has(td.coverFn):hover { background-color: var(--bg3); }
+
+.coverFile a,
+.coverFn a { color: var(--accent); text-decoration: none; font-weight: 500; }
+
+/* ── Coverage percentages ───────────────────────────────────────────────── */
+.coverPerLo, .coverPerMed, .coverPerHi { font-weight: 700; text-align: center; }
+.coverPerLo  { color: var(--cov-low); }
+.coverPerMed { color: var(--cov-med); }
+.coverPerHi  { color: var(--cov-high); }
+.coverNumDflt { color: var(--fg2); text-align: center; }
+
+/* ── Progress bars ──────────────────────────────────────────────────────── */
+td.coverBarOutline { background-color: var(--bg3); }
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
+.versionInfo {
+    color: var(--fg3);
+    font-size: 0.75rem;
+    text-align: center;
+    margin-top: 20px;
+    font-family: var(--mono);
+}
+
+.versionInfo a { color: var(--accent); text-decoration: none; }
+
+.versionInfo::after {
+    content: " | Theme by Mohammad Raziei";
+    color: var(--fg3);
+}
+
+/* ── Source code view ───────────────────────────────────────────────────── */
+pre.source {
+    font-family: var(--mono);
+    font-size: 0.83rem;
+    white-space: pre;
+    margin-top: 2px;
+    color: var(--fg);
+    background-color: var(--bg2);
+    padding: 10px 0;
+    border-top: 1px solid var(--border);
+}
+
+pre.sourceHeading {
+    white-space: pre;
+    font-family: var(--mono);
+    font-weight: 700;
+    margin: 0;
+    padding: 10px;
+    background-color: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    color: var(--fg2);
+    font-size: 0.8rem;
+}
+
+span.lineNum {
+    background-color: var(--bg3);
+    color: var(--fg3);
+    padding-right: 10px;
+    user-select: none;
+    font-family: var(--mono);
+}
+
+td:has(pre.source) {
+    overflow: auto;
+    width: calc(100dvw - 40px);
+    display: block;
+    color: var(--fg);
+    background-color: var(--bg2);
+    height: calc(100vh - 268px);
+    min-height: 60vh;
+}
+
+pre > span:hover {
+    background-color: rgba(77, 171, 247, 0.08);
+    cursor: default;
+    width: 100%;
+}
+
+/* ── TLA colors (aligned to ctoon palette) ──────────────────────────────── */
+/* Uncovered / lost — red tone */
+td.tlaUNC, td.tlaBgUNC, span.tlaUNC, span.tlaBgUNC, a.tlaBgUNC,
+td.tlaLBC, td.tlaBgLBC, span.tlaLBC, span.tlaBgLBC, a.tlaBgLBC,
+td.tlaUIC, td.tlaBgUIC, span.tlaUIC, span.tlaBgUIC, a.tlaBgUIC,
+td.tlaUBC, td.tlaBgUBC, span.tlaUBC, span.tlaBgUBC, a.tlaBgUBC {
+    background-color: rgba(255, 107, 107, 0.15);
+    color: #ff6b6b;
+}
+
+/* Gained / covered — blue tone (accent) */
+td.tlaGBC, td.tlaBgGBC, span.tlaGBC, span.tlaBgGBC, a.tlaBgGBC,
+td.tlaGIC, td.tlaBgGIC, span.tlaGIC, span.tlaBgGIC, a.tlaBgGIC,
+td.tlaGNC, td.tlaBgGNC, span.tlaGNC, span.tlaBgGNC, a.tlaBgGNC,
+td.tlaCBC, td.tlaBgCBC, span.tlaCBC, span.tlaBgCBC, a.tlaBgCBC {
+    background-color: rgba(77, 171, 247, 0.12);
+    color: var(--accent);
+}
+
+/* Excluded / deleted — muted */
+td.tlaEUB, td.tlaBgEUB, span.tlaEUB, span.tlaBgEUB, a.tlaBgEUB,
+td.tlaECB, td.tlaBgECB, span.tlaECB, span.tlaBgECB, a.tlaBgECB,
+td.tlaDUB, td.tlaBgDUB, span.tlaDUB, span.tlaBgDUB, a.tlaDUB,
+td.tlaDCB, td.tlaBgDCB, span.tlaDCB, span.tlaBgDCB, a.tlaDCB {
+    background-color: var(--bg3);
+    color: var(--fg3);
+}
+
+span.missBins { background-color: rgba(255, 107, 107, 0.2); }
