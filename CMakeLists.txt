@@ -213,6 +213,11 @@ enable_testing()
 find_package(Threads REQUIRED)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
+option(BUILD_BENCHMARK "Build the urlparser_benchmark/urlparser_profile targets" ON)
+if(BUILD_BENCHMARK)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/benchmark)
+endif()
+
 
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/docs)

@@ -28,11 +28,19 @@ class urlparser::Host::Impl {
     const std::string& str() const noexcept;
 
    private:
+    // Runs the PSL lookup + domain/subdomain/suffix split exactly once, the
+    // first time any of those fields is actually requested. Constructing a
+    // Host is therefore just a string copy; the PSL-dependent work only
+    // happens (and is cached) on demand.
+    void ensureParsed() const noexcept;
+
     std::string host_;
-    std::string domain_;
-    std::string subdomain_;
-    std::string suffix_;
-    std::string fulldomain_;
+    bool ignore_www_;
+    mutable bool parsed_ = false;
+    mutable std::string domain_;
+    mutable std::string subdomain_;
+    mutable std::string suffix_;
+    mutable std::string fulldomain_;
     static urlparser::detail::PSL psl;
 };
 
@@ -70,8 +78,14 @@ bool urlparser::Host::isPslLoaded() noexcept {
 ////////////////////////////////////////////////////////////////////
 
 urlparser::Host::Impl::Impl(const std::string& host_, const bool ignore_www)
-    : host_(host_), fulldomain_(host_) {
-    this->suffix_ = urlparser::Host::Impl::psl.getTLD(host_);
+    : host_(host_), ignore_www_(ignore_www) {}
+
+void urlparser::Host::Impl::ensureParsed() const noexcept {
+    if (parsed_) return;
+    parsed_ = true;
+
+    fulldomain_ = host_;
+    suffix_ = urlparser::Host::Impl::psl.getTLD(host_);
     size_t suffix_pos = fulldomain_.rfind("." + suffix_);
     size_t subdomain_pos = 0;
     if (suffix_pos == std::string::npos || suffix_pos < 1)
@@ -79,7 +93,7 @@ urlparser::Host::Impl::Impl(const std::string& host_, const bool ignore_www)
     domain_ = host_.substr(0, suffix_pos);
     size_t domain_pos = domain_.find_last_of('.');
     if (domain_pos != std::string::npos) {
-        if (ignore_www) {
+        if (ignore_www_) {
             size_t www_pos = domain_.find("www.");
             if (www_pos != 0) {
                 if (www_pos != std::string::npos)
@@ -101,6 +115,7 @@ urlparser::Host::Host(const std::string& host, const bool ignore_www)
 
 /// suffix:
 inline const std::string& urlparser::Host::Impl::suffix() const noexcept {
+    ensureParsed();
     return suffix_;
 }
 
@@ -110,6 +125,7 @@ const std::string& urlparser::Host::suffix() const noexcept {
 
 /// subdomain
 inline const std::string& urlparser::Host::Impl::subdomain() const noexcept {
+    ensureParsed();
     return subdomain_;
 }
 
@@ -119,6 +135,7 @@ const std::string& urlparser::Host::subdomain() const noexcept {
 
 /// domain
 inline const std::string& urlparser::Host::Impl::domain() const noexcept {
+    ensureParsed();
     return domain_;
 }
 
@@ -127,7 +144,15 @@ const std::string& urlparser::Host::domain() const noexcept {
 }
 
 /// fulldomain
+// Fast path: with ignore_www == false, fulldomain is always exactly the
+// original host string (the PSL-dependent split below never touches
+// fulldomain_ in that case), so we can skip the PSL lookup entirely for
+// what is, by far, the most common call pattern.
 const std::string& urlparser::Host::Impl::fulldomain() const noexcept {
+    if (!ignore_www_) {
+        return host_;
+    }
+    ensureParsed();
     return fulldomain_;
 }
 
@@ -137,6 +162,7 @@ const std::string& urlparser::Host::fulldomain() const noexcept {
 
 /// domainName
 inline std::string urlparser::Host::Impl::domainName() const noexcept {
+    ensureParsed();
     return domain_ + "." + suffix_;
 }
 

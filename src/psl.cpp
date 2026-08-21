@@ -170,14 +170,9 @@ namespace urlparser::detail
 
     void PSL::add(std::string& rule, int level_adjust, size_t trim)
     {
-        // First unpunycoded
         std::string copy(rule.rbegin(), rule.rend() - trim);
         size_t length = countSegments(copy) + level_adjust;
-        levels[copy] = length;
-
-        // And now punycoded
-        copy.assign(rule.rbegin(), rule.rend() - trim);
-        levels[copy] = length;
+        levels[std::move(copy)] = length;
     }
 
 };
