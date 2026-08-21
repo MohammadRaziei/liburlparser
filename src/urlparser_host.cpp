@@ -7,10 +7,9 @@
 
 #include "psl.h"
 
-namespace URL = Url;
 
-class TLD::Host::Impl {
-    friend class TLD::Host;
+class urlparser::Host::Impl {
+    friend class urlparser::Host;
 
    public:
     static void loadPslFromPath(const std::string& filepath);
@@ -34,45 +33,45 @@ class TLD::Host::Impl {
     std::string subdomain_;
     std::string suffix_;
     std::string fulldomain_;
-    static URL::PSL psl;
+    static urlparser::detail::PSL psl;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////
 #include "public_suffix_list_dat.h"
 
-URL::PSL initiate_static_psl() {
-    return URL::PSL::fromString(templates::public_suffix_list_dat);
+urlparser::detail::PSL initiate_static_psl() {
+    return urlparser::detail::PSL::fromString(templates::public_suffix_list_dat);
 }
-URL::PSL TLD::Host::Impl::psl = initiate_static_psl();
+urlparser::detail::PSL urlparser::Host::Impl::psl = initiate_static_psl();
 
-inline void TLD::Host::Impl::loadPslFromPath(const std::string& filepath) {
-    psl = URL::PSL::fromPath(filepath);
-}
-
-inline void TLD::Host::Impl::loadPslFromString(const std::string& filestr) {
-    psl = URL::PSL::fromString(filestr);
+inline void urlparser::Host::Impl::loadPslFromPath(const std::string& filepath) {
+    psl = urlparser::detail::PSL::fromPath(filepath);
 }
 
-void TLD::Host::loadPslFromPath(const std::string& filepath) {
-    TLD::Host::Impl::loadPslFromPath(filepath);
+inline void urlparser::Host::Impl::loadPslFromString(const std::string& filestr) {
+    psl = urlparser::detail::PSL::fromString(filestr);
 }
 
-void TLD::Host::loadPslFromString(const std::string& filestr) {
-    TLD::Host::Impl::loadPslFromString(filestr);
+void urlparser::Host::loadPslFromPath(const std::string& filepath) {
+    urlparser::Host::Impl::loadPslFromPath(filepath);
 }
 
-inline bool TLD::Host::Impl::isPslLoaded() noexcept {
+void urlparser::Host::loadPslFromString(const std::string& filestr) {
+    urlparser::Host::Impl::loadPslFromString(filestr);
+}
+
+inline bool urlparser::Host::Impl::isPslLoaded() noexcept {
     return psl.numLevels() > 0;
 }
 
-bool TLD::Host::isPslLoaded() noexcept {
-    return TLD::Host::Impl::isPslLoaded();
+bool urlparser::Host::isPslLoaded() noexcept {
+    return urlparser::Host::Impl::isPslLoaded();
 }
 ////////////////////////////////////////////////////////////////////
 
-TLD::Host::Impl::Impl(const std::string& host_, const bool ignore_www)
+urlparser::Host::Impl::Impl(const std::string& host_, const bool ignore_www)
     : host_(host_), fulldomain_(host_) {
-    this->suffix_ = TLD::Host::Impl::psl.getTLD(host_);
+    this->suffix_ = urlparser::Host::Impl::psl.getTLD(host_);
     size_t suffix_pos = fulldomain_.rfind("." + suffix_);
     size_t subdomain_pos = 0;
     if (suffix_pos == std::string::npos || suffix_pos < 1)
@@ -97,70 +96,70 @@ TLD::Host::Impl::Impl(const std::string& host_, const bool ignore_www)
     }
 }
 
-TLD::Host::Host(const std::string& host, const bool ignore_www)
+urlparser::Host::Host(const std::string& host, const bool ignore_www)
     : impl(std::make_shared<Impl>(host, ignore_www)) {}
 
 /// suffix:
-inline const std::string& TLD::Host::Impl::suffix() const noexcept {
+inline const std::string& urlparser::Host::Impl::suffix() const noexcept {
     return suffix_;
 }
 
-const std::string& TLD::Host::suffix() const noexcept {
+const std::string& urlparser::Host::suffix() const noexcept {
     return impl->suffix();
 }
 
 /// subdomain
-inline const std::string& TLD::Host::Impl::subdomain() const noexcept {
+inline const std::string& urlparser::Host::Impl::subdomain() const noexcept {
     return subdomain_;
 }
 
-const std::string& TLD::Host::subdomain() const noexcept {
+const std::string& urlparser::Host::subdomain() const noexcept {
     return impl->subdomain();
 }
 
 /// domain
-inline const std::string& TLD::Host::Impl::domain() const noexcept {
+inline const std::string& urlparser::Host::Impl::domain() const noexcept {
     return domain_;
 }
 
-const std::string& TLD::Host::domain() const noexcept {
+const std::string& urlparser::Host::domain() const noexcept {
     return impl->domain();
 }
 
 /// fulldomain
-const std::string& TLD::Host::Impl::fulldomain() const noexcept {
+const std::string& urlparser::Host::Impl::fulldomain() const noexcept {
     return fulldomain_;
 }
 
-const std::string& TLD::Host::fulldomain() const noexcept {
+const std::string& urlparser::Host::fulldomain() const noexcept {
     return impl->fulldomain();
 }
 
 /// domainName
-inline std::string TLD::Host::Impl::domainName() const noexcept {
+inline std::string urlparser::Host::Impl::domainName() const noexcept {
     return domain_ + "." + suffix_;
 }
 
-std::string TLD::Host::domainName() const noexcept {
+std::string urlparser::Host::domainName() const noexcept {
     return impl->domainName();
 }
 
-const std::string& TLD::Host::str() const noexcept {
+const std::string& urlparser::Host::str() const noexcept {
     return impl->fulldomain();
 }
 
-TLD::Host TLD::Host::fromUrl(const std::string& url, const bool ignore_www) {
-    return TLD::Host(TLD::Url::extractHost(url), ignore_www);
+urlparser::Host urlparser::Host::fromUrl(const std::string& url, const bool ignore_www) {
+    return urlparser::Host(urlparser::Url::extractHost(url), ignore_www);
 }
 
-bool TLD::Host::operator==(const TLD::Host& other) const {
+bool urlparser::Host::operator==(const urlparser::Host& other) const {
     return impl->fulldomain() == other.impl->fulldomain();
 }
 
-bool TLD::Host::operator==(const std::string& host) const {
+bool urlparser::Host::operator==(const std::string& host) const {
     return impl->fulldomain() == host;
 }
-std::string_view TLD::Host::removeWWW(const std::string_view& host) noexcept {
+std::string_view urlparser::Host::removeWWW(const std::string_view& host) noexcept {
     if (const size_t www_pos = host.find("www.");
         www_pos == std::string_view::npos || www_pos != 0) {
             return host;

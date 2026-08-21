@@ -57,7 +57,7 @@ std::vector<HostData> load_host_data(const std::string& filename) {
 // Runs all field checks for a single CSV row. Non-fatal (EXPECT_*) so every
 // mismatched field is reported, not just the first one.
 static void check_host_row(int *utest_result, const HostData& host_data) {
-    TLD::Host host = TLD::Host::fromUrl(host_data.url, host_data.ignore_www);
+    urlparser::Host host = urlparser::Host::fromUrl(host_data.url, host_data.ignore_www);
     EXPECT_STREQ(host.str().c_str(), host_data.host.c_str());
     EXPECT_STREQ(host.domain().c_str(), host_data.domain.c_str());
     EXPECT_STREQ(host.domainName().c_str(), host_data.domain_name.c_str());
@@ -65,7 +65,7 @@ static void check_host_row(int *utest_result, const HostData& host_data) {
 }
 
 UTEST(CSVHostTest, CheckPSLisLoaded){
-    ASSERT_TRUE(TLD::Host::isPslLoaded());
+    ASSERT_TRUE(urlparser::Host::isPslLoaded());
 }
 
 UTEST(CSVHostTest, HostDataInput) {

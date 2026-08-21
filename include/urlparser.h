@@ -20,29 +20,29 @@
 * Example Usage:
 * @code
 *   // Creating a URL object and accessing its methods
-*   TLD::Url url("https://www.example.com/path/to/resource");
+*   urlparser::Url url("https://www.example.com/path/to/resource");
 *   std::cout << "URL Protocol: " << url.protocol() << std::endl;
 *   std::cout << "URL Domain: " << url.domain() << std::endl;
 *   std::cout << "URL Suffix: " << url.suffix() << std::endl;
 *   std::cout << "URL Query: " << url.query() << std::endl;
 *
 *   // Creating a Host object and calling its methods
-*   TLD::Host host("www.example.com");
+*   urlparser::Host host("www.example.com");
 *   std::cout << "Host Domain: " << host.domain() << std::endl;
 *   std::cout << "Host Suffix: " << host.suffix() << std::endl;
 *   std::cout << "Host Subdomain: " << host.subdomain() << std::endl;
 * @endcode
 */
 
-#ifndef TLD_URLPARSER_H
-#define TLD_URLPARSER_H
+#ifndef URLPARSER_H
+#define URLPARSER_H
 
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
 
-namespace TLD {
+namespace urlparser {
 constexpr bool DEFAULT_IGNORE_WWW = false;
 
 /**
@@ -300,7 +300,7 @@ class Host {
     class Impl;
     std::shared_ptr<Impl> impl; // since all methods are constants
 };
-}  // namespace TLD
+}  // namespace urlparser
 
 /**
  * @brief Output stream operator for QueryParams.
@@ -308,7 +308,7 @@ class Host {
  * @param dt The QueryParams to output.
  * @return The output stream.
  */
-std::ostream& operator<<(std::ostream& os, const TLD::QueryParams& dt);
+std::ostream& operator<<(std::ostream& os, const urlparser::QueryParams& dt);
 
 /**
  * @brief Output stream operator for Url.
@@ -316,7 +316,7 @@ std::ostream& operator<<(std::ostream& os, const TLD::QueryParams& dt);
  * @param dt The Url object to output.
  * @return The output stream.
  */
-std::ostream& operator<<(std::ostream& os, const TLD::Url& dt);
+std::ostream& operator<<(std::ostream& os, const urlparser::Url& dt);
 
 /**
  * @brief Output stream operator for Host.
@@ -324,5 +324,5 @@ std::ostream& operator<<(std::ostream& os, const TLD::Url& dt);
  * @param dt The Host object to output.
  * @return The output stream.
  */
-std::ostream& operator<<(std::ostream& os, const TLD::Host& dt);
-#endif  // TLD_URLPARSER_H
+std::ostream& operator<<(std::ostream& os, const urlparser::Host& dt);
+#endif  // URLPARSER_H

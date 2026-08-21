@@ -9,7 +9,7 @@
 
 #include "url.h"
 
-namespace Url
+namespace urlparser::detail
 {
 
     /* Character classes */

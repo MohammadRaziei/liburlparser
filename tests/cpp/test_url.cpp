@@ -70,7 +70,7 @@ std::vector<UrlData> load_url_data(const std::string& filename) {
 // Runs all field checks for a single CSV row. Non-fatal (EXPECT_*) so every
 // mismatched field is reported, not just the first one.
 static void check_url_row(int *utest_result, const UrlData& url_data) {
-    TLD::Url url(url_data.url, url_data.ignore_www);
+    urlparser::Url url(url_data.url, url_data.ignore_www);
     EXPECT_STREQ(url.protocol().c_str(), url_data.protocol.c_str());
     EXPECT_STREQ(url.userinfo().c_str(), url_data.userinfo.c_str());
     EXPECT_STREQ(url.fulldomain().c_str(), url_data.fulldomain.c_str());
@@ -82,7 +82,7 @@ static void check_url_row(int *utest_result, const UrlData& url_data) {
 }
 
 UTEST(CSVUrlTest, CheckPSLisLoaded){
-    ASSERT_TRUE(TLD::Host::isPslLoaded());
+    ASSERT_TRUE(urlparser::Host::isPslLoaded());
 }
 
 UTEST(CSVUrlTest, UrlDataInput) {

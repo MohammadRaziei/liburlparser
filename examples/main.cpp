@@ -29,7 +29,7 @@
 int main() {
     {
         tic;
-        const TLD::Url url(
+        const urlparser::Url url(
             "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
             "home?o=10&k=helloworld#aboutus",
             true);
@@ -47,7 +47,7 @@ int main() {
     }
     {
         tic;
-        const TLD::Url url(
+        const urlparser::Url url(
             "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
             "home?o=10&k=helloworld#aboutus",
             true);
@@ -65,16 +65,16 @@ int main() {
         show(host);
     }
 
-    const TLD::Url url(
+    const urlparser::Url url(
         "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
         "home?o=10&k=helloworld#aboutus",
         true);
 
-    TLD::Url _url = url;
+    urlparser::Url _url = url;
     show(_url);
     show(_url.suffix());
     {
-        TLD::Url __url(
+        urlparser::Url __url(
             "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
             "home?o=10&k=helloworld#aboutus",
             true);
@@ -85,30 +85,30 @@ int main() {
     show(_url.suffix());
     show(_url == url);
 
-    TLD::Host _host = TLD::Host::fromUrl(_url.str());
+    urlparser::Host _host = urlparser::Host::fromUrl(_url.str());
     _host = _url.host();
 
     show(_host);
 
     tic;
     for (int i = 0; i < 1'000'000; ++i)
-        TLD::Host host("www.ee.aut.ac.ir");
+        urlparser::Host host("www.ee.aut.ac.ir");
     toc;
 
     tic;
     for (int i = 0; i < 1'000'000; ++i)
-        TLD::Host::fromUrl(
+        urlparser::Host::fromUrl(
             "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
             "home?o=10&k=helloworld#aboutus",
             true);
     toc;
-    TLD::Host host = TLD::Host::fromUrl(
+    urlparser::Host host = urlparser::Host::fromUrl(
         "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
         "home?o=10&k=helloworld#aboutus");
 
-    show(TLD::Host("www.ee.aut.ac.ir").suffix());
-    show(TLD::Host("aut.ac.ir").fulldomain());
-    show(TLD::Host("ee.aut.ac.ir").fulldomain());
+    show(urlparser::Host("www.ee.aut.ac.ir").suffix());
+    show(urlparser::Host("aut.ac.ir").fulldomain());
+    show(urlparser::Host("ee.aut.ac.ir").fulldomain());
 
     show_attr(url, isPslLoaded);
     show(url);
@@ -128,27 +128,27 @@ int main() {
     show_attr(url, params);
     show_attr(url, abspath);
     //
-    show(TLD::Host("ee.aut.ac.ir"));
-    show(TLD::Url("https://ee.aut.ac.ir/about"));
-    show(TLD::Url("http://www.google.com").subdomain());
-    show(TLD::Url("http://www.google.com", true).subdomain());
-    show(TLD::Url("http://www.google.com").domain());
-    show(TLD::Url("http://www.google.com", true).subdomain());
-    show(TLD::Url("http://www.google.com", true).domain());
+    show(urlparser::Host("ee.aut.ac.ir"));
+    show(urlparser::Url("https://ee.aut.ac.ir/about"));
+    show(urlparser::Url("http://www.google.com").subdomain());
+    show(urlparser::Url("http://www.google.com", true).subdomain());
+    show(urlparser::Url("http://www.google.com").domain());
+    show(urlparser::Url("http://www.google.com", true).subdomain());
+    show(urlparser::Url("http://www.google.com", true).domain());
 
-    show(TLD::Host::fromUrl("http://mohammad:123@www.google.com?about", true));
-    show(TLD::Host::fromUrl("mohammad:123@www.google.com?about", true));
-    show(TLD::Host::fromUrl("www.google.com?about", true));
-    show(TLD::Host::fromUrl("www.google.com/?about", true));
-    show(TLD::Host::fromUrl("www.google.com", true));
+    show(urlparser::Host::fromUrl("http://mohammad:123@www.google.com?about", true));
+    show(urlparser::Host::fromUrl("mohammad:123@www.google.com?about", true));
+    show(urlparser::Host::fromUrl("www.google.com?about", true));
+    show(urlparser::Host::fromUrl("www.google.com/?about", true));
+    show(urlparser::Host::fromUrl("www.google.com", true));
 
-    show(TLD::Url("http://mohammad:123@www.google.com?about", true).host());
-    show(TLD::Url("https://www.p30download.ir", false).host());
+    show(urlparser::Url("http://mohammad:123@www.google.com?about", true).host());
+    show(urlparser::Url("https://www.p30download.ir", false).host());
 
-    show(TLD::Url("http://mohammad:123@www.google.com?about", true).fulldomain()); // TODO: fix hostName Issue for ignore_www
-    show(TLD::Host("http://mohammad:123@www.google.com?about", true) == "google.com"); // TODO: fix hostName Issue for ignore_www
-    const TLD::Host host2 = TLD::Host::fromUrl("http://mohammad:123@www.google.com?about", true);
-    const TLD::Url url2("http://mohammad:123@www.google.com?about", true);
+    show(urlparser::Url("http://mohammad:123@www.google.com?about", true).fulldomain()); // TODO: fix hostName Issue for ignore_www
+    show(urlparser::Host("http://mohammad:123@www.google.com?about", true) == "google.com"); // TODO: fix hostName Issue for ignore_www
+    const urlparser::Host host2 = urlparser::Host::fromUrl("http://mohammad:123@www.google.com?about", true);
+    const urlparser::Url url2("http://mohammad:123@www.google.com?about", true);
     tic;
     const auto a = url2.fulldomain();
     toc;

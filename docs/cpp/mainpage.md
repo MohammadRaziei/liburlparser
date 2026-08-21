@@ -34,7 +34,7 @@ The primary purpose of liburlparser is to parse URLs and extract their component
 - **High Performance**: Optimized C++ implementation for fast URL parsing
 - **Comprehensive URL Parsing**: Extract all components of a URL including protocol, domain, subdomain, suffix, path, query parameters, and fragments
 - **Public Suffix List Support**: Accurate domain recognition using the public suffix list
-- **Clean API Design**: Separate `TLD::Url` and `TLD::Host` classes for better code organization
+- **Clean API Design**: Separate `urlparser::Url` and `urlparser::Host` classes for better code organization
 - **Cross-Platform Compatibility**: Works on Windows, Linux, and macOS
 - **Automatic PSL Updates**: Updates the public suffix list automatically during build
 
@@ -57,9 +57,9 @@ When parsing a URL, the library follows this general flow:
 
 The library is built around two primary classes that work together to provide URL parsing functionality:
 
-### TLD::Url Class
+### urlparser::Url Class
 
-The `TLD::Url` class is responsible for parsing complete URLs and extracting all their components. It provides methods to access:
+The `urlparser::Url` class is responsible for parsing complete URLs and extracting all their components. It provides methods to access:
 
 - Protocol (e.g., "https")
 - User information
@@ -73,7 +73,7 @@ The `TLD::Url` class is responsible for parsing complete URLs and extracting all
 
 - `protocol()`: Returns the protocol (e.g., "http", "https")
 - `userinfo()`: Returns the user information part of the URL
-- `host()`: Returns a `TLD::Host` object representing the host part
+- `host()`: Returns a `urlparser::Host` object representing the host part
 - `port()`: Returns the port number
 - `abspath()`: Returns the absolute path
 - `query()`: Returns the query string
@@ -81,9 +81,9 @@ The `TLD::Url` class is responsible for parsing complete URLs and extracting all
 - `fragment()`: Returns the fragment (anchor)
 - `str()`: Returns the complete URL as a string
 
-### TLD::Host Class
+### urlparser::Host Class
 
-The `TLD::Host` class focuses on parsing and extracting domain information from hostnames. It leverages the Public Suffix List (PSL) to correctly handle domain extraction, even for complex cases like "co.uk". It provides methods to access:
+The `urlparser::Host` class focuses on parsing and extracting domain information from hostnames. It leverages the Public Suffix List (PSL) to correctly handle domain extraction, even for complex cases like "co.uk". It provides methods to access:
 
 - Subdomain (e.g., "www" in "www.example.com")
 - Domain (e.g., "example" in "www.example.com")
@@ -110,7 +110,7 @@ The `TLD::Host` class focuses on parsing and extracting domain information from 
 
 int main() {
     // Parse a URL
-    TLD::Url url("https://www.example.com/path?param=value#section");
+    urlparser::Url url("https://www.example.com/path?param=value#section");
     
     // Access URL components
     std::cout << "Protocol: " << url.protocol() << std::endl;
@@ -133,10 +133,10 @@ int main() {
 
 int main() {
     // Create a Host object directly
-    TLD::Host host1("www.example.com");
+    urlparser::Host host1("www.example.com");
     
     // Create a Host object from a URL
-    TLD::Host host2 = TLD::Host::fromUrl("https://www.example.com/path?param=value");
+    urlparser::Host host2 = urlparser::Host::fromUrl("https://www.example.com/path?param=value");
     
     // Access Host components
     std::cout << "Domain: " << host1.domain() << std::endl;
@@ -161,7 +161,7 @@ int main() {
 
 int main() {
     // Parse a complex URL
-    const TLD::Url url(
+    const urlparser::Url url(
         "https://user:password@www.subdomain.example.co.uk:8080/path/to/resource?param1=value1&param2=value2#section",
         true  // ignore_www parameter
     );
@@ -184,7 +184,7 @@ int main() {
     }
     
     // Get the host object
-    TLD::Host host = url.host();
+    urlparser::Host host = url.host();
     std::cout << "Full Domain: " << host.fulldomain() << std::endl;
     
     return 0;
@@ -200,16 +200,16 @@ The library uses the Public Suffix List (PSL) to accurately identify domain suff
 
 int main() {
     // Check if PSL is loaded
-    bool pslLoaded = TLD::Host::isPslLoaded();
+    bool pslLoaded = urlparser::Host::isPslLoaded();
     
     // Load PSL from a file
     if (!pslLoaded) {
-        TLD::Host::loadPslFromPath("/path/to/public_suffix_list.dat");
+        urlparser::Host::loadPslFromPath("/path/to/public_suffix_list.dat");
     }
     
     // Or load PSL from a string
     std::string pslContent = "..."; // PSL content
-    TLD::Host::loadPslFromString(pslContent);
+    urlparser::Host::loadPslFromString(pslContent);
     
     return 0;
 }

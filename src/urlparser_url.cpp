@@ -7,20 +7,19 @@
 
 #include "url.h"
 
-namespace URL = Url;
 
 /// define Impl class:
-class TLD::Url::Impl : public URL::Url {
-    friend class TLD::Url;
+class urlparser::Url::Impl : public urlparser::detail::Url {
+    friend class urlparser::Url;
 
    public:
     Impl(const std::string& url, const bool ignore_www);
 
-    const TLD::Host* getHost() noexcept;
+    const urlparser::Host* getHost() noexcept;
     inline const std::string& hostName();
 
    private:
-    std::unique_ptr<TLD::Host> host_obj = nullptr;
+    std::unique_ptr<urlparser::Host> host_obj = nullptr;
     const bool ignore_www = DEFAULT_IGNORE_WWW;
 };
 
@@ -37,92 +36,92 @@ inline std::vector<std::string> split(const std::string& str,
 }
 
 
-bool TLD::Url::isPslLoaded() noexcept {
-    return TLD::Host::isPslLoaded();
+bool urlparser::Url::isPslLoaded() noexcept {
+    return urlparser::Host::isPslLoaded();
 }
 
-TLD::Url::Impl::Impl(const std::string& url, const bool ignore_www)
-    : URL::Url(url) , ignore_www(ignore_www) {}
+urlparser::Url::Impl::Impl(const std::string& url, const bool ignore_www)
+    : urlparser::detail::Url(url) , ignore_www(ignore_www) {}
 
-TLD::Url::Url(const std::string& url, const bool ignore_www)
-    : impl(std::make_unique<TLD::Url::Impl>(url, ignore_www)) {}
+urlparser::Url::Url(const std::string& url, const bool ignore_www)
+    : impl(std::make_unique<urlparser::Url::Impl>(url, ignore_www)) {}
 
-const TLD::Host* TLD::Url::Impl::getHost() noexcept {
+const urlparser::Host* urlparser::Url::Impl::getHost() noexcept {
     if (!host_obj)
-        host_obj = std::make_unique<TLD::Host>(hostName(), false);
+        host_obj = std::make_unique<urlparser::Host>(hostName(), false);
     /// we set ignore_www to false because we remove www in hostName function
     return host_obj.get();
 }
-const std::string& TLD::Url::Impl::hostName() {
+const std::string& urlparser::Url::Impl::hostName() {
     if (ignore_www){
-        host_ = TLD::Host::removeWWW(host_);
+        host_ = urlparser::Host::removeWWW(host_);
     }
     return host_;
 }
 
-const TLD::Host& TLD::Url::host() const {
+const urlparser::Host& urlparser::Url::host() const {
     return *impl->getHost();
 }
 
 /// suffix
-const std::string& TLD::Url::suffix() const noexcept {
+const std::string& urlparser::Url::suffix() const noexcept {
     return impl->getHost()->suffix();
 }
 
 /// subdomain
-const std::string& TLD::Url::subdomain() const noexcept {
+const std::string& urlparser::Url::subdomain() const noexcept {
     return impl->getHost()->subdomain();
 }
 
 /// domain
-const std::string& TLD::Url::domain() const noexcept {
+const std::string& urlparser::Url::domain() const noexcept {
     return impl->getHost()->domain();
 }
 
 /// fulldomain
-const std::string& TLD::Url::fulldomain() const noexcept {
+const std::string& urlparser::Url::fulldomain() const noexcept {
     return impl->hostName();
 }
 
 /// domainName
-std::string TLD::Url::domainName() const noexcept {
+std::string urlparser::Url::domainName() const noexcept {
     return impl->getHost()->domainName();
 }
 
 // str
-std::string TLD::Url::str() const noexcept {
+std::string urlparser::Url::str() const noexcept {
     return impl->str();
 }
 
-const std::string& TLD::Url::protocol() const noexcept {
+const std::string& urlparser::Url::protocol() const noexcept {
     return impl->scheme();
 }
 
-const int TLD::Url::port() const noexcept {
+const int urlparser::Url::port() const noexcept {
     return impl->port();
 }
 
-const std::string& TLD::Url::query() const noexcept {
+const std::string& urlparser::Url::query() const noexcept {
     return impl->query();
 }
 
-const std::string& TLD::Url::fragment() const noexcept {
+const std::string& urlparser::Url::fragment() const noexcept {
     return impl->fragment();
 }
 
-const std::string& TLD::Url::userinfo() const noexcept {
+const std::string& urlparser::Url::userinfo() const noexcept {
     return impl->userinfo();
 }
 
-std::string TLD::Url::abspath() const noexcept {
+std::string urlparser::Url::abspath() const noexcept {
     return impl->abspath().str();
 }
 
-TLD::QueryParams TLD::Url::params() const noexcept {
+urlparser::QueryParams urlparser::Url::params() const noexcept {
     return split(query(), '&');
 }
 
-std::string TLD::Url::extractHost(const std::string& url) noexcept {
+std::string urlparser::Url::extractHost(const std::string& url) noexcept {
     std::string host;
     size_t pos = url.find("://");
     if (pos != std::string::npos) {
@@ -141,11 +140,11 @@ std::string TLD::Url::extractHost(const std::string& url) noexcept {
     return host;
 }
 
-bool TLD::Url::operator==(const TLD::Url& other) const {
+bool urlparser::Url::operator==(const urlparser::Url& other) const {
     return *impl == *other.impl;
 }
 
-std::ostream& operator<<(std::ostream& os, const TLD::QueryParams& v) {
+std::ostream& operator<<(std::ostream& os, const urlparser::QueryParams& v) {
     os << "[";
     for (const auto& e : v) {
         os << e << ", ";
@@ -154,12 +153,12 @@ std::ostream& operator<<(std::ostream& os, const TLD::QueryParams& v) {
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const TLD::Host& dt) {
+std::ostream& operator<<(std::ostream& os, const urlparser::Host& dt) {
     os << dt.str();
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const TLD::Url& dt) {
+std::ostream& operator<<(std::ostream& os, const urlparser::Url& dt) {
     os << dt.str();
     return os;
 }

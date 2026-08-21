@@ -4,7 +4,7 @@
 #include <string>
 
 #include "psl.h"
-namespace Url
+namespace urlparser::detail
 {
     const std::string PSL::not_found = "";
 

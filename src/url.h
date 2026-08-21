@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace Url
+namespace urlparser::detail
 {
 
     struct UrlParseException : public std::logic_error

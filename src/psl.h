@@ -8,7 +8,7 @@
 #include <utility>
 
 
-namespace Url
+namespace urlparser::detail
 {
 
     /**
