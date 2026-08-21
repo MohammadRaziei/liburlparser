@@ -84,3 +84,20 @@ Tests were run on a file containing 1 million random URLs:
 | publicsuffix2 | publicsuffix2.get_sld | 10.84s |
 | tldextract | \_\_call\_\_ | 36.04s |
 | tld | tld.parse_tld | 57.87s |
+
+```{toctree}
+:maxdepth: 1
+:hidden:
+
+Overview <self>
+installation
+usage/basic
+usage/advanced
+usage/cli
+api/reference
+api/url
+api/host
+api/psl
+examples
+performance
+```

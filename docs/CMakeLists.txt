@@ -48,6 +48,59 @@ else()
 endif()
 
 
+# ── Python Documentation (Sphinx) ──────────────────────────────
+
+set(URLPARSER_DOCS_PYTHON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/python)
+set(URLPARSER_DOCS_PYTHON_OUT ${URLPARSER_DOCS_OUT}/python)
+
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
+execute_process(
+    COMMAND ${Python3_EXECUTABLE} -c "import sphinx"
+    OUTPUT_QUIET
+    ERROR_QUIET
+    RESULT_VARIABLE SPHINX_CHECK
+)
+
+if(BUILD_PYTHON AND SPHINX_CHECK EQUAL 0)
+    set(URLPARSER_DOCS_PYTHON_HTML ${URLPARSER_DOCS_PYTHON_OUT}/html/index.html)
+
+    add_custom_command(
+        OUTPUT ${URLPARSER_DOCS_PYTHON_HTML}
+        COMMAND ${CMAKE_COMMAND}
+            -DPYTHON_EXECUTABLE=${Python3_EXECUTABLE}
+            -DSOURCE_DIR=${URLPARSER_DOCS_PYTHON_DIR}/docs
+            -DOUTPUT_DIR=${URLPARSER_DOCS_PYTHON_OUT}
+            -DURLPARSER_PYTHON_INSTALL_DIR=${PYTHON_PROJECT_NAME}
+            -P ${URLPARSER_DOCS_PYTHON_DIR}/CreateDocs.cmake
+        DEPENDS
+            ${URLPARSER_DOCS_PYTHON_DIR}/CreateDocs.cmake
+            ${URLPARSER_DOCS_PYTHON_DIR}/docs/conf.py
+            ${URLPARSER_DOCS_PYTHON_DIR}/docs/index.md
+        COMMENT "Building Python API documentation with Sphinx"
+        VERBATIM
+    )
+
+    add_custom_target(urlparser_docs_python DEPENDS ${URLPARSER_DOCS_PYTHON_HTML})
+
+    # Must have the nanobind extension(s) built/installed first so `import
+    # liburlparser` works from inside conf.py.
+    if(DEFINED PYTHON_BIND_MODULES)
+        add_dependencies(urlparser_docs_python ${PYTHON_BIND_MODULES})
+    endif()
+elseif(NOT BUILD_PYTHON)
+    message(WARNING "BUILD_PYTHON is off - Python documentation will not be generated. Configure with -DBUILD_PYTHON=on")
+    add_custom_target(urlparser_docs_python
+        COMMAND ${CMAKE_COMMAND} -E echo "Skipping Python docs: BUILD_PYTHON is off"
+    )
+else()
+    message(WARNING "Sphinx not found (pip install sphinx myst-parser furo) - Python documentation will not be generated")
+    add_custom_target(urlparser_docs_python
+        COMMAND ${CMAKE_COMMAND} -E echo "Skipping Python docs: Sphinx not found"
+    )
+endif()
+
+
 # ── Route Index Page ──────────────────────────────────────────
 
 set(URLPARSER_INDEX_OUT ${URLPARSER_DOCS_OUT}/index.html)
@@ -68,4 +121,4 @@ add_custom_target(urlparser_docs
     COMMENT "Building all documentation"
 )
 
-add_dependencies(urlparser_docs urlparser_docs_cpp urlparser_docs_index)
+add_dependencies(urlparser_docs urlparser_docs_cpp urlparser_docs_python urlparser_docs_index)

@@ -23,7 +23,7 @@
   <p>Redirecting to the C++ API documentation...</p>
   <ul>
     <li><a href="cpp/html/index.html">C++ API Reference (Doxygen)</a></li>
-    <li><a href="https://liburlparser.readthedocs.io/">Python documentation</a></li>
+    <li><a href="python/html/index.html">Python API Reference (Sphinx)</a></li>
     <li><a href="https://github.com/MohammadRaziei/liburlparser">GitHub Repository</a></li>
   </ul>
 </body>

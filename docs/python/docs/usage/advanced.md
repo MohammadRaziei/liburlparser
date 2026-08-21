@@ -13,8 +13,7 @@ from liburlparser import psl
 print(psl.is_loaded())  # True (by default)
 
 # Get PSL information
-print(psl.url)       # URL of the public suffix list
-print(psl.filename)  # Filename of the public suffix list
+print(psl.url)       # URL of the public suffix list (used by psl.update())
 
 # Load PSL from a custom path
 psl.load_from_path("/path/to/custom/public_suffix_list.dat")
