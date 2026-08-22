@@ -1,0 +1,20 @@
+# Development dependencies for liburlparser
+# Build requirements
+nanobind
+ninja
+scikit-build-core
+# Testing dependencies
+pytest
+pytest-xdist
+pytest-memray; sys_platform != 'win32'
+coverage
+# Packaging dependencies
+build
+twine
+wheel
+# Documentation dependencies
+doxygen-awesome-css
+sphinx
+myst-parser
+furo
+sphinx-autodoc-typehints

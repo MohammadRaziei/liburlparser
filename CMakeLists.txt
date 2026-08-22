@@ -40,30 +40,21 @@ if(DEFINED SKBUILD)
 elseif(BUILD_PYTHON)
     set(PYTHON_PROJECT_NAME "${CMAKE_BINARY_DIR}")
 
-    if(NOT PYTHON_REQUIREMENT_INSTALLED)
-        execute_process(
-                COMMAND "${Python3_EXECUTABLE}" -m pip install
-                nanobind ninja pytest-xdist pip-tools # build requirements
-                OUTPUT_QUIET COMMAND_ERROR_IS_FATAL ANY
-        )
-        execute_process(
-                COMMAND "${Python3_EXECUTABLE}" -m piptools compile --output-file ${CMAKE_CURRENT_BINARY_DIR}/requirements.txt pyproject.toml
-                    --no-emit-options --quiet --no-strip-extras --extra test
-                OUTPUT_QUIET COMMAND_ERROR_IS_FATAL ANY
-        )
-        execute_process(
-                COMMAND "${Python3_EXECUTABLE}" -m pip install -r ${CMAKE_CURRENT_BINARY_DIR}/requirements.txt
-                OUTPUT_QUIET COMMAND_ERROR_IS_FATAL ANY
-        )
-        set(PYTHON_REQUIREMENT_INSTALLED TRUE CACHE INTERNAL "Python requirements installed")
-    endif()
-
     execute_process(
             COMMAND "${Python3_EXECUTABLE}" -m nanobind --cmake_dir
-            OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE NB_DIR)
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            OUTPUT_VARIABLE NB_DIR
+            ERROR_QUIET
+            RESULT_VARIABLE NANOBIND_CHECK_RESULT
+    )
 
-    message(STATUS "Found NanoBind at ${NB_DIR}")
-    list(APPEND CMAKE_PREFIX_PATH "${NB_DIR}")
+    if(NOT NANOBIND_CHECK_RESULT EQUAL 0 OR NOT NB_DIR)
+        message(WARNING "nanobind not found for ${Python3_EXECUTABLE}.")
+        message(WARNING "Please install build requirements with: pip install -r requirements-dev.txt")
+    else()
+        message(STATUS "Found NanoBind at ${NB_DIR}")
+        list(APPEND CMAKE_PREFIX_PATH "${NB_DIR}")
+    endif()
 endif()
 
 

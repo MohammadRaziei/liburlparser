@@ -25,7 +25,7 @@ jobs:
         cache: "pip"
 
     - name: Install python deps
-      run: pip install pytest pytest-xdist
+      run: pip install -r requirements-dev.txt
 
     - name: Build Project
       uses: threeal/cmake-action@v2.1.0
@@ -69,7 +69,7 @@ jobs:
         cache: "pip"
 
     - name: Install python deps
-      run: pip install doxygen-awesome-css sphinx myst-parser furo sphinx-autodoc-typehints
+      run: pip install -r requirements-dev.txt
 
     - name: Configure CMake
       run: |
@@ -111,7 +111,7 @@ jobs:
         cache: "pip"
 
     - name: Install python dependencies
-      run: pip install pytest pytest-xdist coverage
+      run: pip install -r requirements-dev.txt
 
     - name: Install coverage tools
       run: |

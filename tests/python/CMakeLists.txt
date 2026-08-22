@@ -16,18 +16,13 @@ if(BUILD_PYTHON)
         message(WARNING "pytest is not installed. Python tests will be skipped.")
         message(WARNING "Please install it using: pip install pytest pytest-xdist")
     else()
-        set(URLPARSER_PYTEST_ARGS -n auto ${CMAKE_CURRENT_SOURCE_DIR})
+        set(URLPARSER_PYTEST_ARGS -v -n auto ${CMAKE_CURRENT_SOURCE_DIR})
 
-        # ENABLE_MEMRAY folds pytest-memray leak checking (@pytest.mark.limit_leaks
-        # in test_memory.py) into the normal test run, via extra pytest flags -
-        # not a separate target. On by default; automatically skipped on Windows,
-        # since memray itself doesn't support Windows (no pkg-config/native build
-        # there) - pyproject.toml's `test` extra already excludes it there too via
-        # an environment marker.
-        option(ENABLE_MEMRAY "Run python tests with pytest-memray leak checking" ON)
-        if(ENABLE_MEMRAY AND WIN32)
-            message(STATUS "ENABLE_MEMRAY is on, but memray does not support Windows - skipping leak checking on this platform.")
-        elseif(ENABLE_MEMRAY)
+        # memray has no Windows support, so it's never even checked there.
+        # Otherwise: if pytest-memray is installed, fold its leak checking
+        # (@pytest.mark.limit_leaks in test_memory.py) into the normal test
+        # run via --memray; if not installed, just run pytest normally.
+        if(NOT WIN32)
             execute_process(
                 COMMAND ${Python3_EXECUTABLE} -c "import pytest_memray"
                 OUTPUT_QUIET
@@ -37,7 +32,8 @@ if(BUILD_PYTHON)
             if(MEMRAY_CHECK_RESULT EQUAL 0)
                 list(APPEND URLPARSER_PYTEST_ARGS --memray)
             else()
-                message(STATUS "pytest-memray not installed - running python tests without leak checking. Install with: pip install pytest-memray")
+                message(STATUS "pytest-memray not installed - running python tests without leak checking.")
+                message(STATUS "Please install it using: pip install -r requirements-dev.txt")
             endif()
         endif()
 
