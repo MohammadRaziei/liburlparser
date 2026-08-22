@@ -15,11 +15,11 @@ def warning_on_one_line(message, category, filename, lineno, file=None, line=Non
 warnings.formatwarning = warning_on_one_line
 
 try:
-    import urllib.error
-    import urllib.request
+    from urllib.error import URLError  # noqa: F401
+    from urllib.request import urlopen
 
     def psl_update():
-        with urllib.request.urlopen(psl.url) as resp:
+        with urlopen(psl.url) as resp:
             charset = resp.headers.get_content_charset() or "utf-8"
             text = resp.read().decode(charset)
         psl.load_from_string(text)
