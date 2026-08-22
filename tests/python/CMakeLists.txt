@@ -50,6 +50,9 @@ if(BUILD_PYTHON)
         )
 
         add_dependencies(urlparser_test urlparser_test_python)
+        if(DEFINED PYTHON_BIND_MODULES)
+            add_dependencies(urlparser_test_python ${PYTHON_BIND_MODULES})
+        endif()
     endif()
 
     # Check for coverage.py
