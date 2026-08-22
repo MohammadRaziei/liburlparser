@@ -16,14 +16,34 @@ if(BUILD_PYTHON)
         message(WARNING "pytest is not installed. Python tests will be skipped.")
         message(WARNING "Please install it using: pip install pytest pytest-xdist")
     else()
+        set(URLPARSER_PYTEST_ARGS -n auto ${CMAKE_CURRENT_SOURCE_DIR})
+
+        # ENABLE_MEMRAY folds pytest-memray leak checking (@pytest.mark.limit_leaks
+        # in test_memory.py) into the normal test run, via extra pytest flags -
+        # not a separate target. Off by default since it's an extra dependency.
+        option(ENABLE_MEMRAY "Run python tests with pytest-memray leak checking" ON)
+        if(ENABLE_MEMRAY)
+            execute_process(
+                COMMAND ${Python3_EXECUTABLE} -c "import pytest_memray"
+                OUTPUT_QUIET
+                ERROR_QUIET
+                RESULT_VARIABLE MEMRAY_CHECK_RESULT
+            )
+            if(MEMRAY_CHECK_RESULT EQUAL 0)
+                list(APPEND URLPARSER_PYTEST_ARGS --memray)
+            else()
+                message(STATUS "pytest-memray not installed - running python tests without leak checking. Install with: pip install pytest-memray")
+            endif()
+        endif()
+
         add_test(NAME test_liburlparser_python
-                 COMMAND ${Python3_EXECUTABLE} -m pytest -n auto ${CMAKE_CURRENT_SOURCE_DIR}
+                 COMMAND ${Python3_EXECUTABLE} -m pytest ${URLPARSER_PYTEST_ARGS}
                  WORKING_DIRECTORY ${URLPARSER_PYTHON_INSTALL_DIR}
         )
 
         add_custom_target(urlparser_test_python
             COMMAND ${CMAKE_COMMAND} -E echo "-- Running python tests..."
-            COMMAND ${Python3_EXECUTABLE} -m pytest -n auto ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMAND ${Python3_EXECUTABLE} -m pytest ${URLPARSER_PYTEST_ARGS}
             WORKING_DIRECTORY ${URLPARSER_PYTHON_INSTALL_DIR}
             USES_TERMINAL
         )
