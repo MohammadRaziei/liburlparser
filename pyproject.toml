@@ -30,7 +30,7 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-test = ["pytest-xdist", "pytest-memray"]
+test = ["pytest-xdist", "pytest-memray; sys_platform != 'win32'"]
 docs = ["doxygen-awesome-css", "sphinx", "myst-parser", "furo", "sphinx-autodoc-typehints"]
 
 [project.urls]

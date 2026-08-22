@@ -20,9 +20,14 @@ if(BUILD_PYTHON)
 
         # ENABLE_MEMRAY folds pytest-memray leak checking (@pytest.mark.limit_leaks
         # in test_memory.py) into the normal test run, via extra pytest flags -
-        # not a separate target. Off by default since it's an extra dependency.
+        # not a separate target. On by default; automatically skipped on Windows,
+        # since memray itself doesn't support Windows (no pkg-config/native build
+        # there) - pyproject.toml's `test` extra already excludes it there too via
+        # an environment marker.
         option(ENABLE_MEMRAY "Run python tests with pytest-memray leak checking" ON)
-        if(ENABLE_MEMRAY)
+        if(ENABLE_MEMRAY AND WIN32)
+            message(STATUS "ENABLE_MEMRAY is on, but memray does not support Windows - skipping leak checking on this platform.")
+        elseif(ENABLE_MEMRAY)
             execute_process(
                 COMMAND ${Python3_EXECUTABLE} -c "import pytest_memray"
                 OUTPUT_QUIET
