@@ -8,7 +8,13 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-include(PyProject)
+include(DynamicVersion)
+
+extract_version_string(
+    HEADER_FILE ${CMAKE_CURRENT_LIST_DIR}/include/urlparser.h
+    VERSION_PREFIX LIBURLPARSER_
+    OUTPUT_VAR PROJECT_VERSION
+)
 
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -21,8 +27,11 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING "" FORCE)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}" CACHE STRING "" FORCE)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" CACHE STRING "" FORCE)
 
-project(${PyProject_NAME} LANGUAGES CXX VERSION ${PyProject_VERSION})
+project(liburlparser LANGUAGES CXX VERSION ${PROJECT_VERSION})
 message(STATUS "Project: ${PROJECT_NAME}@v${PROJECT_VERSION}")
+# Kept for docs/cpp templates (Doxyfile.in, footer.html.in) that still
+# reference @PyProject_VERSION@.
+set(PyProject_VERSION ${PROJECT_VERSION})
 
 if (MSVC)
     add_compile_options(/EHsc)

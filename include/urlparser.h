@@ -37,6 +37,14 @@
 #ifndef URLPARSER_H
 #define URLPARSER_H
 
+// Single source of truth for the project version. Read by:
+//   - cmake/DynamicVersion.cmake (sets PROJECT_VERSION for the CMake build)
+//   - pyproject.toml's [tool.scikit-build.metadata.version] regex provider
+//   - version.py (bump/tag helper)
+#define LIBURLPARSER_VERSION_MAJOR 2
+#define LIBURLPARSER_VERSION_MINOR 0
+#define LIBURLPARSER_VERSION_PATCH 0
+
 #include <iostream>
 #include <memory>
 #include <string>

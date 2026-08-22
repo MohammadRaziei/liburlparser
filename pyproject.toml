@@ -5,7 +5,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "liburlparser"
-version = "2.0.0"
+dynamic = ["version"]
 description = "Fastest Url parser in the world"
 readme = "README.md"
 authors = [
@@ -54,6 +54,16 @@ cmake.version = ">=3.15"
 cmake.args = [
     "-DCMAKE_BUILD_TYPE=Release"
 ]
+
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "include/urlparser.h"
+regex = '''(?sx)
+\#define \s+ LIBURLPARSER_VERSION_MAJOR \s+ (?P<major>\d+) .*?
+\#define \s+ LIBURLPARSER_VERSION_MINOR \s+ (?P<minor>\d+) .*?
+\#define \s+ LIBURLPARSER_VERSION_PATCH \s+ (?P<patch>\d+) .*?
+'''
+result = "{major}.{minor}.{patch}"
 
 [tool.pytest.ini_options]
 minversion = "6.0"

@@ -2,13 +2,13 @@
 """
 liburlparser Version & Tag Manager
 Supports:
-  - Showing current pyproject.toml version
+  - Showing current header version
   - Reading latest git tag
   - Setting version from tag
   - Creating releases (commit + tag)
   - Semantic version bumping
 Repository:
-    https://github.com/MohammadRaziei/liburlparser
+    https://github.com/mohammadraziei/liburlparser
 Author:
     Mohammad Raziei
 License:
@@ -23,19 +23,18 @@ import argparse
 import subprocess
 from pathlib import Path
 
-PYPROJECT_PATH = "pyproject.toml"
-PYPROJECT_ABS_PATH = Path(__file__).parent / PYPROJECT_PATH
+HEADER_PATH = "include/urlparser.h"
+PREFIX = "LIBURLPARSER_"
+HEADER_ABS_PATH = Path(__file__).parent / HEADER_PATH
 
 # ============================================================
 # Utilities
 # ============================================================
 
-VERSION_PATTERN = r'(?m)^version\s*=\s*"(\d+)\.(\d+)\.(\d+)"'
-
+VERSION_PATTERN = f"#define\\s+{PREFIX}VERSION_(MAJOR|MINOR|PATCH)\\s+(\\d+)"
 
 def run(cmd):
     subprocess.run(cmd, check=True)
-
 
 def git_last_tag():
     try:
@@ -49,29 +48,23 @@ def git_last_tag():
     except subprocess.CalledProcessError:
         return None
 
-
 def read_version():
-    if not PYPROJECT_ABS_PATH.exists():
-        sys.exit(f"{PYPROJECT_PATH} not found")
-    text = PYPROJECT_ABS_PATH.read_text()
-    match = re.search(VERSION_PATTERN, text)
-    if not match:
-        sys.exit(f"Could not find a version = \"X.Y.Z\" line in {PYPROJECT_PATH}")
-    major, minor, patch = map(int, match.groups())
-    version = {"MAJOR": major, "MINOR": minor, "PATCH": patch}
+    if not HEADER_ABS_PATH.exists():
+        sys.exit(f"{HEADER_PATH} not found")
+    text = HEADER_ABS_PATH.read_text()
+    matches = re.findall(VERSION_PATTERN, text)
+    version = {name: int(value) for name, value in matches}
     return version, text
-
 
 def write_version(version, text):
     def repl(match):
-        return f'version = "{version_str(version)}"'
+        name = match.group(1)
+        return f"#define {PREFIX}VERSION_{name} {version[name]}"
     new_text = re.sub(VERSION_PATTERN, repl, text)
-    PYPROJECT_ABS_PATH.write_text(new_text)
-
+    HEADER_ABS_PATH.write_text(new_text)
 
 def version_str(v):
     return f"{v['MAJOR']}.{v['MINOR']}.{v['PATCH']}"
-
 
 def bump(version, part):
     if part == "major":
@@ -88,24 +81,22 @@ def bump(version, part):
 # Commands
 # ============================================================
 
-
 def cmd_show(args):
     version, _ = read_version()
     part = getattr(args, 'part', None)
-
+    
     if part:
         print(version[part.upper()])
     else:
         print(version_str(version))
 
-
 def cmd_bump_or_set(args):
     version, text = read_version()
     part = args.part.upper()  # MAJOR, MINOR, or PATCH
-
+    
     if args.value:
         val_str = args.value
-
+        
         # Handle other offsets (+1, -5, etc)
         if val_str.startswith(('+', '-')):
             try:
@@ -124,13 +115,12 @@ def cmd_bump_or_set(args):
                 version[part] = int(val_str)
             except ValueError:
                 sys.exit(f"Invalid value for {part}: {val_str}")
-
+        
         write_version(version, text)
         print(f"Version updated to {version_str(version)}")
     else:
         # If no value provided, just show the current part
         print(version[part])
-
 
 def cmd_tag(args):
     # --------------------------------------------------------
@@ -164,7 +154,7 @@ def cmd_tag(args):
     if args.subcommand == "create":
         version, text = read_version()
         if args.value is None:
-            # use current pyproject.toml version
+            # use current header version
             pass
         elif args.value in ("major", "minor", "patch"):
             bump(version, args.value)
@@ -174,11 +164,11 @@ def cmd_tag(args):
             if len(parts) != 3 or not all(p.isdigit() for p in parts):
                 sys.exit("Invalid version format")
             version["MAJOR"], version["MINOR"], version["PATCH"] = map(int, parts)
-
+        
         write_version(version, text)
         new_version = version_str(version)
         tag_name = f"v{new_version}"
-        run(["git", "add", str(PYPROJECT_ABS_PATH)])
+        run(["git", "add", str(HEADER_ABS_PATH)])
         run(["git", "commit", "-m", f"Release {new_version}"])
         run(["git", "tag", tag_name])
         print(f"Committed and tagged {tag_name}")
@@ -188,7 +178,6 @@ def cmd_tag(args):
 # CLI
 # ============================================================
 
-
 def main():
     parser = argparse.ArgumentParser(
         prog="version.py",
@@ -197,7 +186,7 @@ def main():
         epilog="""
 Examples:
   python version.py
-      Show pyproject.toml version
+      Show header version
   python version.py minor
       Show minor version
   python version.py major +
@@ -211,18 +200,18 @@ Examples:
   python version.py tag
       Show latest git tag
   python version.py tag set
-      Set version from latest tag
+      Set header version from latest tag
   python version.py tag create
-      Commit and tag using current version
+      Commit and tag using current header version
   python version.py tag create minor
       Bump minor, commit and tag
   python version.py tag create v1.2.3
       Set version, commit and tag
 """
     )
-
+    
     subparsers = parser.add_subparsers(dest="command")
-
+    
     # Default show (if no command provided)
     parser.set_defaults(func=cmd_show)
 
@@ -239,24 +228,23 @@ Examples:
     # tag command
     tag_parser = subparsers.add_parser("tag", help="Manage git tags")
     tag_sub = tag_parser.add_subparsers(dest="subcommand")
-
+    
     tag_parser.set_defaults(func=cmd_tag)
-
+    
     tag_sub.add_parser("set", help="Set version from latest tag")
-
+    
     create_parser = tag_sub.add_parser("create", help="Create release tag")
     create_parser.add_argument(
         "value",
         nargs="?",
         help="major | minor | patch | X.Y.Z"
     )
-
+    
     args = parser.parse_args()
     if hasattr(args, "func"):
         args.func(args)
     else:
         parser.print_help()
-
 
 if __name__ == "__main__":
     main()
