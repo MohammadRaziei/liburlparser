@@ -24,7 +24,7 @@ import subprocess
 from pathlib import Path
 
 HEADER_PATH = "include/urlparser.h"
-PREFIX = "LIBURLPARSER_"
+PREFIX = "URLPARSER_"
 HEADER_ABS_PATH = Path(__file__).parent / HEADER_PATH
 
 # ============================================================

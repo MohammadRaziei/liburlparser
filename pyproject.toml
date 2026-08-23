@@ -59,9 +59,9 @@ cmake.args = [
 provider = "scikit_build_core.metadata.regex"
 input = "include/urlparser.h"
 regex = '''(?sx)
-\#define \s+ LIBURLPARSER_VERSION_MAJOR \s+ (?P<major>\d+) .*?
-\#define \s+ LIBURLPARSER_VERSION_MINOR \s+ (?P<minor>\d+) .*?
-\#define \s+ LIBURLPARSER_VERSION_PATCH \s+ (?P<patch>\d+) .*?
+\#define \s+ URLPARSER_VERSION_MAJOR \s+ (?P<major>\d+) .*?
+\#define \s+ URLPARSER_VERSION_MINOR \s+ (?P<minor>\d+) .*?
+\#define \s+ URLPARSER_VERSION_PATCH \s+ (?P<patch>\d+) .*?
 '''
 result = "{major}.{minor}.{patch}"
 

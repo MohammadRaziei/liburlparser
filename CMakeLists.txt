@@ -12,7 +12,7 @@ include(DynamicVersion)
 
 extract_version_string(
     HEADER_FILE ${CMAKE_CURRENT_LIST_DIR}/include/urlparser.h
-    VERSION_PREFIX LIBURLPARSER_
+    VERSION_PREFIX URLPARSER_
     OUTPUT_VAR PROJECT_VERSION
 )
 

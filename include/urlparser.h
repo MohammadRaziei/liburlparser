@@ -41,9 +41,9 @@
 //   - cmake/DynamicVersion.cmake (sets PROJECT_VERSION for the CMake build)
 //   - pyproject.toml's [tool.scikit-build.metadata.version] regex provider
 //   - version.py (bump/tag helper)
-#define LIBURLPARSER_VERSION_MAJOR 2
-#define LIBURLPARSER_VERSION_MINOR 0
-#define LIBURLPARSER_VERSION_PATCH 0
+#define URLPARSER_VERSION_MAJOR 2
+#define URLPARSER_VERSION_MINOR 0
+#define URLPARSER_VERSION_PATCH 0
 
 #include <iostream>
 #include <memory>
