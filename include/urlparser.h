@@ -45,13 +45,47 @@
 #define URLPARSER_VERSION_MINOR 0
 #define URLPARSER_VERSION_PATCH 0
 
+#define URLPARSER_VERSION_ENCODE(maj,min,pat) (((maj)*10000)+((min)*100)+(pat))
+#define URLPARSER_VERSION \
+    URLPARSER_VERSION_ENCODE(URLPARSER_VERSION_MAJOR,URLPARSER_VERSION_MINOR,URLPARSER_VERSION_PATCH)
+
+/** The version of liburlparser in hex: `(major << 16) | (minor << 8) | (patch)`. */
+#define URLPARSER_VERSION_HEX \
+    ((URLPARSER_VERSION_MAJOR << 16) | (URLPARSER_VERSION_MINOR << 8) | URLPARSER_VERSION_PATCH)
+
+/* Internal helpers for URLPARSER_VERSION_STRING */
+#define _URLPARSER_VERSION_XSTR(a,b,c) #a"."#b"."#c
+#define _URLPARSER_VERSION_STR(a,b,c)  _URLPARSER_VERSION_XSTR(a,b,c)
+
+/** The version string of liburlparser, e.g. "2.0.0". */
+#define URLPARSER_VERSION_STRING \
+    _URLPARSER_VERSION_STR(URLPARSER_VERSION_MAJOR,URLPARSER_VERSION_MINOR,URLPARSER_VERSION_PATCH)
+
 #include <iostream>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace urlparser {
 constexpr bool DEFAULT_IGNORE_WWW = false;
+
+/**
+ * @class version
+ * @brief Exposes the library version (from the URLPARSER_VERSION_* macros)
+ *        at runtime, without needing to `#include` the macros directly.
+ */
+class version {
+   public:
+    static unsigned int major() noexcept { return URLPARSER_VERSION_MAJOR; }
+    static unsigned int minor() noexcept { return URLPARSER_VERSION_MINOR; }
+    static unsigned int patch() noexcept { return URLPARSER_VERSION_PATCH; }
+    static unsigned int hex() noexcept { return URLPARSER_VERSION_HEX; }
+    static std::string_view string() noexcept { return URLPARSER_VERSION_STRING; }
+
+   private:
+    version();
+};
 
 /**
  * @typedef QueryParams
