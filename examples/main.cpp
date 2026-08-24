@@ -145,14 +145,14 @@ int main() {
     show(urlparser::Url("http://mohammad:123@www.google.com?about", true).host());
     show(urlparser::Url("https://www.p30download.ir", false).host());
 
-    show(urlparser::Url("http://mohammad:123@www.google.com?about", true).fulldomain()); // TODO: fix hostName Issue for ignore_www
-    show(urlparser::Host("http://mohammad:123@www.google.com?about", true) == "google.com"); // TODO: fix hostName Issue for ignore_www
+    show(urlparser::Url("http://mohammad:123@www.google.com?about", true).fulldomain());
+    show(urlparser::Host("http://mohammad:123@www.google.com?about", true) == "google.com"); // note: Host(str) treats str literally as a host - use Host::fromUrl() to parse a full URL
     const urlparser::Host host2 = urlparser::Host::fromUrl("http://mohammad:123@www.google.com?about", true);
     const urlparser::Url url2("http://mohammad:123@www.google.com?about", true);
     tic;
     const auto a = url2.fulldomain();
     toc;
-    show(a); // TODO: add clone version to copy without sharing
+    show(a);
 
     printf("\ngood bye :)\n");
     return 0;

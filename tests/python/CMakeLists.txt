@@ -81,6 +81,16 @@ if(BUILD_PYTHON)
             COMMAND ${CMAKE_COMMAND} -E echo "-- Generating coverage.lcov file..."
             COMMAND ${Python3_EXECUTABLE} -m coverage lcov -o ${URLPARSER_COVERAGE_PYTHON_BINARY_DIR}/coverage.lcov
 
+            # coverage.py records paths relative to the build dir it ran in
+            # (e.g. "liburlparser/core.py"), but the real source lives at
+            # "src/liburlparser/core.py" - prepend that prefix so paths
+            # resolve correctly once merged with the C++ coverage (which is
+            # already normalized to be PROJECT_SOURCE_DIR-relative).
+            COMMAND ${CMAKE_COMMAND}
+                    -DCOV_FILE=${URLPARSER_COVERAGE_PYTHON_BINARY_DIR}/coverage.lcov
+                    -DPREFIX_PATH=src/
+                    -P ${PROJECT_SOURCE_DIR}/cmake/FixLCovPaths.cmake
+
             # Generate HTML report
             COMMAND ${CMAKE_COMMAND} -E echo "-- Generating HTML report..."
             COMMAND ${Python3_EXECUTABLE} -m coverage html -d ${URLPARSER_COVERAGE_PYTHON_BINARY_DIR}/html

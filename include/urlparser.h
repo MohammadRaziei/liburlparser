@@ -7,15 +7,10 @@
 * allows extraction and manipulation of various components of a URL, while the Host
 * class focuses on handling and extracting domain-related information from a host.
 *
-* The Url class encapsulates a URL and provides methods to access its components
-* such as protocol, subdomain, domain, suffix, query, fragment, userinfo, port,
-* and parameters. Additionally, it offers methods for constructing a URL string and
-* obtaining specific parts of the URL.
-*
-* The Host class represents a host part of a URL and offers functionalities for
-* extracting domain-related details such as suffix, domain, subdomain, and the full
-* domain. It also supports the removal of 'www' from the host and provides methods
-* to obtain domain-specific information.
+* Both classes are plain value types: no PIMPL, no heap allocation for the
+* object itself. The only deferred/lazy work is the PSL-dependent domain/
+* suffix split (Host) and, for Url, building its Host at all - both are
+* computed once, on first access, and cached in `mutable` members.
 *
 * Example Usage:
 * @code
@@ -62,7 +57,7 @@
     _URLPARSER_VERSION_STR(URLPARSER_VERSION_MAJOR,URLPARSER_VERSION_MINOR,URLPARSER_VERSION_PATCH)
 
 #include <iostream>
-#include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -93,147 +88,16 @@ class version {
  */
 using QueryParams = std::vector<std::string>;
 
-class Host;
-
-/**
- * @brief Represents a URL.
- *
- * The Url class provides functionalities for parsing and managing URLs. It
- * allows access to various components of a URL such as protocol, subdomain,
- * domain, suffix, query, fragment, userinfo, port, and parameters.
- */
-class Url {
-   public:
-    /**
-     * @brief Check if the Public Suffix List (PSL) is loaded.
-     * @return true if the PSL is loaded, false otherwise.
-     */
-    static bool isPslLoaded() noexcept;
-    
-    /**
-     * @brief Extract the host from a given URL.
-     * @param url The URL from which to extract the host.
-     * @return The extracted host as a string.
-     */
-    static std::string extractHost(const std::string& url) noexcept;
-
-   public:
-    /**
-     * @brief Construct a Url object from a given URL string.
-     * @param url The URL string to parse.
-     * @param ignore_www Whether to ignore the "www" subdomain. Default is false.
-     * @throws std::invalid_argument If the URL is malformed or cannot be parsed.
-     */
-    Url(const std::string& url, const bool ignore_www = DEFAULT_IGNORE_WWW);
-    
-    /**
-     * @brief Default constructor for the Url class.
-     * Creates an empty URL object.
-     */
-    Url() noexcept = default;
-
-    /**
-     * @brief Equality operator for comparing two Url objects.
-     * @param other The Url object to compare with.
-     * @return true if the URLs are equal, false otherwise.
-     */
-    bool operator==(const Url& other) const;
-
-    /**
-     * @brief Get the complete URL as a string.
-     * @return The complete URL string.
-     */
-    std::string str() const noexcept;
-    
-    /**
-     * @brief Get the protocol of the URL.
-     * @return The protocol of the URL (e.g., "http", "https", "ftp").
-     */
-    const std::string& protocol() const noexcept;
-    
-    /**
-     * @brief Get the subdomain of the URL.
-     * @return The subdomain of the URL (e.g., "www" in "www.example.com").
-     */
-    const std::string& subdomain() const noexcept;
-    
-    /**
-     * @brief Get the domain of the URL.
-     * @return The domain of the URL (e.g., "example" in "www.example.com").
-     */
-    const std::string& domain() const noexcept;
-    
-    /**
-     * @brief Get the suffix of the URL.
-     * @return The suffix of the URL (e.g., "com" in "www.example.com").
-     */
-    const std::string& suffix() const noexcept;
-    
-    /**
-     * @brief Get the query part of the URL.
-     * @return The query string of the URL (e.g., "param1=value1&param2=value2").
-     */
-    const std::string& query() const noexcept;
-    
-    /**
-     * @brief Get the fragment part of the URL.
-     * @return The fragment of the URL (the part after #).
-     */
-    const std::string& fragment() const noexcept;
-    
-    /**
-     * @brief Get the userinfo part of the URL.
-     * @return The userinfo of the URL (e.g., "username:password").
-     */
-    const std::string& userinfo() const noexcept;
-    
-    /**
-     * @brief Get the absolute path of the URL.
-     * @return The absolute path of the URL (the part after the host and before the query).
-     */
-    std::string abspath() const noexcept;
-    
-    /**
-     * @brief Get the domain name of the URL.
-     * @return The domain name, which is the same as domain().
-     */
-    std::string domainName() const noexcept;
-    
-    /**
-     * @brief Get the full domain of the URL.
-     * @return The full domain of the URL (e.g., "example.com").
-     */
-    const std::string& fulldomain() const noexcept;
-    
-    /**
-     * @brief Get the port of the URL.
-     * @return The port number of the URL, or -1 if not specified.
-     */
-    const int port() const noexcept;
-    
-    /**
-     * @brief Get the parameters of the URL.
-     * @return A vector of strings containing the query parameters.
-     */
-    QueryParams params() const noexcept;
-    
-    /**
-     * @brief Get the host object of the URL.
-     * @return A Host object representing the host part of the URL.
-     */
-    const Host& host() const;
-
-   private:
-    class Impl;
-    std::shared_ptr<Impl> impl; // since all methods are constants
-};
-
 /**
  * @brief Represents a Host part of a URL.
  *
  * The Host class encapsulates functionalities for handling the host component
  * of a URL. It provides methods to extract domain-specific details such as
  * suffix, domain, subdomain, and the full domain.
+ *
+ * A Host is a plain value type: constructing one is just a string copy. The
+ * Public-Suffix-List lookup that domain()/subdomain()/suffix()/domainName()
+ * need is deferred until one of them is first called, and cached from then on.
  */
 class Host {
    public:
@@ -245,27 +109,27 @@ class Host {
      */
     static Host fromUrl(const std::string& url,
                         const bool ignore_www = DEFAULT_IGNORE_WWW);
-    
+
     /**
      * @brief Load the Public Suffix List from a file.
      * @param filepath Path to the PSL file.
      * @throws std::runtime_error If the file cannot be opened or parsed.
      */
     static void loadPslFromPath(const std::string& filepath);
-    
+
     /**
      * @brief Load the Public Suffix List from a string.
      * @param filestr The PSL content as a string.
      * @throws std::runtime_error If the content cannot be parsed.
      */
     static void loadPslFromString(const std::string& filestr);
-    
+
     /**
      * @brief Check if the Public Suffix List (PSL) is loaded.
      * @return true if the PSL is loaded, false otherwise.
      */
     static bool isPslLoaded() noexcept;
-    
+
     /**
      * @brief Remove "www." from the beginning of a hostname.
      * @param host The hostname to process.
@@ -278,93 +142,155 @@ class Host {
      * @brief Construct a Host object from a hostname string.
      * @param host The hostname to parse.
      * @param ignore_www Whether to ignore the "www" subdomain. Default is false.
-     * @throws std::invalid_argument If the hostname is malformed or cannot be parsed.
      */
     Host(const std::string& host, const bool ignore_www = DEFAULT_IGNORE_WWW);
-    
+
     /**
      * @brief Default constructor for the Host class.
      * Creates an empty Host object.
      */
-    Host() = default;
+    Host() noexcept = default;
 
     /**
      * @brief Equality operator for comparing two Host objects.
-     * @param other The Host object to compare with.
-     * @return true if the hosts are equal, false otherwise.
      */
-    bool operator==(const Host& other) const;
-    
-    /**
-     * @brief Equality operator for comparing a Host object with a string.
-     * @param other The string to compare with.
-     * @return true if the host string is equal to the given string, false otherwise.
-     */
-    bool operator==(const std::string& other) const;
+    bool operator==(const Host& other) const noexcept;
 
     /**
-     * @brief Get the suffix of the host.
-     * @return The suffix of the host (e.g., "com" in "example.com").
+     * @brief Equality operator for comparing a Host object with a string.
      */
+    bool operator==(const std::string& other) const noexcept;
+
+    /** @brief The suffix of the host (e.g., "com" in "example.com"). */
     const std::string& suffix() const noexcept;
-    
-    /**
-     * @brief Get the domain of the host.
-     * @return The domain of the host (e.g., "example" in "www.example.com").
-     */
+    /** @brief The domain of the host (e.g., "example" in "www.example.com"). */
     const std::string& domain() const noexcept;
-    
-    /**
-     * @brief Get the domain name of the host.
-     * @return The domain name, which is the same as domain().
-     */
+    /** @brief The domain name, i.e. "<domain>.<suffix>". */
     std::string domainName() const noexcept;
-    
-    /**
-     * @brief Get the subdomain of the host.
-     * @return The subdomain of the host (e.g., "www" in "www.example.com").
-     */
+    /** @brief The subdomain of the host (e.g., "www" in "www.example.com"). */
     const std::string& subdomain() const noexcept;
-    
-    /**
-     * @brief Get the full domain of the host.
-     * @return The full domain of the host (e.g., "example.com").
-     */
+    /** @brief The full domain of the host (e.g., "example.com"). */
     const std::string& fulldomain() const noexcept;
-    
-    /**
-     * @brief Get the complete host as a string.
-     * @return The complete host string.
-     */
+    /** @brief The complete host string (same as fulldomain()). */
     const std::string& str() const noexcept;
 
    private:
-    class Impl;
-    std::shared_ptr<Impl> impl; // since all methods are constants
+    // Runs the PSL lookup + domain/subdomain/suffix split exactly once, the
+    // first time any of those fields is actually requested.
+    void ensureParsed() const noexcept;
+
+    std::string host_;
+    bool ignore_www_ = false;
+    mutable bool parsed_ = false;
+    mutable std::string domain_;
+    mutable std::string subdomain_;
+    mutable std::string suffix_;
+    mutable std::string fulldomain_;
+};
+
+/**
+ * @brief Represents a URL.
+ *
+ * The Url class provides functionalities for parsing and managing URLs. It
+ * allows access to various components of a URL such as protocol, subdomain,
+ * domain, suffix, query, fragment, userinfo, port, and parameters.
+ *
+ * Like Host, Url is a plain value type - parsing happens once in the
+ * constructor; the only deferred work is building the (cheap) Host, which
+ * only happens if `.host()`/`.domain()`/`.suffix()`/`.subdomain()` is
+ * actually called.
+ */
+class Url {
+   public:
+    /**
+     * @brief Check if the Public Suffix List (PSL) is loaded.
+     */
+    static bool isPslLoaded() noexcept;
+
+    /**
+     * @brief Extract the host from a given URL, without fully parsing it.
+     */
+    static std::string extractHost(const std::string& url) noexcept;
+
+   public:
+    /**
+     * @brief Construct a Url object from a given URL string.
+     * @param url The URL string to parse.
+     * @param ignore_www Whether to ignore the "www" subdomain. Default is false.
+     * @throws std::invalid_argument If the URL is malformed or cannot be parsed.
+     */
+    Url(const std::string& url, const bool ignore_www = DEFAULT_IGNORE_WWW);
+
+    /**
+     * @brief Default constructor for the Url class.
+     * Creates an empty URL object.
+     */
+    Url() noexcept = default;
+
+    /**
+     * @brief Equality operator for comparing two Url objects.
+     */
+    bool operator==(const Url& other) const noexcept;
+
+    /** @brief The complete URL as a string. */
+    std::string str() const noexcept;
+    /** @brief The protocol of the URL (e.g., "http", "https", "ftp"). */
+    const std::string& protocol() const noexcept { return scheme_; }
+    /** @brief The subdomain of the URL (e.g., "www" in "www.example.com"). */
+    const std::string& subdomain() const noexcept;
+    /** @brief The domain of the URL (e.g., "example" in "www.example.com"). */
+    const std::string& domain() const noexcept;
+    /** @brief The suffix of the URL (e.g., "com" in "www.example.com"). */
+    const std::string& suffix() const noexcept;
+    /** @brief The query string of the URL (e.g., "a=1&b=2"). */
+    const std::string& query() const noexcept { return query_; }
+    /** @brief The fragment of the URL (the part after '#'). */
+    const std::string& fragment() const noexcept { return fragment_; }
+    /** @brief The userinfo of the URL (e.g., "username:password"). */
+    const std::string& userinfo() const noexcept { return userinfo_; }
+    /** @brief The path, with '.'/'..' segments resolved. */
+    std::string abspath() const noexcept;
+    /** @brief The domain name, i.e. "<domain>.<suffix>". */
+    std::string domainName() const noexcept;
+    /** @brief The full domain of the URL (e.g., "example.com"). */
+    const std::string& fulldomain() const noexcept { return host_; }
+    /** @brief The port number of the URL, or 0 if not specified. */
+    int port() const noexcept { return port_; }
+    /** @brief The '&'-separated query parameters, split into a vector. */
+    QueryParams params() const noexcept;
+    /** @brief The Host object representing the host part of the URL. */
+    const Host& host() const noexcept;
+
+   private:
+    const Host& ensureHost() const noexcept;
+
+    std::string scheme_;
+    std::string userinfo_;
+    std::string host_;
+    int port_ = 0;
+    std::string path_;
+    std::string params_;
+    std::string query_;
+    std::string fragment_;
+    bool has_params_ = false;
+    bool has_query_ = false;
+    bool ignore_www_ = false;
+    mutable std::optional<Host> host_cache_;
 };
 }  // namespace urlparser
 
 /**
  * @brief Output stream operator for QueryParams.
- * @param os The output stream.
- * @param dt The QueryParams to output.
- * @return The output stream.
  */
 std::ostream& operator<<(std::ostream& os, const urlparser::QueryParams& dt);
 
 /**
  * @brief Output stream operator for Url.
- * @param os The output stream.
- * @param dt The Url object to output.
- * @return The output stream.
  */
 std::ostream& operator<<(std::ostream& os, const urlparser::Url& dt);
 
 /**
  * @brief Output stream operator for Host.
- * @param os The output stream.
- * @param dt The Host object to output.
- * @return The output stream.
  */
 std::ostream& operator<<(std::ostream& os, const urlparser::Host& dt);
 #endif  // URLPARSER_H

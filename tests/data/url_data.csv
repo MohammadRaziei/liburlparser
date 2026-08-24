@@ -6,3 +6,6 @@ http://www.aut.ac.ir/#about,True,http,,aut.ac.ir,,aut,aut.ac.ir,ac.ir,0,,about
 http://www.ee.aut.ac.ir/#about,True,http,,ee.aut.ac.ir,ee,aut,aut.ac.ir,ac.ir,0,,about
 http://www.ee.aut.ac.ir/?search,True,http,,ee.aut.ac.ir,ee,aut,aut.ac.ir,ac.ir,0,search,
 http://www.ee.aut.ac.ir?search,True,http,,ee.aut.ac.ir,ee,aut,aut.ac.ir,ac.ir,0,search,
+https://api.github.io/v1/resource?x=1,False,https,,api.github.io,,api,api.github.io,github.io,0,x=1,
+ftp://ftp.example.com:21/pub/file.txt,False,ftp,,ftp.example.com,ftp,example,example.com,com,21,,
+http://example.co.uk,False,http,,example.co.uk,,example,example.co.uk,co.uk,0,,

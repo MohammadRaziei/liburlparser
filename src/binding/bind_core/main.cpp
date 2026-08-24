@@ -107,7 +107,12 @@ NB_MODULE(NB_MODULE_NAME, m) {
         .def_prop_ro("domain_name", &urlparser::Host::domainName)
         .def_prop_ro("fulldomain", &urlparser::Host::fulldomain)
         .def_prop_ro("suffix", &urlparser::Host::suffix)
-//        .def("__eq__", &urlparser::Host::operator==) // TODO: fix this operator for 2 types
+        .def("__eq__", [](const urlparser::Host& self, const urlparser::Host& other) {
+            return self == other;
+        })
+        .def("__eq__", [](const urlparser::Host& self, const std::string& other) {
+            return self == other;
+        })
         .def("to_dict", host_to_dict)
         .def("to_json", host_to_json)
         .def("__str__", &urlparser::Host::str)
@@ -129,7 +134,8 @@ NB_MODULE(NB_MODULE_NAME, m) {
         .def_prop_ro("params", &urlparser::Url::params)
         .def_prop_ro("query", &urlparser::Url::query)
         .def_prop_ro("fragment", &urlparser::Url::fragment)
-//        .def("__eq__", &urlparser::Url::operator==) // TODO: fix this operator for 2 types
+        .def_prop_ro("abspath", &urlparser::Url::abspath)
+        .def("__eq__", &urlparser::Url::operator==)
         .def("to_dict", url_to_dict)
         .def("to_json", url_to_json)
         .def("__str__", &urlparser::Url::str)
