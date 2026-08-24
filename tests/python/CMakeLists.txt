@@ -88,6 +88,7 @@ if(BUILD_PYTHON)
             # already normalized to be PROJECT_SOURCE_DIR-relative).
             COMMAND ${CMAKE_COMMAND}
                     -DCOV_FILE=${URLPARSER_COVERAGE_PYTHON_BINARY_DIR}/coverage.lcov
+                    -DSOURCE_PATH=
                     -DPREFIX_PATH=src/
                     -P ${PROJECT_SOURCE_DIR}/cmake/FixLCovPaths.cmake
 
