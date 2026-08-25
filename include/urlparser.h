@@ -143,7 +143,7 @@ class Host {
      * @param host The hostname to parse.
      * @param ignore_www Whether to ignore the "www" subdomain. Default is false.
      */
-    Host(const std::string& host, const bool ignore_www = DEFAULT_IGNORE_WWW);
+    Host(std::string host, const bool ignore_www = DEFAULT_IGNORE_WWW);
 
     /**
      * @brief Default constructor for the Host class.

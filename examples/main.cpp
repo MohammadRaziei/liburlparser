@@ -91,12 +91,12 @@ int main() {
     show(_host);
 
     tic;
-    for (int i = 0; i < 1'000'000; ++i)
+    for (int i = 0; i < 10'000'000; ++i)
         urlparser::Host host("www.ee.aut.ac.ir");
     toc;
 
     tic;
-    for (int i = 0; i < 1'000'000; ++i)
+    for (int i = 0; i < 10'000'000; ++i)
         urlparser::Host::fromUrl(
             "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
             "home?o=10&k=helloworld#aboutus",

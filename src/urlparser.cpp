@@ -501,8 +501,8 @@ std::string_view urlparser::Host::removeWWW(const std::string_view& host) noexce
     return host.substr(4);
 }
 
-urlparser::Host::Host(const std::string& host, const bool ignore_www)
-    : host_(host), ignore_www_(ignore_www) {}
+urlparser::Host::Host(std::string host, const bool ignore_www)
+    : host_(std::move(host)), ignore_www_(ignore_www) {}
 
 urlparser::Host urlparser::Host::fromUrl(const std::string& url, const bool ignore_www) {
     return urlparser::Host(urlparser::Url::extractHost(url), ignore_www);
