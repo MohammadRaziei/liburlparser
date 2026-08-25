@@ -50,8 +50,8 @@ if(BUILD_PYTHON)
         )
 
         add_dependencies(urlparser_test urlparser_test_python)
-        if(DEFINED PYTHON_BIND_MODULES)
-            add_dependencies(urlparser_test_python ${PYTHON_BIND_MODULES})
+        if(DEFINED NB_MODULE)
+            add_dependencies(urlparser_test_python ${NB_MODULE})
         endif()
     endif()
 

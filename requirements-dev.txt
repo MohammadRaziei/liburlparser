@@ -1,6 +1,7 @@
 # Development dependencies for liburlparser
 # Build requirements
 nanobind
+nanobind-backend
 ninja
 scikit-build-core
 # Testing dependencies

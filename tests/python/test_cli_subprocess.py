@@ -7,14 +7,27 @@ import sys
 import pytest
 
 
-def run_cli_command(command):
-    """Run the CLI command and return the output"""
-    result = subprocess.run(
-        command,
-        capture_output = True,
-        text=True,
-        check=False
-    )
+def run_cli_command(command, timeout=30):
+    """Run the CLI command and return the output.
+
+    A timeout is set deliberately: if the subprocess ever hangs (e.g. due to
+    environment-specific process-creation issues), this test should fail
+    with a clear TimeoutExpired error instead of hanging the whole pytest
+    run indefinitely, forcing a manual Ctrl+C.
+    """
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as e:
+        pytest.fail(
+            f"CLI command timed out after {timeout}s: {command!r}\n"
+            f"partial stdout: {e.stdout!r}\npartial stderr: {e.stderr!r}"
+        )
     return result.stdout, result.stderr, result.returncode
 
 

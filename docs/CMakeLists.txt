@@ -85,8 +85,8 @@ if(BUILD_PYTHON AND SPHINX_CHECK EQUAL 0)
 
     # Must have the nanobind extension(s) built/installed first so `import
     # liburlparser` works from inside conf.py.
-    if(DEFINED PYTHON_BIND_MODULES)
-        add_dependencies(urlparser_docs_python ${PYTHON_BIND_MODULES})
+    if(DEFINED NB_MODULE)
+        add_dependencies(urlparser_docs_python ${NB_MODULE})
     endif()
 elseif(NOT BUILD_PYTHON)
     message(WARNING "BUILD_PYTHON is off - Python documentation will not be generated. Configure with -DBUILD_PYTHON=on")

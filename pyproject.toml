@@ -11,7 +11,7 @@ readme = "README.md"
 authors = [
   { name = "Mohammad Raziei", email = "mohammadraziei1375@gmail.com" },
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
   "Development Status :: 4 - Beta",
   "License :: OSI Approved :: MIT License",
@@ -21,13 +21,15 @@ classifiers = [
   "Programming Language :: C++",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
 ]
-dependencies = []
+# nanobind's split-mode (STABLE_ABI + BACKEND_MODULE, see CMakeLists.txt)
+# moves the nanobind runtime itself out of this extension and into a
+# separate package, loaded at import time - hence a real runtime
+# dependency now, where there was none before.
+dependencies = ["nanobind-backend>=1.0"]
 
 [project.optional-dependencies]
 test = ["pytest-xdist"]
@@ -38,6 +40,11 @@ test = ["pytest-xdist"]
 "Document" = "https://mohammadraziei.github.io/liburlparser/latest"
 
 [tool.cibuildwheel]
+# Split-mode STABLE_ABI (see CMakeLists.txt) means the wheel built here
+# carries an abi3 tag valid for Python 3.10 and every version after it -
+# building cp311/cp312/... separately would just produce redundant copies
+# of the same wheel. Build once, on the floor version.
+build = "cp310-*"
 test-command = "pytest {project}/tests -k \"not test_cli_subprocess\""
 test-extras = ["test"]
 test-skip = ["*universal2:arm64"]

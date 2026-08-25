@@ -5,9 +5,6 @@
 #include <string>
 #include "urlparser.h"
 
-#define STRINGIFY(x) #x
-#define MACRO_STRINGIFY(x) STRINGIFY(x)
-
 namespace nb = nanobind;
 using namespace nb::literals;
 
@@ -75,7 +72,8 @@ inline nb::dict extract(const std::string& host){
     return host_to_dict_minimal(urlparser::Host(host));
 }
 
-NB_MODULE(NB_MODULE_NAME, m) {
+NB_MODULE(_urlparser_py, m) {
+    m.attr("__version__") = URLPARSER_VERSION_STRING;
     m.doc() = R"pbdoc(
         nanobind example plugin
         -----------------------

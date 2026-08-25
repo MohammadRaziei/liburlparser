@@ -113,71 +113,55 @@ embed_file_as_string(
 if(DEFINED PYTHON_PROJECT_NAME)
     # Try to import all Python components potentially needed by nanobind
     #set(Python3_FIND_STRATEGY LOCATION)
-    find_package(Python 3.8
+    find_package(Python 3.10
             REQUIRED COMPONENTS Interpreter Development.Module
             OPTIONAL_COMPONENTS Development.SABIModule)
     # Import nanobind through CMake's find_package mechanism
     find_package(nanobind CONFIG REQUIRED)
 
+    set(NB_MODULE _urlparser_py)
 
-    set(NB_MODULE _about)
-    nanobind_add_module(${NB_MODULE} STABLE_ABI NB_STATIC ${PROJECT_SOURCE_DIR}/src/binding/about.cpp)
+    # We are now ready to compile the actual extension module
+    nanobind_add_module(
+            # Name of the extension
+            ${NB_MODULE}
+
+            # Target the stable ABI, floored at Python 3.10 - the lowest
+            # nanobind supports at all (linked-mode STABLE_ABI needs
+            # 3.12; split mode, via BACKEND_MODULE below, gets us down
+            # to 3.10). One wheel then covers 3.10-3.latest, instead of
+            # a separate wheel per minor version.
+            #
+            # Trade-off: split mode moves the nanobind runtime out of
+            # this extension and into a separate 'nanobind-backend'
+            # package (a real runtime dependency now - see
+            # pyproject.toml), loaded via dlopen() at import time. That
+            # is one extra shared-library hop per call across the
+            # Python/C++ boundary (attribute access, string conversion,
+            # exception translation, etc.) - the pure C++ parsing code
+            # in src/urlparser.cpp is completely unaffected, since it
+            # never touches the Python C API at all.
+            STABLE_ABI
+            BACKEND_MODULE nanobind_backend
+
+            # Source code goes here
+            ${PROJECT_SOURCE_DIR}/src/binding/main.cpp ${SOURCES}
+    )
+
+    target_include_directories(${NB_MODULE} PRIVATE include src ${GENERATED_HEADERS_DIR})
     target_compile_definitions(${NB_MODULE} PRIVATE
-            VERSION_INFO=${PROJECT_VERSION}
-            NB_MODULE_NAME=${NB_MODULE})
-
-    file(GLOB PYTHON_BIND_MODULES_PATH ${PROJECT_SOURCE_DIR}/src/binding/bind_*)
-    set(PYTHON_BIND_MODULES "${NB_MODULE}")
-    foreach(NB_MODULE_PATH IN LISTS PYTHON_BIND_MODULES_PATH)
-        get_filename_component(NB_MODULE ${NB_MODULE_PATH} NAME)
-        string(REGEX REPLACE "bind(.*)" "\\1" NB_MODULE ${NB_MODULE})
-        list(APPEND PYTHON_BIND_MODULES ${NB_MODULE})
-        file(GLOB NB_MODULE_SOURCES ${NB_MODULE_PATH}/*.cpp)
-
-        message(STATUS "Found module: ${NB_MODULE}")
-
-        # Add more commands here to process each directory as needed
-
-        # We are now ready to compile the actual extension module
-        nanobind_add_module(
-                # Name of the extension
-                ${NB_MODULE}
-
-                # Target the stable ABI for Python 3.12+, which reduces
-                # the number of binary wheels that must be built. This
-                # does nothing on older Python versions
-                STABLE_ABI
-
-                # Build libnanobind statically and merge it into the
-                # extension (which itself remains a shared library)
-                #
-                # If your project builds multiple extensions, you can
-                # replace this flag by NB_SHARED to conserve space by
-                # reusing a shared libnanobind across libraries
-                NB_STATIC
-
-                # Source code goes here
-                ${NB_MODULE_SOURCES} ${SOURCES}
-        )
-
-        target_include_directories(${NB_MODULE} PRIVATE include src ${GENERATED_HEADERS_DIR})
-        target_compile_definitions(${NB_MODULE} PRIVATE
-                NB_MODULE_NAME=${NB_MODULE}
-                PUBLIC_SUFFIX_LIST_URL="${PUBLIC_SUFFIX_LIST_URL}"
-        )
-    endforeach()
+            PUBLIC_SUFFIX_LIST_URL="${PUBLIC_SUFFIX_LIST_URL}"
+    )
 
     if(DEFINED SKBUILD)
-        install(TARGETS ${PYTHON_BIND_MODULES}
+        install(TARGETS ${NB_MODULE}
                 CONFIGURATIONS Release
                 LIBRARY DESTINATION
                 ${PYTHON_PROJECT_NAME})
     else()
         file(COPY ${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME} DESTINATION ${PYTHON_PROJECT_NAME})
 
-        foreach(_core IN LISTS PYTHON_BIND_MODULES)
-            set_target_properties(${_core} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PYTHON_PROJECT_NAME}/${PROJECT_NAME})
-        endforeach()
+        set_target_properties(${NB_MODULE} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PYTHON_PROJECT_NAME}/${PROJECT_NAME})
     endif()
 endif()
 
