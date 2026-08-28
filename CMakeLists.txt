@@ -23,10 +23,6 @@ endif()
 
 
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING "" FORCE)
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}" CACHE STRING "" FORCE)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" CACHE STRING "" FORCE)
-
 project(liburlparser LANGUAGES CXX VERSION ${PROJECT_VERSION})
 message(STATUS "Project: ${PROJECT_NAME}@v${PROJECT_VERSION}")
 # Kept for docs/cpp templates (Doxyfile.in, footer.html.in) that still
@@ -171,19 +167,18 @@ endif()
 
 
 
-add_library(urlparser SHARED ${SOURCES})
+add_library(urlparser STATIC ${SOURCES})
 add_library(url::base ALIAS urlparser)
 target_include_directories(urlparser PRIVATE ${GENERATED_HEADERS_DIR})
 
-# Without this, GCC/Clang give inline STL functions (std::string,
-# std::string_view, ...) default/exported visibility in a shared library,
-# meaning they can't be inlined (the compiler must assume they could be
-# interposed by another .so at runtime) - every std::string_view::find()
-# call then goes through the PLT instead of being inlined. Measured impact
-# here: ~6x slower on find()-heavy parsing code without this flag.
-if(NOT MSVC)
-    target_compile_options(urlparser PRIVATE -fvisibility-inlines-hidden)
-endif()
+# Static, not shared: nothing actually needs urlparser as a shared library -
+# the Python extension compiles these sources directly (see
+# nanobind_add_module below), and so do the tests. A shared library would
+# only exist for example/urlparser_benchmark to link against, and shared
+# libraries have real, measured downsides here (PLT indirection breaks
+# inlining for STL-heavy code unless carefully managed with
+# -fvisibility-inlines-hidden) with no upside for this project.
+target_compile_options(urlparser PRIVATE -fPIC)
 
 target_include_directories(urlparser
         PUBLIC
