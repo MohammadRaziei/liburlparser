@@ -56,6 +56,7 @@
 #define URLPARSER_VERSION_STRING \
     _URLPARSER_VERSION_STR(URLPARSER_VERSION_MAJOR,URLPARSER_VERSION_MINOR,URLPARSER_VERSION_PATCH)
 
+#include <cstdint>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -188,6 +189,21 @@ class Host {
     mutable std::string fulldomain_;
 };
 
+// Extra headroom (bytes) reserved beyond a URL's own length in Url's single
+// internal storage buffer. Parsing itself never needs this - every field is
+// a non-expanding substring of the input (case-folding only), so the sum of
+// all fields' lengths can never exceed the URL's length; reserving exactly
+// that is provably enough. The headroom only matters for mutating setters
+// added *after* construction (not yet implemented): if a setter's new value
+// is longer than the field's current span, it gets appended past the
+// initially-parsed content, consuming this headroom before Url would need
+// to grow (reallocate) its buffer. Override before #include "urlparser.h"
+// for special cases (e.g. programs that rebuild many long fields via
+// setters on the same Url instance).
+#ifndef URLPARSER_ARENA_EXTRA_CAPACITY
+#define URLPARSER_ARENA_EXTRA_CAPACITY 32
+#endif
+
 /**
  * @brief Represents a URL.
  *
@@ -199,6 +215,14 @@ class Host {
  * constructor; the only deferred work is building the (cheap) Host, which
  * only happens if `.host()`/`.domain()`/`.suffix()`/`.subdomain()` is
  * actually called.
+ *
+ * Internally, all string fields (scheme, userinfo, host, path, params,
+ * query, fragment) are carved out of a single owned buffer, sized once at
+ * construction (see URLPARSER_ARENA_EXTRA_CAPACITY) - instead of each field
+ * being its own separately heap-allocated std::string. Since fields are
+ * stored as (offset, length) pairs into that one buffer rather than raw
+ * pointers, copying a Url is automatically correct (no dangling views) with
+ * no custom copy/move logic needed.
  */
 class Url {
    public:
@@ -210,7 +234,7 @@ class Url {
     /**
      * @brief Extract the host from a given URL, without fully parsing it.
      */
-    static std::string extractHost(const std::string& url) noexcept;
+    static std::string extractHost(std::string_view url) noexcept;
 
    public:
     /**
@@ -219,7 +243,7 @@ class Url {
      * @param ignore_www Whether to ignore the "www" subdomain. Default is false.
      * @throws std::invalid_argument If the URL is malformed or cannot be parsed.
      */
-    Url(const std::string& url, const bool ignore_www = DEFAULT_IGNORE_WWW);
+    Url(std::string_view url, const bool ignore_www = DEFAULT_IGNORE_WWW);
 
     /**
      * @brief Default constructor for the Url class.
@@ -235,7 +259,7 @@ class Url {
     /** @brief The complete URL as a string. */
     std::string str() const noexcept;
     /** @brief The protocol of the URL (e.g., "http", "https", "ftp"). */
-    const std::string& protocol() const noexcept { return scheme_; }
+    std::string_view protocol() const noexcept { return field(scheme_); }
     /** @brief The subdomain of the URL (e.g., "www" in "www.example.com"). */
     const std::string& subdomain() const noexcept;
     /** @brief The domain of the URL (e.g., "example" in "www.example.com"). */
@@ -243,17 +267,17 @@ class Url {
     /** @brief The suffix of the URL (e.g., "com" in "www.example.com"). */
     const std::string& suffix() const noexcept;
     /** @brief The query string of the URL (e.g., "a=1&b=2"). */
-    const std::string& query() const noexcept { return query_; }
+    std::string_view query() const noexcept { return field(query_); }
     /** @brief The fragment of the URL (the part after '#'). */
-    const std::string& fragment() const noexcept { return fragment_; }
+    std::string_view fragment() const noexcept { return field(fragment_); }
     /** @brief The userinfo of the URL (e.g., "username:password"). */
-    const std::string& userinfo() const noexcept { return userinfo_; }
+    std::string_view userinfo() const noexcept { return field(userinfo_); }
     /** @brief The path, with '.'/'..' segments resolved. */
     std::string abspath() const noexcept;
     /** @brief The domain name, i.e. "<domain>.<suffix>". */
     std::string domainName() const noexcept;
     /** @brief The full domain of the URL (e.g., "example.com"). */
-    const std::string& fulldomain() const noexcept { return host_; }
+    std::string_view fulldomain() const noexcept { return field(host_); }
     /** @brief The port number of the URL, or 0 if not specified. */
     int port() const noexcept { return port_; }
     /** @brief The '&'-separated query parameters, split into a vector. */
@@ -262,16 +286,22 @@ class Url {
     const Host& host() const noexcept;
 
    private:
+    // An (offset, length) pair into storage_ - not a raw pointer/view, so
+    // that copying a Url (which deep-copies storage_) never needs to
+    // "rebase" anything: the offsets stay correct as-is.
+    struct Span {
+        uint32_t pos = 0;
+        uint32_t len = 0;
+    };
+    std::string_view field(Span s) const noexcept {
+        return std::string_view(storage_).substr(s.pos, s.len);
+    }
+
     const Host& ensureHost() const noexcept;
 
-    std::string scheme_;
-    std::string userinfo_;
-    std::string host_;
+    std::string storage_;
+    Span scheme_, userinfo_, host_, path_, params_, query_, fragment_;
     int port_ = 0;
-    std::string path_;
-    std::string params_;
-    std::string query_;
-    std::string fragment_;
     bool has_params_ = false;
     bool has_query_ = false;
     bool ignore_www_ = false;

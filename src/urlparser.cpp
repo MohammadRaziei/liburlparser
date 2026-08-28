@@ -68,8 +68,27 @@ std::vector<std::string> split(const std::string& str, const char delim) noexcep
 
 bool urlparser::Url::isPslLoaded() noexcept { return urlparser::Host::isPslLoaded(); }
 
-urlparser::Url::Url(const std::string& url, const bool ignore_www)
+urlparser::Url::Url(std::string_view url, const bool ignore_www)
     : ignore_www_(ignore_www) {
+    // Every field is a non-expanding substring of url (case-folding only
+    // changes case, never length), so their combined length can never
+    // exceed url.size() - reserving exactly that (plus the configurable
+    // headroom, for future setters) means storage_ never reallocates
+    // during parsing, so the Spans we hand out below stay valid forever.
+    storage_.reserve(url.size() + URLPARSER_ARENA_EXTRA_CAPACITY);
+
+    auto appendAsIs = [this](std::string_view src) -> Span {
+        const auto pos = static_cast<uint32_t>(storage_.size());
+        storage_.append(src);
+        return Span{pos, static_cast<uint32_t>(src.size())};
+    };
+    auto appendLower = [&appendAsIs, this](std::string_view src) -> Span {
+        const Span s = appendAsIs(src);
+        std::transform(storage_.begin() + s.pos, storage_.begin() + s.pos + s.len,
+                        storage_.begin() + s.pos, ascii_tolower);
+        return s;
+    };
+
     size_t position = 0;
     size_t index = url.find(':');
     if (index != std::string::npos) {
@@ -80,18 +99,14 @@ urlparser::Url::Url(const std::string& url, const bool ignore_www)
             if ((index + 1) >= url.length() ||
                 std::any_of(url.begin() + index + 1, url.end(),
                             [](char c) { return !is_digit_char(c); })) {
-                scheme_.assign(url, 0, index);
-                std::transform(scheme_.begin(), scheme_.end(), scheme_.begin(),
-                                ascii_tolower);
+                scheme_ = appendLower(url.substr(0, index));
                 position = index + 1;
             } else {
-                scheme_.assign(url, 0, index);
-                std::transform(scheme_.begin(), scheme_.end(), scheme_.begin(),
-                                ascii_tolower);
-                if (KNOWN_PROTOCOLS.find(scheme_) != KNOWN_PROTOCOLS.end()) {
+                scheme_ = appendLower(url.substr(0, index));
+                if (KNOWN_PROTOCOLS.find(std::string(field(scheme_))) != KNOWN_PROTOCOLS.end()) {
                     position = index + 1;
                 } else {
-                    scheme_.clear();
+                    scheme_ = Span{};
                 }
             }
         }
@@ -127,17 +142,21 @@ urlparser::Url::Url(const std::string& url, const bool ignore_www)
         const size_t host_end = (colon_pos != std::string::npos) ? colon_pos : authority_end;
 
         if (at_pos != std::string::npos) {
-            userinfo_.assign(url, position, at_pos - position);
+            userinfo_ = appendAsIs(url.substr(position, at_pos - position));
         }
 
-        host_.assign(url, host_start, host_end - host_start);
-        std::transform(host_.begin(), host_.end(), host_.begin(), ascii_tolower);
+        host_ = appendLower(url.substr(host_start, host_end - host_start));
         if (ignore_www_) {
             // Cheap (a prefix check, not a PSL lookup) - do it once, here,
             // rather than lazily: host_ is then a plain, immutable-after-
             // construction field like everything else, and str()/
             // fulldomain()/host() all agree with each other from the start.
-            host_ = std::string(urlparser::Host::removeWWW(host_));
+            // With Span-based storage this is just an offset bump - no
+            // copy, no allocation at all.
+            if (field(host_).compare(0, 4, "www.") == 0) {
+                host_.pos += 4;
+                host_.len -= 4;
+            }
         }
 
         position = authority_end;
@@ -151,12 +170,11 @@ urlparser::Url::Url(const std::string& url, const bool ignore_www)
             if (first != last) {
                 int parsed_port = 0;
                 auto [ptr, ec] = std::from_chars(first, last, parsed_port);
-                const std::string portText(first, last);
                 if (ec != std::errc() || ptr != last) {
-                    throw std::invalid_argument("Port not a number: " + portText);
+                    throw std::invalid_argument("Port not a number: " + std::string(first, last));
                 }
                 if (parsed_port > 65535 || parsed_port < 0) {
-                    throw std::invalid_argument("Port out of range: " + portText);
+                    throw std::invalid_argument("Port out of range: " + std::string(first, last));
                 }
                 port_ = parsed_port;
             }
@@ -166,7 +184,7 @@ urlparser::Url::Url(const std::string& url, const bool ignore_www)
     // Single forward pass over the rest of the URL to locate the first '#'
     // (fragment), the first '?' before it (query), and - only for schemes
     // that use params - the first ';' before the query.
-    const bool track_params = USES_PARAMS.find(scheme_) != USES_PARAMS.end();
+    const bool track_params = USES_PARAMS.find(std::string(field(scheme_))) != USES_PARAMS.end();
     size_t hash_pos = std::string::npos;
     size_t query_pos = std::string::npos;
     size_t params_pos = std::string::npos;
@@ -190,41 +208,50 @@ urlparser::Url::Url(const std::string& url, const bool ignore_www)
                                                                 : url.length();
     const size_t path_content_end = (params_pos != std::string::npos) ? params_pos : path_end;
 
-    path_.assign(url, position, path_content_end - position);
+    path_ = appendAsIs(url.substr(position, path_content_end - position));
 
     if (params_pos != std::string::npos) {
-        params_.assign(url, params_pos + 1, path_end - params_pos - 1);
+        params_ = appendAsIs(url.substr(params_pos + 1, path_end - params_pos - 1));
         has_params_ = true;
     }
 
     if (query_pos != std::string::npos) {
         const size_t query_end = (hash_pos != std::string::npos) ? hash_pos : url.length();
-        query_.assign(url, query_pos + 1, query_end - query_pos - 1);
+        query_ = appendAsIs(url.substr(query_pos + 1, query_end - query_pos - 1));
         has_query_ = true;
     }
 
     if (hash_pos != std::string::npos) {
-        fragment_.assign(url, hash_pos + 1, url.length() - hash_pos - 1);
+        fragment_ = appendAsIs(url.substr(hash_pos + 1, url.length() - hash_pos - 1));
     }
 }
 
 std::string urlparser::Url::str() const noexcept {
     std::string result;
+    result.reserve(storage_.size() + 16);
 
-    if (!scheme_.empty()) {
-        result.append(scheme_);
-        result.append(USES_NETLOC.find(scheme_) == USES_NETLOC.end() ? ":" : "://");
-    } else if (!host_.empty()) {
+    const std::string_view scheme = field(scheme_);
+    const std::string_view userinfo = field(userinfo_);
+    const std::string_view host = field(host_);
+    const std::string_view path = field(path_);
+    const std::string_view params = field(params_);
+    const std::string_view query = field(query_);
+    const std::string_view fragment = field(fragment_);
+
+    if (!scheme.empty()) {
+        result.append(scheme);
+        result.append(USES_NETLOC.find(std::string(scheme)) == USES_NETLOC.end() ? ":" : "://");
+    } else if (!host.empty()) {
         result.append("//");
     }
 
-    if (!userinfo_.empty()) {
-        result.append(userinfo_);
+    if (!userinfo.empty()) {
+        result.append(userinfo);
         result.append("@");
     }
 
-    if (!host_.empty()) {
-        result.append(host_);
+    if (!host.empty()) {
+        result.append(host);
     }
 
     if (port_) {
@@ -232,30 +259,30 @@ std::string urlparser::Url::str() const noexcept {
         result.append(std::to_string(port_));
     }
 
-    if (path_.empty()) {
+    if (path.empty()) {
         if (!result.empty()) {
             result.append("/");
         }
     } else {
-        if (!host_.empty() && path_[0] != '/') {
+        if (!host.empty() && path[0] != '/') {
             result.append(1, '/');
         }
-        result.append(path_);
+        result.append(path);
     }
 
     if (has_params_) {
         result.append(";");
-        result.append(params_);
+        result.append(params);
     }
 
     if (has_query_) {
         result.append("?");
-        result.append(query_);
+        result.append(query);
     }
 
-    if (!fragment_.empty()) {
+    if (!fragment.empty()) {
         result.append("#");
-        result.append(fragment_);
+        result.append(fragment);
     }
 
     return result;
@@ -263,22 +290,21 @@ std::string urlparser::Url::str() const noexcept {
 
 std::string urlparser::Url::abspath() const noexcept {
     // Resolves '.'/'..' path segments, the way a filesystem path resolver
-    // would - a pure computation (unlike the old chainable UrlImpl::abspath(),
-    // which mutated path_ in place as a side effect of what looked like a
-    // read-only getter).
+    // would - a pure computation (no mutation of any internal state).
+    const std::string_view path = field(path_);
     std::string result;
     std::vector<size_t> segment_starts;
 
-    if (!path_.empty() && path_[0] == '/') {
+    if (!path.empty() && path[0] == '/') {
         result.append(1, '/');
         segment_starts.push_back(0);
     }
 
     size_t previous = 0;
-    size_t index = path_.find('/');
+    size_t index = path.find('/');
     auto emit_segment = [&](size_t start, size_t end) {
         if (end - start == 0) return;  // skip empty segments
-        const std::string_view segment(path_.data() + start, end - start);
+        const std::string_view segment = path.substr(start, end - start);
         if (segment == ".") return;
         if (segment == "..") {
             if (segment_starts.size() > 1) {
@@ -292,17 +318,19 @@ std::string urlparser::Url::abspath() const noexcept {
         result.append(segment);
     };
 
-    for (; index != std::string::npos; previous = index + 1, index = path_.find('/', index + 1)) {
+    for (; index != std::string::npos; previous = index + 1, index = path.find('/', index + 1)) {
         emit_segment(previous, index);
     }
-    emit_segment(previous, path_.size());
+    emit_segment(previous, path.size());
 
     return result;
 }
 
-urlparser::QueryParams urlparser::Url::params() const noexcept { return split(query_, '&'); }
+urlparser::QueryParams urlparser::Url::params() const noexcept {
+    return split(std::string(field(query_)), '&');
+}
 
-std::string urlparser::Url::extractHost(const std::string& url) noexcept {
+std::string urlparser::Url::extractHost(std::string_view url) noexcept {
     size_t pos = url.find("://");
     pos = (pos != std::string::npos) ? pos + 3 : 0;
     size_t end_pos = url.find_first_of("?/", pos);
@@ -312,14 +340,17 @@ std::string urlparser::Url::extractHost(const std::string& url) noexcept {
     if (size_t at_pos = url.find_first_of('@', pos); at_pos < end_pos) {
         pos = at_pos + 1;
     }
-    return url.substr(pos, end_pos - pos);
+    return std::string(url.substr(pos, end_pos - pos));
 }
 
 bool urlparser::Url::operator==(const urlparser::Url& other) const noexcept {
-    return scheme_ == other.scheme_ && userinfo_ == other.userinfo_ &&
-           host_ == other.host_ && port_ == other.port_ && path_ == other.path_ &&
-           params_ == other.params_ && query_ == other.query_ &&
-           fragment_ == other.fragment_;
+    return field(scheme_) == other.field(other.scheme_) &&
+           field(userinfo_) == other.field(other.userinfo_) &&
+           field(host_) == other.field(other.host_) && port_ == other.port_ &&
+           field(path_) == other.field(other.path_) &&
+           field(params_) == other.field(other.params_) &&
+           field(query_) == other.field(other.query_) &&
+           field(fragment_) == other.field(other.fragment_);
 }
 
 /// Builds (once, cached) the Host for this URL. ignore_www is always passed
@@ -327,7 +358,7 @@ bool urlparser::Url::operator==(const urlparser::Url& other) const noexcept {
 /// construction time, if requested.
 const urlparser::Host& urlparser::Url::ensureHost() const noexcept {
     if (!host_cache_) {
-        host_cache_.emplace(host_, false);
+        host_cache_.emplace(std::string(field(host_)), false);
     }
     return *host_cache_;
 }

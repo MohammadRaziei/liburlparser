@@ -5,15 +5,18 @@ file(GLOB URLPARSER_TEST_SOURCES_CPP CONFIGURE_DEPENDS
 
 add_executable(test_liburlparser_cpp
     ${URLPARSER_TEST_SOURCES_CPP}
+    ${PROJECT_SOURCE_DIR}/src/urlparser.cpp
     ${URLPARSER_TEST_SOURCE_DIR}/utest/utest_main.cxx
 )
 
 target_include_directories(test_liburlparser_cpp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${URLPARSER_TEST_SOURCE_DIR}/utest
+    ${PROJECT_SOURCE_DIR}/include
+    ${GENERATED_HEADERS_DIR}
 )
 
-target_link_libraries(test_liburlparser_cpp PRIVATE url::base Threads::Threads)
+target_link_libraries(test_liburlparser_cpp PRIVATE Threads::Threads)
 
 add_test(NAME test_liburlparser_cpp COMMAND $<TARGET_FILE:test_liburlparser_cpp>)
 

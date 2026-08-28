@@ -22,13 +22,6 @@ find_package(Python3 COMPONENTS Interpreter REQUIRED)
 find_program(LCOV_EXECUTABLE lcov)
 find_program(GENHTML_EXECUTABLE genhtml)
 
-# Instrument the library itself so its internals (not just test glue code)
-# show up in the coverage report.
-if(LCOV_EXECUTABLE AND GENHTML_EXECUTABLE AND TARGET urlparser)
-    target_compile_options(urlparser PRIVATE -O0 -g --coverage)
-    target_link_options(urlparser PRIVATE --coverage)
-endif()
-
 add_subdirectory(${URLPARSER_TEST_SOURCE_DIR}/cpp)
 add_subdirectory(${URLPARSER_TEST_SOURCE_DIR}/python)
 

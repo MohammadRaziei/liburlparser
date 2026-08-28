@@ -1,5 +1,6 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
 #include <nanobind/stl/vector.h>
 
 #include <string>
@@ -49,12 +50,12 @@ inline std::string host_to_json(const urlparser::Host& host) {
 
 inline std::string url_to_json(const urlparser::Url& url) {
     return "{\"str\": \"" + url.str() + "\""
-        + ", \"protocol\": \"" + url.protocol() + "\""
-        + ", \"userinfo\": \"" + url.userinfo() + "\""
+        + ", \"protocol\": \"" + std::string(url.protocol()) + "\""
+        + ", \"userinfo\": \"" + std::string(url.userinfo()) + "\""
         + ", \"host\": " + host_to_json(url.host())
         + ", \"port\": " + std::to_string(url.port())
-        + ", \"query\": \"" + url.query() + "\""
-        + ", \"fragment\": \"" + url.fragment() + "\"}";
+        + ", \"query\": \"" + std::string(url.query()) + "\""
+        + ", \"fragment\": \"" + std::string(url.fragment()) + "\"}";
 }
 
 inline nb::dict host_to_dict_minimal(const urlparser::Host& host) {

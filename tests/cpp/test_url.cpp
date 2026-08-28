@@ -71,17 +71,17 @@ std::vector<UrlData> load_url_data(const std::string& filename) {
 // mismatched field is reported, not just the first one.
 static void check_url_row(int *utest_result, const UrlData& url_data) {
     urlparser::Url url(url_data.url, url_data.ignore_www);
-    EXPECT_STREQ(url.protocol().c_str(), url_data.protocol.c_str());
-    EXPECT_STREQ(url.userinfo().c_str(), url_data.userinfo.c_str());
-    EXPECT_STREQ(url.fulldomain().c_str(), url_data.fulldomain.c_str());
+    EXPECT_STREQ(std::string(url.protocol()).c_str(), url_data.protocol.c_str());
+    EXPECT_STREQ(std::string(url.userinfo()).c_str(), url_data.userinfo.c_str());
+    EXPECT_STREQ(std::string(url.fulldomain()).c_str(), url_data.fulldomain.c_str());
     EXPECT_STREQ(url.host().str().c_str(), url_data.fulldomain.c_str());
     EXPECT_STREQ(url.subdomain().c_str(), url_data.subdomain.c_str());
     EXPECT_STREQ(url.domain().c_str(), url_data.domain.c_str());
     EXPECT_STREQ(url.domainName().c_str(), url_data.domain_name.c_str());
     EXPECT_STREQ(url.suffix().c_str(), url_data.suffix.c_str());
     EXPECT_EQ(url.port(), url_data.port);
-    EXPECT_STREQ(url.query().c_str(), url_data.query.c_str());
-    EXPECT_STREQ(url.fragment().c_str(), url_data.fragment.c_str());
+    EXPECT_STREQ(std::string(url.query()).c_str(), url_data.query.c_str());
+    EXPECT_STREQ(std::string(url.fragment()).c_str(), url_data.fragment.c_str());
 }
 
 UTEST(CSVUrlTest, CheckPSLisLoaded){
@@ -116,7 +116,7 @@ UTEST(UrlTest, StrIncludesPortWhenNonDefault) {
 
 UTEST(UrlTest, StrIncludesUserinfo) {
     urlparser::Url url("https://user:pass@example.com/");
-    EXPECT_STREQ(url.userinfo().c_str(), "user:pass");
+    EXPECT_STREQ(std::string(url.userinfo()).c_str(), "user:pass");
     EXPECT_STREQ(url.str().c_str(), "https://user:pass@example.com/");
 }
 
@@ -197,8 +197,8 @@ UTEST(UrlTest, CopyIsIndependentValue) {
 
 UTEST(UrlTest, DefaultConstructedUrlIsEmpty) {
     urlparser::Url url;
-    EXPECT_STREQ(url.protocol().c_str(), "");
-    EXPECT_STREQ(url.fulldomain().c_str(), "");
+    EXPECT_STREQ(std::string(url.protocol()).c_str(), "");
+    EXPECT_STREQ(std::string(url.fulldomain()).c_str(), "");
     EXPECT_EQ(url.port(), 0);
 }
 
