@@ -34,7 +34,7 @@ The primary purpose of liburlparser is to parse URLs and extract their component
 - **High Performance**: Optimized C++ implementation for fast URL parsing
 - **Comprehensive URL Parsing**: Extract all components of a URL including protocol, domain, subdomain, suffix, path, query parameters, and fragments
 - **Public Suffix List Support**: Accurate domain recognition using the public suffix list
-- **Clean API Design**: Separate `urlparser::Url` and `urlparser::Host` classes for better code organization
+- **Clean API Design**: Separate `urlparser::url` and `urlparser::host` classes for better code organization
 - **Cross-Platform Compatibility**: Works on Windows, Linux, and macOS
 - **Automatic PSL Updates**: Updates the public suffix list automatically during build
 
@@ -57,13 +57,13 @@ When parsing a URL, the library follows this general flow:
 
 The library is built around two primary classes that work together to provide URL parsing functionality:
 
-### urlparser::Url Class
+### urlparser::url Class
 
-The `urlparser::Url` class is responsible for parsing complete URLs and extracting all their components. It provides methods to access:
+The `urlparser::url` class is responsible for parsing complete URLs and extracting all their components. It provides methods to access:
 
 - Protocol (e.g., "https")
 - User information
-- Host (which is represented as a Host object)
+- host (which is represented as a host object)
 - Port
 - Path
 - Query parameters
@@ -73,7 +73,7 @@ The `urlparser::Url` class is responsible for parsing complete URLs and extracti
 
 - `protocol()`: Returns the protocol (e.g., "http", "https")
 - `userinfo()`: Returns the user information part of the URL
-- `host()`: Returns a `urlparser::Host` object representing the host part
+- `host()`: Returns a `urlparser::host` object representing the host part
 - `port()`: Returns the port number
 - `abspath()`: Returns the absolute path
 - `query()`: Returns the query string
@@ -81,9 +81,9 @@ The `urlparser::Url` class is responsible for parsing complete URLs and extracti
 - `fragment()`: Returns the fragment (anchor)
 - `str()`: Returns the complete URL as a string
 
-### urlparser::Host Class
+### urlparser::host Class
 
-The `urlparser::Host` class focuses on parsing and extracting domain information from hostnames. It leverages the Public Suffix List (PSL) to correctly handle domain extraction, even for complex cases like "co.uk". It provides methods to access:
+The `urlparser::host` class focuses on parsing and extracting domain information from hostnames. It leverages the Public Suffix List (PSL) to correctly handle domain extraction, even for complex cases like "co.uk". It provides methods to access:
 
 - Subdomain (e.g., "www" in "www.example.com")
 - Domain (e.g., "example" in "www.example.com")
@@ -95,10 +95,10 @@ The `urlparser::Host` class focuses on parsing and extracting domain information
 - `domain()`: Returns the domain part
 - `subdomain()`: Returns the subdomain part
 - `suffix()`: Returns the suffix (TLD)
-- `domainName()`: Returns the domain name (domain + suffix)
-- `fulldomain()`: Returns the full domain (subdomain + domain + suffix)
+- `domain_name()`: Returns the domain name (domain + suffix)
+- `full_domain()`: Returns the full domain (subdomain + domain + suffix)
 - `str()`: Returns the host as a string
-- `static fromUrl(const std::string& url, bool ignore_www = false)`: Creates a Host object from a URL
+- `static from_url(const std::string& url, bool ignore_www = false)`: Creates a host object from a URL
 
 ## Usage Examples
 
@@ -110,7 +110,7 @@ The `urlparser::Host` class focuses on parsing and extracting domain information
 
 int main() {
     // Parse a URL
-    urlparser::Url url("https://www.example.com/path?param=value#section");
+    urlparser::url url("https://www.example.com/path?param=value#section");
     
     // Access URL components
     std::cout << "Protocol: " << url.protocol() << std::endl;
@@ -132,17 +132,17 @@ int main() {
 #include "urlparser.h"
 
 int main() {
-    // Create a Host object directly
-    urlparser::Host host1("www.example.com");
+    // Create a host object directly
+    urlparser::host host1("www.example.com");
     
-    // Create a Host object from a URL
-    urlparser::Host host2 = urlparser::Host::fromUrl("https://www.example.com/path?param=value");
+    // Create a host object from a URL
+    urlparser::host host2 = urlparser::host::from_url("https://www.example.com/path?param=value");
     
-    // Access Host components
+    // Access host components
     std::cout << "Domain: " << host1.domain() << std::endl;
     std::cout << "Subdomain: " << host1.subdomain() << std::endl;
     std::cout << "Suffix: " << host1.suffix() << std::endl;
-    std::cout << "Domain Name: " << host1.domainName() << std::endl;
+    std::cout << "Domain Name: " << host1.domain_name() << std::endl;
     
     // Compare hosts
     if (host1 == host2) {
@@ -161,7 +161,7 @@ int main() {
 
 int main() {
     // Parse a complex URL
-    const urlparser::Url url(
+    const urlparser::url url(
         "https://user:password@www.subdomain.example.co.uk:8080/path/to/resource?param1=value1&param2=value2#section",
         true  // ignore_www parameter
     );
@@ -184,8 +184,8 @@ int main() {
     }
     
     // Get the host object
-    urlparser::Host host = url.host();
-    std::cout << "Full Domain: " << host.fulldomain() << std::endl;
+    urlparser::host host = url.host();
+    std::cout << "Full Domain: " << host.full_domain() << std::endl;
     
     return 0;
 }
@@ -200,16 +200,16 @@ The library uses the Public Suffix List (PSL) to accurately identify domain suff
 
 int main() {
     // Check if PSL is loaded
-    bool pslLoaded = urlparser::Host::isPslLoaded();
+    bool pslLoaded = urlparser::host::is_psl_loaded();
     
     // Load PSL from a file
     if (!pslLoaded) {
-        urlparser::Host::loadPslFromPath("/path/to/public_suffix_list.dat");
+        urlparser::host::load_psl_from_path("/path/to/public_suffix_list.dat");
     }
     
     // Or load PSL from a string
     std::string pslContent = "..."; // PSL content
-    urlparser::Host::loadPslFromString(pslContent);
+    urlparser::host::load_psl_from_string(pslContent);
     
     return 0;
 }
@@ -248,9 +248,9 @@ make docs
 
 URL Parser is designed for high performance. In benchmarks, it consistently outperforms other URL parsing libraries:
 
-| Library | Function | Time (Extract from Host) | Time (Extract from URL) |
+| Library | Function | Time (Extract from host) | Time (Extract from URL) |
 |---------|----------|--------------------------|-------------------------|
-| liburlparser | Host | 1.12s | 2.10s |
+| liburlparser | host | 1.12s | 2.10s |
 | Other libraries | - | 1.50s - 34.48s | 2.24s - 57.87s |
 
 *Tests were run on a file containing 10 million random domains and 1 million random URLs.*

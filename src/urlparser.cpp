@@ -1,10 +1,10 @@
 //
-// Url + Host: parsing, string reconstruction, and Public-Suffix-List
+// url + host: parsing, string reconstruction, and Public-Suffix-List
 // matching - everything liburlparser's core does, in one file. (Previously
 // split across url.h + url.cpp + urlparser_url.cpp + psl.h + psl.cpp +
-// urlparser_host.cpp, with a confusing detail::Url class wrapped by another
-// Url::Impl, and a PIMPL Host::Impl wrapping a separately-loaded PSL.) Url
-// and Host are now flat value types declared directly in
+// urlparser_host.cpp, with a confusing detail::url class wrapped by another
+// url::Impl, and a PIMPL host::Impl wrapping a separately-loaded PSL.) url
+// and host are now flat value types declared directly in
 // include/urlparser.h - there is nothing to wrap here anymore, just the
 // method bodies. PSL (the one piece that genuinely needs a
 // std::unordered_map) lives entirely here, in urlparser::detail, and never
@@ -66,9 +66,9 @@ std::vector<std::string> split(const std::string& str, const char delim) noexcep
 
 }  // namespace
 
-bool urlparser::Url::isPslLoaded() noexcept { return urlparser::Host::isPslLoaded(); }
+bool urlparser::url::is_psl_loaded() noexcept { return urlparser::host::is_psl_loaded(); }
 
-urlparser::Url::Url(std::string_view url, const bool ignore_www)
+urlparser::url::url(std::string_view url, const bool ignore_www)
     : ignore_www_(ignore_www) {
     // Every field is a non-expanding substring of url (case-folding only
     // changes case, never length), so their combined length can never
@@ -150,7 +150,7 @@ urlparser::Url::Url(std::string_view url, const bool ignore_www)
             // Cheap (a prefix check, not a PSL lookup) - do it once, here,
             // rather than lazily: host_ is then a plain, immutable-after-
             // construction field like everything else, and str()/
-            // fulldomain()/host() all agree with each other from the start.
+            // full_domain()/host() all agree with each other from the start.
             // With Span-based storage this is just an offset bump - no
             // copy, no allocation at all.
             if (field(host_).compare(0, 4, "www.") == 0) {
@@ -226,7 +226,7 @@ urlparser::Url::Url(std::string_view url, const bool ignore_www)
     }
 }
 
-std::string urlparser::Url::str() const noexcept {
+std::string urlparser::url::str() const noexcept {
     std::string result;
     result.reserve(storage_.size() + 16);
 
@@ -288,7 +288,7 @@ std::string urlparser::Url::str() const noexcept {
     return result;
 }
 
-std::string urlparser::Url::abspath() const noexcept {
+std::string urlparser::url::abspath() const noexcept {
     // Resolves '.'/'..' path segments, the way a filesystem path resolver
     // would - a pure computation (no mutation of any internal state).
     const std::string_view path = field(path_);
@@ -326,11 +326,11 @@ std::string urlparser::Url::abspath() const noexcept {
     return result;
 }
 
-urlparser::QueryParams urlparser::Url::params() const noexcept {
+urlparser::QueryParams urlparser::url::params() const noexcept {
     return split(std::string(field(query_)), '&');
 }
 
-std::string urlparser::Url::extractHost(std::string_view url) noexcept {
+std::string urlparser::url::extract_host(std::string_view url) noexcept {
     size_t pos = url.find("://");
     pos = (pos != std::string::npos) ? pos + 3 : 0;
     size_t end_pos = url.find_first_of("?/", pos);
@@ -343,7 +343,7 @@ std::string urlparser::Url::extractHost(std::string_view url) noexcept {
     return std::string(url.substr(pos, end_pos - pos));
 }
 
-bool urlparser::Url::operator==(const urlparser::Url& other) const noexcept {
+bool urlparser::url::operator==(const urlparser::url& other) const noexcept {
     return field(scheme_) == other.field(other.scheme_) &&
            field(userinfo_) == other.field(other.userinfo_) &&
            field(host_) == other.field(other.host_) && port_ == other.port_ &&
@@ -353,21 +353,21 @@ bool urlparser::Url::operator==(const urlparser::Url& other) const noexcept {
            field(fragment_) == other.field(other.fragment_);
 }
 
-/// Builds (once, cached) the Host for this URL. ignore_www is always passed
+/// Builds (once, cached) the host for this URL. ignore_www is always passed
 /// as false here since host_ has already had "www." stripped, at
 /// construction time, if requested.
-const urlparser::Host& urlparser::Url::ensureHost() const noexcept {
+const urlparser::host& urlparser::url::ensure_host() const noexcept {
     if (!host_cache_) {
         host_cache_.emplace(std::string(field(host_)), false);
     }
     return *host_cache_;
 }
 
-const urlparser::Host& urlparser::Url::host() const noexcept { return ensureHost(); }
-const std::string& urlparser::Url::suffix() const noexcept { return ensureHost().suffix(); }
-const std::string& urlparser::Url::subdomain() const noexcept { return ensureHost().subdomain(); }
-const std::string& urlparser::Url::domain() const noexcept { return ensureHost().domain(); }
-std::string urlparser::Url::domainName() const noexcept { return ensureHost().domainName(); }
+const urlparser::host& urlparser::url::host() const noexcept { return ensure_host(); }
+const std::string& urlparser::url::suffix() const noexcept { return ensure_host().suffix(); }
+const std::string& urlparser::url::subdomain() const noexcept { return ensure_host().subdomain(); }
+const std::string& urlparser::url::domain() const noexcept { return ensure_host().domain(); }
+std::string urlparser::url::domain_name() const noexcept { return ensure_host().domain_name(); }
 
 std::ostream& operator<<(std::ostream& os, const urlparser::QueryParams& v) {
     os << "[";
@@ -378,20 +378,20 @@ std::ostream& operator<<(std::ostream& os, const urlparser::QueryParams& v) {
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const urlparser::Url& dt) {
+std::ostream& operator<<(std::ostream& os, const urlparser::url& dt) {
     os << dt.str();
     return os;
 }
 
 // ---------------------------------------------------------------------------
-// Host: Public-Suffix-List matching (suffix/domain/subdomain split).
+// host: Public-Suffix-List matching (suffix/domain/subdomain split).
 // ---------------------------------------------------------------------------
 
 namespace urlparser::detail {
 
 /**
  * Finds the TLD (public suffix) of a hostname according to a Public Suffix
- * List. Internal to this file - Host is the only thing that uses it.
+ * List. Internal to this file - host is the only thing that uses it.
  */
 struct PSL {
     PSL() = default;
@@ -513,33 +513,33 @@ PSL& psl() {
 
 }  // namespace urlparser::detail
 
-void urlparser::Host::loadPslFromPath(const std::string& filepath) {
+void urlparser::host::load_psl_from_path(const std::string& filepath) {
     urlparser::detail::psl() = urlparser::detail::PSL::fromPath(filepath);
 }
 
-void urlparser::Host::loadPslFromString(const std::string& filestr) {
+void urlparser::host::load_psl_from_string(const std::string& filestr) {
     urlparser::detail::psl() = urlparser::detail::PSL::fromString(filestr);
 }
 
-bool urlparser::Host::isPslLoaded() noexcept {
+bool urlparser::host::is_psl_loaded() noexcept {
     return urlparser::detail::psl().numLevels() > 0;
 }
 
-std::string_view urlparser::Host::removeWWW(const std::string_view& host) noexcept {
+std::string_view urlparser::host::remove_www(const std::string_view& host) noexcept {
     if (host.compare(0, 4, "www.") != 0) {
         return host;
     }
     return host.substr(4);
 }
 
-urlparser::Host::Host(std::string host, const bool ignore_www)
+urlparser::host::host(std::string host, const bool ignore_www)
     : host_(std::move(host)), ignore_www_(ignore_www) {}
 
-urlparser::Host urlparser::Host::fromUrl(const std::string& url, const bool ignore_www) {
-    return urlparser::Host(urlparser::Url::extractHost(url), ignore_www);
+urlparser::host urlparser::host::from_url(const std::string& url, const bool ignore_www) {
+    return urlparser::host(urlparser::url::extract_host(url), ignore_www);
 }
 
-void urlparser::Host::ensureParsed() const noexcept {
+void urlparser::host::ensure_parsed() const noexcept {
     if (parsed_) return;
     parsed_ = true;
 
@@ -568,47 +568,47 @@ void urlparser::Host::ensureParsed() const noexcept {
     }
 }
 
-const std::string& urlparser::Host::suffix() const noexcept {
-    ensureParsed();
+const std::string& urlparser::host::suffix() const noexcept {
+    ensure_parsed();
     return suffix_;
 }
 
-const std::string& urlparser::Host::subdomain() const noexcept {
-    ensureParsed();
+const std::string& urlparser::host::subdomain() const noexcept {
+    ensure_parsed();
     return subdomain_;
 }
 
-const std::string& urlparser::Host::domain() const noexcept {
-    ensureParsed();
+const std::string& urlparser::host::domain() const noexcept {
+    ensure_parsed();
     return domain_;
 }
 
-// Fast path: with ignore_www == false, fulldomain is always exactly the
+// Fast path: with ignore_www == false, full_domain is always exactly the
 // original host string (the PSL-dependent split above never touches
 // fulldomain_ in that case), so this skips the PSL lookup entirely for what
 // is, by far, the most common call pattern.
-const std::string& urlparser::Host::fulldomain() const noexcept {
+const std::string& urlparser::host::full_domain() const noexcept {
     if (!ignore_www_) return host_;
-    ensureParsed();
+    ensure_parsed();
     return fulldomain_;
 }
 
-const std::string& urlparser::Host::str() const noexcept { return fulldomain(); }
+const std::string& urlparser::host::str() const noexcept { return full_domain(); }
 
-std::string urlparser::Host::domainName() const noexcept {
-    ensureParsed();
+std::string urlparser::host::domain_name() const noexcept {
+    ensure_parsed();
     return domain_ + "." + suffix_;
 }
 
-bool urlparser::Host::operator==(const urlparser::Host& other) const noexcept {
-    return fulldomain() == other.fulldomain();
+bool urlparser::host::operator==(const urlparser::host& other) const noexcept {
+    return full_domain() == other.full_domain();
 }
 
-bool urlparser::Host::operator==(const std::string& other) const noexcept {
-    return fulldomain() == other;
+bool urlparser::host::operator==(const std::string& other) const noexcept {
+    return full_domain() == other;
 }
 
-std::ostream& operator<<(std::ostream& os, const urlparser::Host& dt) {
+std::ostream& operator<<(std::ostream& os, const urlparser::host& dt) {
     os << dt.str();
     return os;
 }

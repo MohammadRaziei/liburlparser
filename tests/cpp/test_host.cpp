@@ -57,16 +57,16 @@ std::vector<HostData> load_host_data(const std::string& filename) {
 // Runs all field checks for a single CSV row. Non-fatal (EXPECT_*) so every
 // mismatched field is reported, not just the first one.
 static void check_host_row(int *utest_result, const HostData& host_data) {
-    urlparser::Host host = urlparser::Host::fromUrl(host_data.url, host_data.ignore_www);
+    urlparser::host host = urlparser::host::from_url(host_data.url, host_data.ignore_www);
     EXPECT_STREQ(host.str().c_str(), host_data.host.c_str());
     EXPECT_STREQ(host.subdomain().c_str(), host_data.subdomain.c_str());
     EXPECT_STREQ(host.domain().c_str(), host_data.domain.c_str());
-    EXPECT_STREQ(host.domainName().c_str(), host_data.domain_name.c_str());
+    EXPECT_STREQ(host.domain_name().c_str(), host_data.domain_name.c_str());
     EXPECT_STREQ(host.suffix().c_str(), host_data.suffix.c_str());
 }
 
 UTEST(CSVHostTest, CheckPSLisLoaded){
-    ASSERT_TRUE(urlparser::Host::isPslLoaded());
+    ASSERT_TRUE(urlparser::host::is_psl_loaded());
 }
 
 UTEST(CSVHostTest, HostDataInput) {
@@ -82,29 +82,29 @@ UTEST(CSVHostTest, HostDataInput) {
     }
 }
 
-// --- str()/fulldomain(): the PSL-free fast path -------------------------
+// --- str()/full_domain(): the PSL-free fast path -------------------------
 
 UTEST(HostTest, StrEqualsFulldomain) {
-    urlparser::Host host("www.example.com");
-    EXPECT_STREQ(host.str().c_str(), host.fulldomain().c_str());
+    urlparser::host host("www.example.com");
+    EXPECT_STREQ(host.str().c_str(), host.full_domain().c_str());
 }
 
 UTEST(HostTest, FulldomainWithoutIgnoreWwwKeepsWww) {
-    urlparser::Host host("www.example.com", false);
-    EXPECT_STREQ(host.fulldomain().c_str(), "www.example.com");
+    urlparser::host host("www.example.com", false);
+    EXPECT_STREQ(host.full_domain().c_str(), "www.example.com");
 }
 
 UTEST(HostTest, FulldomainWithIgnoreWwwStripsWww) {
-    urlparser::Host host("www.example.com", true);
-    EXPECT_STREQ(host.fulldomain().c_str(), "example.com");
+    urlparser::host host("www.example.com", true);
+    EXPECT_STREQ(host.full_domain().c_str(), "example.com");
 }
 
-// --- operator==: value equality (Host-vs-Host and Host-vs-string) -------
+// --- operator==: value equality (host-vs-host and host-vs-string) -------
 
 UTEST(HostTest, EqualityComparesByValue) {
-    urlparser::Host a("example.com");
-    urlparser::Host b("example.com");
-    urlparser::Host c("other.com");
+    urlparser::host a("example.com");
+    urlparser::host b("example.com");
+    urlparser::host c("other.com");
     EXPECT_TRUE(a == b);
     EXPECT_FALSE(a == c);
     EXPECT_TRUE(a == std::string("example.com"));
@@ -112,8 +112,8 @@ UTEST(HostTest, EqualityComparesByValue) {
 }
 
 UTEST(HostTest, CopyIsIndependentValue) {
-    urlparser::Host original("www.example.co.uk", true);
-    urlparser::Host copy = original;
+    urlparser::host original("www.example.co.uk", true);
+    urlparser::host copy = original;
     EXPECT_TRUE(original == copy);
     // Force the lazy PSL-dependent split on the copy only.
     (void)copy.suffix();
@@ -122,7 +122,7 @@ UTEST(HostTest, CopyIsIndependentValue) {
 }
 
 UTEST(HostTest, DefaultConstructedHostIsEmpty) {
-    urlparser::Host host;
+    urlparser::host host;
     EXPECT_STREQ(host.str().c_str(), "");
     EXPECT_STREQ(host.domain().c_str(), "");
     EXPECT_STREQ(host.suffix().c_str(), "");
@@ -137,7 +137,7 @@ UTEST(VersionTest, MatchesVersionMacros) {
     EXPECT_STREQ(std::string(urlparser::version::string()).c_str(), URLPARSER_VERSION_STRING);
 }
 
-// --- PSL reload: loadPslFromString should take effect immediately -------
+// --- PSL reload: load_psl_from_string should take effect immediately -------
 
 UTEST(HostTest, LoadPslFromStringChangesFutureLookups) {
     // A minimal, deliberately different PSL: only "co.uk" (not "com") is a
@@ -147,15 +147,15 @@ UTEST(HostTest, LoadPslFromStringChangesFutureLookups) {
     // the same as the real PSL would give, just confirming a reload of the
     // *same* content round-trips correctly (we restore the real PSL right
     // after, so we don't leak this into other tests).
-    urlparser::Host before("example.co.uk");
+    urlparser::host before("example.co.uk");
     const std::string suffix_before = before.suffix();
 
-    urlparser::Host::loadPslFromString("uk\nco.uk\n");
-    urlparser::Host after("example.co.uk");
+    urlparser::host::load_psl_from_string("uk\nco.uk\n");
+    urlparser::host after("example.co.uk");
     EXPECT_STREQ(after.suffix().c_str(), "co.uk");
 
     // Restore the real PSL so later tests in this binary aren't affected.
-    urlparser::Host::loadPslFromPath(makeAbsolutePath("../public_suffix_list.dat"));
-    urlparser::Host restored("example.co.uk");
+    urlparser::host::load_psl_from_path(makeAbsolutePath("../public_suffix_list.dat"));
+    urlparser::host restored("example.co.uk");
     EXPECT_STREQ(restored.suffix().c_str(), suffix_before.c_str());
 }

@@ -17,7 +17,7 @@ def test_url(url_data):
     url = Url(url_data["url"], url_data["ignore_www"] == "True")
     assert url.protocol == url_data["protocol"]
     assert url.userinfo == url_data["userinfo"]
-    assert url.fulldomain == url_data["fulldomain"]
+    assert url.full_domain == url_data["fulldomain"]
     assert str(url.host) == url_data["fulldomain"]
     assert url.subdomain == url_data["subdomain"]
     assert url.domain == url_data["domain"]
@@ -53,6 +53,6 @@ def test_equality_compares_by_value():
 
 def test_default_ignore_www_false():
     url = Url("https://www.example.com/")
-    assert url.fulldomain == "www.example.com"
+    assert url.full_domain == "www.example.com"
 
 

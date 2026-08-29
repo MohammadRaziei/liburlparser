@@ -52,7 +52,7 @@ def test_host_lazy_fields_do_not_leak():
     for _ in range(20_000):
         for u in URLS:
             h = Host.from_url(u)
-            _ = h.domain, h.subdomain, h.suffix, h.fulldomain
+            _ = h.domain, h.subdomain, h.suffix, h.full_domain
     gc.collect()
 
 
@@ -62,7 +62,7 @@ def test_url_host_roundtrip_does_not_leak():
     for _ in range(20_000):
         for u in URLS:
             url = Url(u)
-            _ = url.host.fulldomain
+            _ = url.host.full_domain
     gc.collect()
 
 

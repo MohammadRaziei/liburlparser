@@ -14,7 +14,7 @@ struct UrlData : public BaseData{
     bool ignore_www;
     std::string protocol;
     std::string userinfo;
-    std::string fulldomain;
+    std::string full_domain;
     std::string subdomain;
     std::string domain;
     std::string domain_name;
@@ -44,14 +44,14 @@ std::vector<UrlData> load_url_data(const std::string& filename) {
         std::istringstream ss(line);
         UrlData url_data;
         std::string ignore_www, port;
-        // url,ignore_www,protocol,userinfo,fulldomain,subdomain,domain,domain_name,suffix,port,query,fragment
+        // url,ignore_www,protocol,userinfo,full_domain,subdomain,domain,domain_name,suffix,port,query,fragment
 
         std::getline(ss, url_data.url, ',');
         std::getline(ss, ignore_www, ',');
         url_data.ignore_www = ignore_www == "True";
         std::getline(ss, url_data.protocol, ',');
         std::getline(ss, url_data.userinfo, ',');
-        std::getline(ss, url_data.fulldomain, ',');
+        std::getline(ss, url_data.full_domain, ',');
         std::getline(ss, url_data.subdomain, ',');
         std::getline(ss, url_data.domain, ',');
         std::getline(ss, url_data.domain_name, ',');
@@ -70,14 +70,14 @@ std::vector<UrlData> load_url_data(const std::string& filename) {
 // Runs all field checks for a single CSV row. Non-fatal (EXPECT_*) so every
 // mismatched field is reported, not just the first one.
 static void check_url_row(int *utest_result, const UrlData& url_data) {
-    urlparser::Url url(url_data.url, url_data.ignore_www);
+    urlparser::url url(url_data.url, url_data.ignore_www);
     EXPECT_STREQ(std::string(url.protocol()).c_str(), url_data.protocol.c_str());
     EXPECT_STREQ(std::string(url.userinfo()).c_str(), url_data.userinfo.c_str());
-    EXPECT_STREQ(std::string(url.fulldomain()).c_str(), url_data.fulldomain.c_str());
-    EXPECT_STREQ(url.host().str().c_str(), url_data.fulldomain.c_str());
+    EXPECT_STREQ(std::string(url.full_domain()).c_str(), url_data.full_domain.c_str());
+    EXPECT_STREQ(url.host().str().c_str(), url_data.full_domain.c_str());
     EXPECT_STREQ(url.subdomain().c_str(), url_data.subdomain.c_str());
     EXPECT_STREQ(url.domain().c_str(), url_data.domain.c_str());
-    EXPECT_STREQ(url.domainName().c_str(), url_data.domain_name.c_str());
+    EXPECT_STREQ(url.domain_name().c_str(), url_data.domain_name.c_str());
     EXPECT_STREQ(url.suffix().c_str(), url_data.suffix.c_str());
     EXPECT_EQ(url.port(), url_data.port);
     EXPECT_STREQ(std::string(url.query()).c_str(), url_data.query.c_str());
@@ -85,7 +85,7 @@ static void check_url_row(int *utest_result, const UrlData& url_data) {
 }
 
 UTEST(CSVUrlTest, CheckPSLisLoaded){
-    ASSERT_TRUE(urlparser::Host::isPslLoaded());
+    ASSERT_TRUE(urlparser::host::is_psl_loaded());
 }
 
 UTEST(CSVUrlTest, UrlDataInput) {
@@ -104,24 +104,24 @@ UTEST(CSVUrlTest, UrlDataInput) {
 // --- str(): full URL reconstruction ------------------------------------
 
 UTEST(UrlTest, StrRoundTripsSimpleUrl) {
-    urlparser::Url url("https://example.com/path?a=1#frag");
+    urlparser::url url("https://example.com/path?a=1#frag");
     EXPECT_STREQ(url.str().c_str(), "https://example.com/path?a=1#frag");
 }
 
 UTEST(UrlTest, StrIncludesPortWhenNonDefault) {
-    urlparser::Url url("http://example.com:8080/");
+    urlparser::url url("http://example.com:8080/");
     EXPECT_STREQ(url.str().c_str(), "http://example.com:8080/");
     EXPECT_EQ(url.port(), 8080);
 }
 
 UTEST(UrlTest, StrIncludesUserinfo) {
-    urlparser::Url url("https://user:pass@example.com/");
+    urlparser::url url("https://user:pass@example.com/");
     EXPECT_STREQ(std::string(url.userinfo()).c_str(), "user:pass");
     EXPECT_STREQ(url.str().c_str(), "https://user:pass@example.com/");
 }
 
 UTEST(UrlTest, StrOmitsEmptyPathAsRoot) {
-    urlparser::Url url("https://example.com");
+    urlparser::url url("https://example.com");
     // No explicit path in the input, but there IS an authority -> "/" is
     // synthesized on reconstruction (matches str()'s documented behavior).
     EXPECT_STREQ(url.str().c_str(), "https://example.com/");
@@ -130,17 +130,17 @@ UTEST(UrlTest, StrOmitsEmptyPathAsRoot) {
 // --- abspath(): '.'/'..' segment resolution, pure (no side effects) ----
 
 UTEST(UrlTest, AbspathResolvesDotDot) {
-    urlparser::Url url("https://example.com/a/b/../c");
+    urlparser::url url("https://example.com/a/b/../c");
     EXPECT_STREQ(url.abspath().c_str(), "/a/c");
 }
 
 UTEST(UrlTest, AbspathResolvesDot) {
-    urlparser::Url url("https://example.com/a/./b/./c");
+    urlparser::url url("https://example.com/a/./b/./c");
     EXPECT_STREQ(url.abspath().c_str(), "/a/b/c");
 }
 
 UTEST(UrlTest, AbspathCollapsesRepeatedSlashes) {
-    urlparser::Url url("https://example.com/a//b///c");
+    urlparser::url url("https://example.com/a//b///c");
     EXPECT_STREQ(url.abspath().c_str(), "/a/b/c");
 }
 
@@ -148,7 +148,7 @@ UTEST(UrlTest, AbspathIsPureNotMutating) {
     // Calling abspath() must not change path()/str() as a side effect -
     // regression test for a bug in the old chainable UrlImpl::abspath(),
     // which mutated path_ in place.
-    urlparser::Url url("https://example.com/a/../b");
+    urlparser::url url("https://example.com/a/../b");
     const std::string before = url.str();
     (void)url.abspath();
     (void)url.abspath();  // call twice to be sure
@@ -158,7 +158,7 @@ UTEST(UrlTest, AbspathIsPureNotMutating) {
 // --- params(): '&'-separated query splitting ----------------------------
 
 UTEST(UrlTest, ParamsSplitsOnAmpersand) {
-    urlparser::Url url("https://example.com/?a=1&b=2&c=3");
+    urlparser::url url("https://example.com/?a=1&b=2&c=3");
     const auto params = url.params();
     ASSERT_EQ(params.size(), (size_t)3);
     EXPECT_STREQ(params[0].c_str(), "a=1");
@@ -167,16 +167,16 @@ UTEST(UrlTest, ParamsSplitsOnAmpersand) {
 }
 
 UTEST(UrlTest, ParamsEmptyWhenNoQuery) {
-    urlparser::Url url("https://example.com/");
+    urlparser::url url("https://example.com/");
     EXPECT_TRUE(url.params().empty());
 }
 
 // --- operator==: value equality, not identity ---------------------------
 
 UTEST(UrlTest, EqualityComparesByValue) {
-    urlparser::Url a("https://example.com/path?x=1");
-    urlparser::Url b("https://example.com/path?x=1");
-    urlparser::Url c("https://example.com/other");
+    urlparser::url a("https://example.com/path?x=1");
+    urlparser::url b("https://example.com/path?x=1");
+    urlparser::url c("https://example.com/other");
     EXPECT_TRUE(a == b);
     EXPECT_FALSE(a == c);
 }
@@ -185,20 +185,20 @@ UTEST(UrlTest, CopyIsIndependentValue) {
     // Since PIMPL/shared_ptr sharing was removed, a copy must be a fully
     // independent value - mutating access patterns on one must never affect
     // the other's observable state.
-    urlparser::Url original("https://example.com/a/b");
-    urlparser::Url copy = original;
+    urlparser::url original("https://example.com/a/b");
+    urlparser::url copy = original;
     EXPECT_TRUE(original == copy);
     EXPECT_STREQ(copy.str().c_str(), original.str().c_str());
-    // Force lazy Host construction on the copy only, then confirm both
+    // Force lazy host construction on the copy only, then confirm both
     // still report identical, correct results.
     (void)copy.domain();
     EXPECT_STREQ(original.domain().c_str(), copy.domain().c_str());
 }
 
 UTEST(UrlTest, DefaultConstructedUrlIsEmpty) {
-    urlparser::Url url;
+    urlparser::url url;
     EXPECT_STREQ(std::string(url.protocol()).c_str(), "");
-    EXPECT_STREQ(std::string(url.fulldomain()).c_str(), "");
+    EXPECT_STREQ(std::string(url.full_domain()).c_str(), "");
     EXPECT_EQ(url.port(), 0);
 }
 
@@ -207,7 +207,7 @@ UTEST(UrlTest, DefaultConstructedUrlIsEmpty) {
 UTEST(UrlTest, NonNumericPortThrows) {
     bool threw = false;
     try {
-        urlparser::Url url("http://example.com:abc/");
+        urlparser::url url("http://example.com:abc/");
         (void)url;
     } catch (const std::invalid_argument&) {
         threw = true;
@@ -218,7 +218,7 @@ UTEST(UrlTest, NonNumericPortThrows) {
 UTEST(UrlTest, PortAboveMaxThrows) {
     bool threw = false;
     try {
-        urlparser::Url url("http://example.com:99999/");
+        urlparser::url url("http://example.com:99999/");
         (void)url;
     } catch (const std::invalid_argument&) {
         threw = true;
@@ -227,6 +227,6 @@ UTEST(UrlTest, PortAboveMaxThrows) {
 }
 
 UTEST(UrlTest, EmptyPortDefaultsToZero) {
-    urlparser::Url url("http://example.com:/path");
+    urlparser::url url("http://example.com:/path");
     EXPECT_EQ(url.port(), 0);
 }

@@ -9,11 +9,11 @@
 // like "co.uk"/"com.au", subdomains, and "www." prefixes) and times a few
 // distinct usage patterns:
 //
-//   1. Url(...)                         - just parsing the URL structure
-//   2. Host::fromUrl(...)               - constructing a Host (should be cheap: no PSL work)
-//   3. Host::fromUrl(...).fulldomain()  - the common case (ignore_www=false):
+//   1. url(...)                         - just parsing the URL structure
+//   2. host::from_url(...)               - constructing a host (should be cheap: no PSL work)
+//   3. host::from_url(...).full_domain()  - the common case (ignore_www=false):
 //                                          should hit the PSL-free fast path
-//   4. Host::fromUrl(...).domain()      - forces the PSL lookup (lazy, cached)
+//   4. host::from_url(...).domain()      - forces the PSL lookup (lazy, cached)
 //
 #include <chrono>
 #include <cstdio>
@@ -73,33 +73,33 @@ int main(int argc, char** argv) {
     }
 
     std::printf("liburlparser benchmark - %zu iterations\n", iterations);
-    std::printf("PSL loaded: %s\n\n", urlparser::Url::isPslLoaded() ? "yes" : "no");
+    std::printf("PSL loaded: %s\n\n", urlparser::url::is_psl_loaded() ? "yes" : "no");
 
     const std::vector<std::string> corpus = makeCorpus(iterations);
     volatile size_t sink = 0;  // prevents the optimizer from discarding results
 
-    timeIt("Url(url)", iterations, [&](size_t i) {
-        urlparser::Url u(corpus[i]);
-        sink += u.host().fulldomain().size();
+    timeIt("url(url)", iterations, [&](size_t i) {
+        urlparser::url u(corpus[i]);
+        sink += u.host().full_domain().size();
     });
 
-    timeIt("Host::fromUrl(url)  [construct only]", iterations, [&](size_t i) {
-        urlparser::Host h = urlparser::Host::fromUrl(corpus[i]);
+    timeIt("host::from_url(url)  [construct only]", iterations, [&](size_t i) {
+        urlparser::host h = urlparser::host::from_url(corpus[i]);
         sink += reinterpret_cast<size_t>(&h) & 1;  // touch h, avoid dead-code elim
     });
 
-    timeIt("Host::fromUrl(url).fulldomain()  [PSL-free path]", iterations, [&](size_t i) {
-        urlparser::Host h = urlparser::Host::fromUrl(corpus[i]);
-        sink += h.fulldomain().size();
+    timeIt("host::from_url(url).full_domain()  [PSL-free path]", iterations, [&](size_t i) {
+        urlparser::host h = urlparser::host::from_url(corpus[i]);
+        sink += h.full_domain().size();
     });
 
-    timeIt("Host::fromUrl(url).domain()  [forces PSL lookup]", iterations, [&](size_t i) {
-        urlparser::Host h = urlparser::Host::fromUrl(corpus[i]);
+    timeIt("host::from_url(url).domain()  [forces PSL lookup]", iterations, [&](size_t i) {
+        urlparser::host h = urlparser::host::from_url(corpus[i]);
         sink += h.domain().size();
     });
 
-    timeIt("Host::fromUrl(url).domain()+.suffix()+.subdomain()", iterations, [&](size_t i) {
-        urlparser::Host h = urlparser::Host::fromUrl(corpus[i]);
+    timeIt("host::from_url(url).domain()+.suffix()+.subdomain()", iterations, [&](size_t i) {
+        urlparser::host h = urlparser::host::from_url(corpus[i]);
         sink += h.domain().size() + h.suffix().size() + h.subdomain().size();
     });
 

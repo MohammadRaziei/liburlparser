@@ -13,22 +13,22 @@ class Psl{
 public:
     Psl() {};
     std::string url() const {return PUBLIC_SUFFIX_LIST_URL;}
-    void loadFromPath(const std::string& filename) {urlparser::Host::loadPslFromPath(filename);}
-    void loadFromString(const std::string& str) {urlparser::Host::loadPslFromString(str);}
-    bool isLoaded() const {return urlparser::Host::isPslLoaded();}
+    void loadFromPath(const std::string& filename) {urlparser::host::load_psl_from_path(filename);}
+    void loadFromString(const std::string& str) {urlparser::host::load_psl_from_string(str);}
+    bool isLoaded() const {return urlparser::host::is_psl_loaded();}
 };
 
-inline nb::dict host_to_dict(const urlparser::Host& host) {
+inline nb::dict host_to_dict(const urlparser::host& host) {
     nb::dict dict;
     dict["str"] = host.str();
     dict["subdomain"] = host.subdomain();
     dict["domain"] = host.domain();
-    dict["domain_name"] = host.domainName();
+    dict["domain_name"] = host.domain_name();
     dict["suffix"] = host.suffix();
     return dict;
 }
 //
-inline nb::dict url_to_dict(const urlparser::Url& url) {
+inline nb::dict url_to_dict(const urlparser::url& url) {
     nb::dict dict;
     dict["str"] = url.str();
     dict["protocol"] = url.protocol();
@@ -40,15 +40,15 @@ inline nb::dict url_to_dict(const urlparser::Url& url) {
     return dict;
 }
 
-inline std::string host_to_json(const urlparser::Host& host) {
+inline std::string host_to_json(const urlparser::host& host) {
     return "{\"str\": \"" + host.str() + "\""
         + ", \"subdomain\": \"" + host.subdomain() + "\""
         + ", \"domain\": \"" + host.domain() + "\""
-        + ", \"domain_name\": \"" + host.domainName() + "\""
+        + ", \"domain_name\": \"" + host.domain_name() + "\""
         + ", \"suffix\": \"" + host.suffix() + "\"}";
 }
 
-inline std::string url_to_json(const urlparser::Url& url) {
+inline std::string url_to_json(const urlparser::url& url) {
     return "{\"str\": \"" + url.str() + "\""
         + ", \"protocol\": \"" + std::string(url.protocol()) + "\""
         + ", \"userinfo\": \"" + std::string(url.userinfo()) + "\""
@@ -58,7 +58,7 @@ inline std::string url_to_json(const urlparser::Url& url) {
         + ", \"fragment\": \"" + std::string(url.fragment()) + "\"}";
 }
 
-inline nb::dict host_to_dict_minimal(const urlparser::Host& host) {
+inline nb::dict host_to_dict_minimal(const urlparser::host& host) {
     nb::dict dict;
     dict["suffix"] = host.suffix();
     dict["domain"] = host.domain();
@@ -67,10 +67,10 @@ inline nb::dict host_to_dict_minimal(const urlparser::Host& host) {
 }
 
 inline nb::dict extract_from_url(const std::string& url){
-    return host_to_dict_minimal(urlparser::Host::fromUrl(url));
+    return host_to_dict_minimal(urlparser::host::from_url(url));
 }
 inline nb::dict extract(const std::string& host){
-    return host_to_dict_minimal(urlparser::Host(host));
+    return host_to_dict_minimal(urlparser::host(host));
 }
 
 NB_MODULE(_urlparser_py, m) {
@@ -84,62 +84,62 @@ NB_MODULE(_urlparser_py, m) {
         .. autosummary::
            :toctree: _generate
 
-           Url
-           Host
+           url
+           host
     )pbdoc";
     //
-    nb::class_<urlparser::Host> Host(m, "Host");
-    nb::class_<urlparser::Url> Url(m, "Url");
+    nb::class_<urlparser::host> host(m, "Host");
+    nb::class_<urlparser::url> url(m, "Url");
 
-    Host.def(nb::init<const std::string&, const bool>(), nb::arg("hoststr"), nb::arg("ignore_www") = false)
-        .def_static("from_url", &urlparser::Host::fromUrl, nb::arg("urlstr"), nb::arg("ignore_www") = false)
+    host.def(nb::init<const std::string&, const bool>(), nb::arg("hoststr"), nb::arg("ignore_www") = false)
+        .def_static("from_url", &urlparser::host::from_url, nb::arg("urlstr"), nb::arg("ignore_www") = false)
         .def_static("extract_from_url", extract_from_url, nb::arg("urlstr"))
         .def_static("extract", extract, nb::arg("hoststr"))
-        .def_static("load_psl_from_path", &urlparser::Host::loadPslFromPath,
+        .def_static("load_psl_from_path", &urlparser::host::load_psl_from_path,
                     nb::arg("filepath"))
-        .def_static("load_psl_from_string", &urlparser::Host::loadPslFromString,
+        .def_static("load_psl_from_string", &urlparser::host::load_psl_from_string,
                     nb::arg("string"))
-        .def_static("is_psl_loaded", &urlparser::Host::isPslLoaded)
-        .def_static("removeWWW", &urlparser::Host::removeWWW, nb::arg("hoststr"))
-        .def_prop_ro("subdomain", &urlparser::Host::subdomain)
-        .def_prop_ro("domain", &urlparser::Host::domain)
-        .def_prop_ro("domain_name", &urlparser::Host::domainName)
-        .def_prop_ro("fulldomain", &urlparser::Host::fulldomain)
-        .def_prop_ro("suffix", &urlparser::Host::suffix)
-        .def("__eq__", [](const urlparser::Host& self, const urlparser::Host& other) {
+        .def_static("is_psl_loaded", &urlparser::host::is_psl_loaded)
+        .def_static("remove_www", &urlparser::host::remove_www, nb::arg("hoststr"))
+        .def_prop_ro("subdomain", &urlparser::host::subdomain)
+        .def_prop_ro("domain", &urlparser::host::domain)
+        .def_prop_ro("domain_name", &urlparser::host::domain_name)
+        .def_prop_ro("full_domain", &urlparser::host::full_domain)
+        .def_prop_ro("suffix", &urlparser::host::suffix)
+        .def("__eq__", [](const urlparser::host& self, const urlparser::host& other) {
             return self == other;
         })
-        .def("__eq__", [](const urlparser::Host& self, const std::string& other) {
+        .def("__eq__", [](const urlparser::host& self, const std::string& other) {
             return self == other;
         })
         .def("to_dict", host_to_dict)
         .def("to_json", host_to_json)
-        .def("__str__", &urlparser::Host::str)
-        .def("__repr__", [](const urlparser::Host& host) {
-            return "<Host :'" + host.str() + "'>";
+        .def("__str__", &urlparser::host::str)
+        .def("__repr__", [](const urlparser::host& host) {
+            return "<host :'" + host.str() + "'>";
         });
 
-    Url.def(nb::init<const std::string&, const bool>(), nb::arg("urlstr"), nb::arg("ignore_www") = false)
-        .def_static("extract_host", &urlparser::Url::extractHost, nb::arg("urlstr"))
-        .def_prop_ro("protocol", &urlparser::Url::protocol)
-        .def_prop_ro("userinfo", &urlparser::Url::userinfo)
-        .def_prop_ro("host", &urlparser::Url::host)
-        .def_prop_ro("subdomain", &urlparser::Url::subdomain)
-        .def_prop_ro("domain", &urlparser::Url::domain)
-        .def_prop_ro("fulldomain", &urlparser::Url::fulldomain)
-        .def_prop_ro("domain_name", &urlparser::Url::domainName)
-        .def_prop_ro("suffix", &urlparser::Url::suffix)
-        .def_prop_ro("port", &urlparser::Url::port)
-        .def_prop_ro("params", &urlparser::Url::params)
-        .def_prop_ro("query", &urlparser::Url::query)
-        .def_prop_ro("fragment", &urlparser::Url::fragment)
-        .def_prop_ro("abspath", &urlparser::Url::abspath)
-        .def("__eq__", &urlparser::Url::operator==)
+    url.def(nb::init<const std::string&, const bool>(), nb::arg("urlstr"), nb::arg("ignore_www") = false)
+        .def_static("extract_host", &urlparser::url::extract_host, nb::arg("urlstr"))
+        .def_prop_ro("protocol", &urlparser::url::protocol)
+        .def_prop_ro("userinfo", &urlparser::url::userinfo)
+        .def_prop_ro("host", &urlparser::url::host)
+        .def_prop_ro("subdomain", &urlparser::url::subdomain)
+        .def_prop_ro("domain", &urlparser::url::domain)
+        .def_prop_ro("full_domain", &urlparser::url::full_domain)
+        .def_prop_ro("domain_name", &urlparser::url::domain_name)
+        .def_prop_ro("suffix", &urlparser::url::suffix)
+        .def_prop_ro("port", &urlparser::url::port)
+        .def_prop_ro("params", &urlparser::url::params)
+        .def_prop_ro("query", &urlparser::url::query)
+        .def_prop_ro("fragment", &urlparser::url::fragment)
+        .def_prop_ro("abspath", &urlparser::url::abspath)
+        .def("__eq__", &urlparser::url::operator==)
         .def("to_dict", url_to_dict)
         .def("to_json", url_to_json)
-        .def("__str__", &urlparser::Url::str)
-        .def("__repr__", [](const urlparser::Url& url) -> std::string {
-            return "<Url :'" + url.str() + "'>";
+        .def("__str__", &urlparser::url::str)
+        .def("__repr__", [](const urlparser::url& url) -> std::string {
+            return "<url :'" + url.str() + "'>";
         });
 
     nb::class_<Psl> psl(m, "Psl", nb::dynamic_attr());

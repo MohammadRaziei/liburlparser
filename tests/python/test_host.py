@@ -37,5 +37,5 @@ def test_equality_against_string():
 
 
 def test_fulldomain_ignore_www():
-    assert Host("www.example.com", True).fulldomain == "example.com"
-    assert Host("www.example.com", False).fulldomain == "www.example.com"
+    assert Host("www.example.com", True).full_domain == "example.com"
+    assert Host("www.example.com", False).full_domain == "www.example.com"

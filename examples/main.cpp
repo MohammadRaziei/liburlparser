@@ -29,7 +29,7 @@
 int main() {
     {
         tic;
-        const urlparser::Url url(
+        const urlparser::url url(
             "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
             "home?o=10&k=helloworld#aboutus",
             true);
@@ -47,7 +47,7 @@ int main() {
     }
     {
         tic;
-        const urlparser::Url url(
+        const urlparser::url url(
             "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
             "home?o=10&k=helloworld#aboutus",
             true);
@@ -55,7 +55,7 @@ int main() {
 
 
         tic;
-        const auto hostName = url.fulldomain();
+        const auto hostName = url.full_domain();
         toc;
         tic;
         const auto host = url.host();
@@ -65,16 +65,16 @@ int main() {
         show(host);
     }
 
-    const urlparser::Url url(
+    const urlparser::url url(
         "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
         "home?o=10&k=helloworld#aboutus",
         true);
 
-    urlparser::Url _url = url;
+    urlparser::url _url = url;
     show(_url);
     show(_url.suffix());
     {
-        urlparser::Url __url(
+        urlparser::url __url(
             "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
             "home?o=10&k=helloworld#aboutus",
             true);
@@ -85,32 +85,32 @@ int main() {
     show(_url.suffix());
     show(_url == url);
 
-    urlparser::Host _host = urlparser::Host::fromUrl(_url.str());
+    urlparser::host _host = urlparser::host::from_url(_url.str());
     _host = _url.host();
 
     show(_host);
 
     tic;
     for (int i = 0; i < 10'000'000; ++i)
-        urlparser::Host host("www.ee.aut.ac.ir");
+        urlparser::host host("www.ee.aut.ac.ir");
     toc;
 
     tic;
     for (int i = 0; i < 10'000'000; ++i)
-        urlparser::Host::fromUrl(
+        urlparser::host::from_url(
             "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
             "home?o=10&k=helloworld#aboutus",
             true);
     toc;
-    urlparser::Host host = urlparser::Host::fromUrl(
+    urlparser::host host = urlparser::host::from_url(
         "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
         "home?o=10&k=helloworld#aboutus");
 
-    show(urlparser::Host("www.ee.aut.ac.ir").suffix());
-    show(urlparser::Host("aut.ac.ir").fulldomain());
-    show(urlparser::Host("ee.aut.ac.ir").fulldomain());
+    show(urlparser::host("www.ee.aut.ac.ir").suffix());
+    show(urlparser::host("aut.ac.ir").full_domain());
+    show(urlparser::host("ee.aut.ac.ir").full_domain());
 
-    show_attr(url, isPslLoaded);
+    show_attr(url, is_psl_loaded);
     show(url);
     show_attr(url, str);
     show_attr(url, port);
@@ -119,8 +119,8 @@ int main() {
     show_attr(url, protocol);
     show_attr(url, suffix);
     show_attr(url, host);
-    show_attr(url, fulldomain);
-    show_attr(url, domainName);
+    show_attr(url, full_domain);
+    show_attr(url, domain_name);
     show_attr(url, query);
     show_attr(url, port);
     show_attr(url, fragment);
@@ -128,29 +128,29 @@ int main() {
     show_attr(url, params);
     show_attr(url, abspath);
     //
-    show(urlparser::Host("ee.aut.ac.ir"));
-    show(urlparser::Url("https://ee.aut.ac.ir/about"));
-    show(urlparser::Url("http://www.google.com").subdomain());
-    show(urlparser::Url("http://www.google.com", true).subdomain());
-    show(urlparser::Url("http://www.google.com").domain());
-    show(urlparser::Url("http://www.google.com", true).subdomain());
-    show(urlparser::Url("http://www.google.com", true).domain());
+    show(urlparser::host("ee.aut.ac.ir"));
+    show(urlparser::url("https://ee.aut.ac.ir/about"));
+    show(urlparser::url("http://www.google.com").subdomain());
+    show(urlparser::url("http://www.google.com", true).subdomain());
+    show(urlparser::url("http://www.google.com").domain());
+    show(urlparser::url("http://www.google.com", true).subdomain());
+    show(urlparser::url("http://www.google.com", true).domain());
 
-    show(urlparser::Host::fromUrl("http://mohammad:123@www.google.com?about", true));
-    show(urlparser::Host::fromUrl("mohammad:123@www.google.com?about", true));
-    show(urlparser::Host::fromUrl("www.google.com?about", true));
-    show(urlparser::Host::fromUrl("www.google.com/?about", true));
-    show(urlparser::Host::fromUrl("www.google.com", true));
+    show(urlparser::host::from_url("http://mohammad:123@www.google.com?about", true));
+    show(urlparser::host::from_url("mohammad:123@www.google.com?about", true));
+    show(urlparser::host::from_url("www.google.com?about", true));
+    show(urlparser::host::from_url("www.google.com/?about", true));
+    show(urlparser::host::from_url("www.google.com", true));
 
-    show(urlparser::Url("http://mohammad:123@www.google.com?about", true).host());
-    show(urlparser::Url("https://www.p30download.ir", false).host());
+    show(urlparser::url("http://mohammad:123@www.google.com?about", true).host());
+    show(urlparser::url("https://www.p30download.ir", false).host());
 
-    show(urlparser::Url("http://mohammad:123@www.google.com?about", true).fulldomain());
-    show(urlparser::Host("http://mohammad:123@www.google.com?about", true) == "google.com"); // note: Host(str) treats str literally as a host - use Host::fromUrl() to parse a full URL
-    const urlparser::Host host2 = urlparser::Host::fromUrl("http://mohammad:123@www.google.com?about", true);
-    const urlparser::Url url2("http://mohammad:123@www.google.com?about", true);
+    show(urlparser::url("http://mohammad:123@www.google.com?about", true).full_domain());
+    show(urlparser::host("http://mohammad:123@www.google.com?about", true) == "google.com"); // note: host(str) treats str literally as a host - use host::from_url() to parse a full URL
+    const urlparser::host host2 = urlparser::host::from_url("http://mohammad:123@www.google.com?about", true);
+    const urlparser::url url2("http://mohammad:123@www.google.com?about", true);
     tic;
-    const auto a = url2.fulldomain();
+    const auto a = url2.full_domain();
     toc;
     show(a);
 
