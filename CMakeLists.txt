@@ -171,14 +171,6 @@ add_library(urlparser STATIC ${SOURCES})
 add_library(url::base ALIAS urlparser)
 target_include_directories(urlparser PRIVATE ${GENERATED_HEADERS_DIR})
 
-# Static, not shared: nothing actually needs urlparser as a shared library -
-# the Python extension compiles these sources directly (see
-# nanobind_add_module below), and so do the tests. A shared library would
-# only exist for example/urlparser_benchmark to link against, and shared
-# libraries have real, measured downsides here (PLT indirection breaks
-# inlining for STL-heavy code unless carefully managed with
-# -fvisibility-inlines-hidden) with no upside for this project.
-# target_compile_options(urlparser PRIVATE -fPIC)
 
 target_include_directories(urlparser
         PUBLIC
