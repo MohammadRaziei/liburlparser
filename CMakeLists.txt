@@ -178,7 +178,7 @@ target_include_directories(urlparser PRIVATE ${GENERATED_HEADERS_DIR})
 # libraries have real, measured downsides here (PLT indirection breaks
 # inlining for STL-heavy code unless carefully managed with
 # -fvisibility-inlines-hidden) with no upside for this project.
-target_compile_options(urlparser PRIVATE -fPIC)
+# target_compile_options(urlparser PRIVATE -fPIC)
 
 target_include_directories(urlparser
         PUBLIC
