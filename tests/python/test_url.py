@@ -56,3 +56,24 @@ def test_default_ignore_www_false():
     assert url.full_domain == "www.example.com"
 
 
+# --- Url.extract_host(): static method exposed via nanobind's def_static.
+# Regression coverage for two bugs found while adding a move-semantics
+# overload to the C++ side: (1) extract_host used to leave a port number
+# glued onto the host, and a lone '#' fragment with no path/query wasn't
+# recognized as ending the host either; (2) the fix's new C++ overloads
+# made `&urlparser::url::extract_host` ambiguous for nanobind's def_static,
+# which broke the Python module's build entirely. If either regresses, this
+# test (or just importing `liburlparser` at all) will fail.
+
+def test_extract_host_strips_port():
+    assert Url.extract_host("https://www.example.com:8080/path") == "www.example.com"
+
+
+def test_extract_host_stops_at_fragment_with_no_path():
+    assert Url.extract_host("https://example.com#frag") == "example.com"
+
+
+def test_extract_host_does_not_confuse_port_with_userinfo_colon():
+    assert Url.extract_host("https://user:pass@host.example.com:80/x") == "host.example.com"
+
+

@@ -5,3 +5,6 @@ http://blog.bing.com,False,blog.bing.com,blog,bing,bing.com,com
 mail.google.com,False,mail.google.com,mail,google,google.com,com
 www.p30download.ir,False,www.p30download.ir,www,p30download,p30download.ir,ir
 www.p30download.ir,True,p30download.ir,,p30download,p30download.ir,ir
+https://www.ee.aut.ac.ir:8080/about,False,www.ee.aut.ac.ir,www.ee,aut,aut.ac.ir,ac.ir
+https://user:pass@www.ee.aut.ac.ir:8080/about,True,ee.aut.ac.ir,ee,aut,aut.ac.ir,ac.ir
+https://blog.bing.com:443#frag,False,blog.bing.com,blog,bing,bing.com,com
