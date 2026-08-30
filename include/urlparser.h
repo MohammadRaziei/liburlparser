@@ -103,6 +103,27 @@ using QueryParams = std::vector<std::string>;
 class host {
    public:
     /**
+     * @brief Create a host object from a URL string, without taking ownership.
+     * Prefer this overload when the caller only has a borrowed view of the
+     * URL (e.g. a buffer owned by something else, like a Python string) -
+     * it never allocates anything beyond the final host string itself.
+     * @param url The URL string to parse.
+     * @param ignore_www Whether to ignore the "www" subdomain. Default is false.
+     * @return A host object representing the host part of the URL.
+     */
+    static host from_url(std::string_view url,
+                        const bool ignore_www = DEFAULT_IGNORE_WWW);
+
+    /**
+     * @brief Create a host object from a URL string literal.
+     * Disambiguation overload: without this, from_url("literal") would be
+     * an ambiguous call between the string_view and string&& overloads (a
+     * const char* converts equally well to either).
+     */
+    static host from_url(const char* url,
+                        const bool ignore_www = DEFAULT_IGNORE_WWW);
+
+    /**
      * @brief Create a host object from a URL string.
      * @param url The URL string to parse.
      * @param ignore_www Whether to ignore the "www" subdomain. Default is false.
@@ -114,10 +135,9 @@ class host {
     /**
      * @brief Create a host object from a URL string, taking ownership of it.
      * Prefer this overload when you already have an owned/temporary
-     * std::string you don't need afterward (e.g. a literal or a std::move'd
-     * variable): it reuses that string's existing allocation to build the
-     * host in place, instead of copying the host substring into a brand new
-     * one.
+     * std::string you don't need afterward (e.g. a std::move'd variable):
+     * it reuses that string's existing allocation to build the host in
+     * place, instead of copying the host substring into a brand new one.
      * @param url The URL string to parse. Left in a valid but unspecified
      * state after the call.
      * @param ignore_www Whether to ignore the "www" subdomain. Default is false.

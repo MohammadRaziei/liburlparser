@@ -93,7 +93,7 @@ NB_MODULE(_urlparser_py, m) {
 
     host.def(nb::init<const std::string&, const bool>(), nb::arg("hoststr"), nb::arg("ignore_www") = false)
         .def_static("from_url",
-                    static_cast<urlparser::host (*)(const std::string&, bool)>(
+                    static_cast<urlparser::host (*)(std::string_view, bool)>(
                         &urlparser::host::from_url),
                     nb::arg("urlstr"), nb::arg("ignore_www") = false)
         .def_static("extract_from_url", extract_from_url, nb::arg("urlstr"))
