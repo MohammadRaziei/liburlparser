@@ -37,6 +37,44 @@ constexpr bool is_scheme_char(char c) noexcept {
 }
 constexpr bool is_digit_char(char c) noexcept { return c >= '0' && c <= '9'; }
 
+struct AuthorityBounds {
+    size_t host_start;
+    size_t host_end;
+    size_t at_pos;        // std::string::npos if there's no userinfo
+    size_t colon_pos;     // std::string::npos if there's no port
+    size_t authority_end;
+};
+
+// Single forward pass over the authority section starting at `position`
+// (right after "scheme://"): finds where it ends (first '/', '?' or '#')
+// and, within that range, the userinfo '@' separator and the port ':'
+// separator. This is the ONE place that decides where a host starts and
+// ends within a URL - both url::url() (the full parser) and
+// url::extract_host() (the cheap host-only shortcut) call this, so they can
+// never disagree with each other about port/userinfo handling the way two
+// independently-written scans eventually would.
+AuthorityBounds scan_authority(std::string_view url, size_t position) noexcept {
+    size_t authority_end = url.length();
+    size_t at_pos = std::string::npos;
+    size_t colon_pos = std::string::npos;
+    for (size_t i = position; i < url.length(); ++i) {
+        char c = url[i];
+        if (c == '/' || c == '?' || c == '#') {
+            authority_end = i;
+            break;
+        }
+        if (c == '@') {
+            at_pos = i;
+            colon_pos = std::string::npos;  // a ':' before '@' is userinfo, not a port
+        } else if (c == ':' && colon_pos == std::string::npos) {
+            colon_pos = i;
+        }
+    }
+    const size_t host_start = (at_pos != std::string::npos) ? at_pos + 1 : position;
+    const size_t host_end = (colon_pos != std::string::npos) ? colon_pos : authority_end;
+    return {host_start, host_end, at_pos, colon_pos, authority_end};
+}
+
 const std::unordered_set<std::string> USES_NETLOC = {
     "",     "file",  "ftp",   "git",   "git+ssh", "gopher", "http",
     "https", "imap", "mms",   "nfs",   "nntp",    "prospero", "rsync",
@@ -118,28 +156,13 @@ urlparser::url::url(std::string_view url, const bool ignore_www)
         // Skip the '//'.
         position += 2;
 
-        // Single forward pass over the authority section: find where it ends
-        // (first '/', '?' or '#') and, within that range, the userinfo '@'
-        // separator and the port ':' separator - all in one scan.
-        size_t authority_end = url.length();
-        size_t at_pos = std::string::npos;
-        size_t colon_pos = std::string::npos;
-        for (size_t i = position; i < url.length(); ++i) {
-            char c = url[i];
-            if (c == '/' || c == '?' || c == '#') {
-                authority_end = i;
-                break;
-            }
-            if (c == '@') {
-                at_pos = i;
-                colon_pos = std::string::npos;  // a ':' before '@' is userinfo, not a port
-            } else if (c == ':' && colon_pos == std::string::npos) {
-                colon_pos = i;
-            }
-        }
-
-        const size_t host_start = (at_pos != std::string::npos) ? at_pos + 1 : position;
-        const size_t host_end = (colon_pos != std::string::npos) ? colon_pos : authority_end;
+        // Single forward pass over the authority section - see scan_authority().
+        const auto authority = scan_authority(url, position);
+        const size_t host_start = authority.host_start;
+        const size_t host_end = authority.host_end;
+        const size_t at_pos = authority.at_pos;
+        const size_t colon_pos = authority.colon_pos;
+        const size_t authority_end = authority.authority_end;
 
         if (at_pos != std::string::npos) {
             userinfo_ = appendAsIs(url.substr(position, at_pos - position));
@@ -330,17 +353,47 @@ urlparser::QueryParams urlparser::url::params() const noexcept {
     return split(std::string(field(query_)), '&');
 }
 
-std::string urlparser::url::extract_host(std::string_view url) noexcept {
+namespace {
+// Shared by both extract_host() overloads: locates the [pos, end_pos) span
+// of the host within a URL, using the exact same scan_authority() logic
+// url::url() itself uses - so port ("host:80"), a trailing fragment with no
+// path ("host#frag"), and userinfo containing a colon ("user:pass@host")
+// are all handled identically here and in the full parser.
+std::pair<size_t, size_t> find_host_bounds(std::string_view url) noexcept {
     size_t pos = url.find("://");
     pos = (pos != std::string::npos) ? pos + 3 : 0;
-    size_t end_pos = url.find_first_of("?/", pos);
-    if (end_pos == std::string::npos) {
-        end_pos = url.length();
-    }
-    if (size_t at_pos = url.find_first_of('@', pos); at_pos < end_pos) {
-        pos = at_pos + 1;
-    }
+    const auto authority = scan_authority(url, pos);
+    return {authority.host_start, authority.host_end};
+}
+}  // namespace
+
+std::string urlparser::url::extract_host(std::string_view url) noexcept {
+    const auto [pos, end_pos] = find_host_bounds(url);
     return std::string(url.substr(pos, end_pos - pos));
+}
+
+// A raw C-string literal has no allocation to hand over in the first place
+// (it's static storage, not a heap buffer), so route it to the non-owning
+// string_view overload above instead of letting it implicitly convert to a
+// std::string and land in the string&& overload below. Without this,
+// extract_host("literal") is ambiguous: a `const char*` converts equally
+// well to std::string_view or to std::string, and those are two different,
+// incomparable user-defined conversions from the compiler's point of view.
+std::string urlparser::url::extract_host(const char* url) noexcept {
+    return extract_host(std::string_view(url));
+}
+
+std::string urlparser::url::extract_host(std::string&& url) noexcept {
+    // The caller owns url and is giving it up (rvalue), so its buffer is
+    // already-allocated capacity we're free to reuse. Trimming both ends
+    // with erase() keeps that same allocation - no new heap allocation for
+    // the returned host string, unlike the string_view overload above which
+    // must always allocate a fresh (smaller) string since it only has a
+    // non-owning view to copy out of.
+    const auto [pos, end_pos] = find_host_bounds(url);
+    url.erase(end_pos);
+    url.erase(0, pos);
+    return std::move(url);
 }
 
 bool urlparser::url::operator==(const urlparser::url& other) const noexcept {
@@ -537,6 +590,10 @@ urlparser::host::host(std::string host, const bool ignore_www)
 
 urlparser::host urlparser::host::from_url(const std::string& url, const bool ignore_www) {
     return urlparser::host(urlparser::url::extract_host(url), ignore_www);
+}
+
+urlparser::host urlparser::host::from_url(std::string&& url, const bool ignore_www) {
+    return urlparser::host(urlparser::url::extract_host(std::move(url)), ignore_www);
 }
 
 void urlparser::host::ensure_parsed() const noexcept {

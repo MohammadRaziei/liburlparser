@@ -92,7 +92,10 @@ NB_MODULE(_urlparser_py, m) {
     nb::class_<urlparser::url> url(m, "Url");
 
     host.def(nb::init<const std::string&, const bool>(), nb::arg("hoststr"), nb::arg("ignore_www") = false)
-        .def_static("from_url", &urlparser::host::from_url, nb::arg("urlstr"), nb::arg("ignore_www") = false)
+        .def_static("from_url",
+                    static_cast<urlparser::host (*)(const std::string&, bool)>(
+                        &urlparser::host::from_url),
+                    nb::arg("urlstr"), nb::arg("ignore_www") = false)
         .def_static("extract_from_url", extract_from_url, nb::arg("urlstr"))
         .def_static("extract", extract, nb::arg("hoststr"))
         .def_static("load_psl_from_path", &urlparser::host::load_psl_from_path,
@@ -120,7 +123,10 @@ NB_MODULE(_urlparser_py, m) {
         });
 
     url.def(nb::init<const std::string&, const bool>(), nb::arg("urlstr"), nb::arg("ignore_www") = false)
-        .def_static("extract_host", &urlparser::url::extract_host, nb::arg("urlstr"))
+        .def_static("extract_host",
+                    static_cast<std::string (*)(std::string_view)>(
+                        &urlparser::url::extract_host),
+                    nb::arg("urlstr"))
         .def_prop_ro("protocol", &urlparser::url::protocol)
         .def_prop_ro("userinfo", &urlparser::url::userinfo)
         .def_prop_ro("host", &urlparser::url::host)

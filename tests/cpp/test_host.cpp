@@ -128,6 +128,71 @@ UTEST(HostTest, DefaultConstructedHostIsEmpty) {
     EXPECT_STREQ(host.suffix().c_str(), "");
 }
 
+// --- from_url(std::string&&) overload: same result as the const& overload -
+
+UTEST(HostTest, FromUrlRvalueOverloadMatchesLvalueOverload) {
+    const std::string url = "http://mohammad:123@www.google.com/about";
+
+    urlparser::host from_lvalue = urlparser::host::from_url(url, true);
+    urlparser::host from_rvalue = urlparser::host::from_url(std::string(url), true);
+
+    EXPECT_TRUE(from_lvalue == from_rvalue);
+    EXPECT_STREQ(from_lvalue.str().c_str(), from_rvalue.str().c_str());
+}
+
+UTEST(HostTest, ExtractHostRvalueOverloadMatchesViewOverload) {
+    const std::string url = "https://user@sub.example.co.uk:8080/path?q=1";
+
+    std::string from_view = urlparser::url::extract_host(url);
+    std::string from_rvalue = urlparser::url::extract_host(std::string(url));
+
+    EXPECT_STREQ(from_view.c_str(), from_rvalue.c_str());
+}
+
+// --- extract_host()/from_url(): host boundary must agree with url::url() -
+
+// Regression test: extract_host() used to find its end-of-host boundary
+// with find_first_of("?/", pos), which doesn't know about ':' (port) or '#'
+// (fragment) at all. So a URL with an explicit port had its port digits
+// silently glued onto the returned host string, and everything downstream
+// (suffix/domain/subdomain, computed from that polluted string) came out
+// wrong too - all while url::url()'s own, separately-written parser handled
+// the exact same input correctly. Both now share one scan_authority() so
+// they can't drift apart like that again.
+UTEST(HostTest, ExtractHostStripsPort) {
+    EXPECT_STREQ(
+        urlparser::url::extract_host("https://www.example.com:8080/path").c_str(),
+        "www.example.com");
+}
+
+UTEST(HostTest, ExtractHostStopsAtFragmentWithNoPath) {
+    // No '/' or '?' at all - only a '#' - previously fell through to
+    // "end of string", swallowing the fragment into the host.
+    EXPECT_STREQ(urlparser::url::extract_host("https://example.com#frag").c_str(),
+                 "example.com");
+}
+
+UTEST(HostTest, ExtractHostDoesNotConfusePortWithUserinfoColon) {
+    // The userinfo itself contains a ':' (user:pass@...); that must not be
+    // mistaken for the port separator that comes later, after the '@'.
+    EXPECT_STREQ(
+        urlparser::url::extract_host("https://user:pass@host.example.com:80/x").c_str(),
+        "host.example.com");
+}
+
+UTEST(HostTest, FromUrlWithPortMatchesFullUrlParserForDomainAndSuffix) {
+    const std::string full_url =
+        "https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=v#frag";
+
+    urlparser::host h = urlparser::host::from_url(full_url, true);
+    urlparser::url u(full_url, true);
+
+    EXPECT_STREQ(h.str().c_str(), u.host().str().c_str());
+    EXPECT_STREQ(h.suffix().c_str(), u.suffix().c_str());
+    EXPECT_STREQ(h.domain().c_str(), u.domain().c_str());
+    EXPECT_STREQ(h.subdomain().c_str(), u.subdomain().c_str());
+}
+
 // --- version class --------------------------------------------------------
 
 UTEST(VersionTest, MatchesVersionMacros) {

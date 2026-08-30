@@ -112,6 +112,21 @@ class host {
                         const bool ignore_www = DEFAULT_IGNORE_WWW);
 
     /**
+     * @brief Create a host object from a URL string, taking ownership of it.
+     * Prefer this overload when you already have an owned/temporary
+     * std::string you don't need afterward (e.g. a literal or a std::move'd
+     * variable): it reuses that string's existing allocation to build the
+     * host in place, instead of copying the host substring into a brand new
+     * one.
+     * @param url The URL string to parse. Left in a valid but unspecified
+     * state after the call.
+     * @param ignore_www Whether to ignore the "www" subdomain. Default is false.
+     * @return A host object representing the host part of the URL.
+     */
+    static host from_url(std::string&& url,
+                        const bool ignore_www = DEFAULT_IGNORE_WWW);
+
+    /**
      * @brief Load the Public Suffix List from a file.
      * @param filepath Path to the PSL file.
      * @throws std::runtime_error If the file cannot be opened or parsed.
@@ -235,6 +250,24 @@ class url {
      * @brief Extract the host from a given URL, without fully parsing it.
      */
     static std::string extract_host(std::string_view url) noexcept;
+
+    /**
+     * @brief Extract the host from a given URL literal.
+     * Disambiguation overload: without this, extract_host("literal") would
+     * be an ambiguous call between the string_view and string&& overloads
+     * (a const char* converts equally well to either). Routes to the
+     * string_view overload, since a literal has no heap buffer to reuse.
+     */
+    static std::string extract_host(const char* url) noexcept;
+
+    /**
+     * @brief Extract the host from a given URL, taking ownership of it.
+     * Reuses url's own buffer (via erase()) to build the result instead of
+     * allocating a new string, so prefer this overload when you have an
+     * owned/temporary std::string you don't need afterward.
+     * @param url The URL string, left in a valid but unspecified state.
+     */
+    static std::string extract_host(std::string&& url) noexcept;
 
    public:
     /**
