@@ -1,31 +1,42 @@
 /**
 * @file urlparser.h
-* @brief Defines classes for parsing and handling URLs and hosts.
+* @brief Types for parsing URLs and classifying/handling their host part.
 *
-* This file contains the declaration of the url and host classes, which provide
-* functionality for parsing and managing URLs and hosts within them. The url class
-* allows extraction and manipulation of various components of a URL, while the host
-* class focuses on handling and extracting domain-related information from a host.
+* RFC 3986 defines a URL's host grammar as:
 *
-* Both classes are plain value types: no PIMPL, no heap allocation for the
-* object itself. The only deferred/lazy work is the PSL-dependent domain/
-* suffix split (host) and, for url, building its host at all - both are
-* computed once, on first access, and cached in `mutable` members.
+*     host = IP-literal / IPv4address / reg-name
 *
-* Example Usage:
+* i.e. a host is either an IP address or a domain name - never both, never
+* something in between. This library's types mirror that split directly:
+*
+*   - `hostname` is a domain name ("www.example.com"): subdomain, domain,
+*     and suffix, via a lazily-computed Public Suffix List lookup.
+*   - `ipv4` / `ipv6` are IP addresses: no PSL, no subdomain/domain/suffix
+*     (those concepts don't apply to "192.0.2.1"), but arithmetic
+*     (++, --, +=, -=), comparisons, and integer conversions instead.
+*   - `host = std::variant<hostname, ipv4, ipv6>` is whichever of the three
+*     a given URL's host actually is - what `url::host()` returns, and what
+*     `parse_host()`/`parse_host_from_url()` build directly.
+*
+* All are plain value types: no PIMPL, no heap allocation for the object
+* itself beyond what a std::string/std::variant already needs. The only
+* deferred work is the PSL-dependent domain/suffix split (hostname) and,
+* for url, building/classifying its host at all - both are computed once,
+* on first access, and cached in `mutable` members.
+*
+* Example usage:
 * @code
-*   // Creating a URL object and accessing its methods
-*   urlparser::url url("https://www.example.com/path/to/resource");
-*   std::cout << "URL Protocol: " << url.protocol() << std::endl;
-*   std::cout << "URL Domain: " << url.domain() << std::endl;
-*   std::cout << "URL Suffix: " << url.suffix() << std::endl;
-*   std::cout << "URL Query: " << url.query() << std::endl;
+*   urlparser::url u("https://www.example.com/path");
+*   std::cout << "protocol: " << u.protocol() << "\n";
+*   if (auto* h = std::get_if<urlparser::hostname>(&u.host())) {
+*       std::cout << "domain: " << h->domain() << ", suffix: " << h->suffix() << "\n";
+*   }
 *
-*   // Creating a host object and calling its methods
-*   urlparser::host host("www.example.com");
-*   std::cout << "host Domain: " << host.domain() << std::endl;
-*   std::cout << "host Suffix: " << host.suffix() << std::endl;
-*   std::cout << "host Subdomain: " << host.subdomain() << std::endl;
+*   urlparser::url ipurl("http://192.168.1.1:8080/");
+*   if (auto* v4 = std::get_if<urlparser::ipv4>(&ipurl.host())) {
+*       std::cout << "IP as int: " << v4->to_uint32() << "\n";
+*       std::cout << "next IP: " << (*v4 + 1).str() << "\n";
+*   }
 * @endcode
 */
 
@@ -56,11 +67,13 @@
 #define URLPARSER_VERSION_STRING \
     _URLPARSER_VERSION_STR(URLPARSER_VERSION_MAJOR,URLPARSER_VERSION_MINOR,URLPARSER_VERSION_PATCH)
 
+#include <array>
 #include <cstdint>
 #include <iostream>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 namespace urlparser {
@@ -90,60 +103,61 @@ class version {
 using QueryParams = std::vector<std::string>;
 
 /**
- * @brief Represents a host part of a URL.
+ * @brief A domain name used as a URL's host, e.g. "www.example.com".
  *
- * The host class encapsulates functionalities for handling the host component
- * of a URL. It provides methods to extract domain-specific details such as
- * suffix, domain, subdomain, and the full domain.
+ * `hostname` encapsulates the domain-specific details of a host: suffix,
+ * domain, subdomain, and the full (possibly www-stripped) domain. For an IP
+ * address host, use `ipv4`/`ipv6` instead - see the file-level docs.
  *
- * A host is a plain value type: constructing one is just a string copy. The
- * Public-Suffix-List lookup that domain()/subdomain()/suffix()/domain_name()
- * need is deferred until one of them is first called, and cached from then on.
+ * A hostname is a plain value type: constructing one is just a string
+ * copy. The Public-Suffix-List lookup that domain()/subdomain()/suffix()/
+ * domain_name() need is deferred until one of them is first called, and
+ * cached from then on.
  */
-class host {
+class hostname {
    public:
     /**
-     * @brief Create a host object from a URL string, without taking ownership.
+     * @brief Create a hostname from a URL string, without taking ownership.
      * Prefer this overload when the caller only has a borrowed view of the
      * URL (e.g. a buffer owned by something else, like a Python string) -
-     * it never allocates anything beyond the final host string itself.
+     * it never allocates anything beyond the final hostname string itself.
      * @param url The URL string to parse.
      * @param ignore_www Whether to ignore the "www" subdomain. Default is false.
-     * @return A host object representing the host part of the URL.
+     * @return A hostname object representing the host part of the URL.
      */
-    static host from_url(std::string_view url,
+    static hostname from_url(std::string_view url,
                         const bool ignore_www = DEFAULT_IGNORE_WWW);
 
     /**
-     * @brief Create a host object from a URL string literal.
+     * @brief Create a hostname from a URL string literal.
      * Disambiguation overload: without this, from_url("literal") would be
      * an ambiguous call between the string_view and string&& overloads (a
      * const char* converts equally well to either).
      */
-    static host from_url(const char* url,
+    static hostname from_url(const char* url,
                         const bool ignore_www = DEFAULT_IGNORE_WWW);
 
     /**
-     * @brief Create a host object from a URL string.
+     * @brief Create a hostname from a URL string.
      * @param url The URL string to parse.
      * @param ignore_www Whether to ignore the "www" subdomain. Default is false.
-     * @return A host object representing the host part of the URL.
+     * @return A hostname object representing the host part of the URL.
      */
-    static host from_url(const std::string& url,
+    static hostname from_url(const std::string& url,
                         const bool ignore_www = DEFAULT_IGNORE_WWW);
 
     /**
-     * @brief Create a host object from a URL string, taking ownership of it.
+     * @brief Create a hostname from a URL string, taking ownership of it.
      * Prefer this overload when you already have an owned/temporary
      * std::string you don't need afterward (e.g. a std::move'd variable):
-     * it reuses that string's existing allocation to build the host in
+     * it reuses that string's existing allocation to build the hostname in
      * place, instead of copying the host substring into a brand new one.
      * @param url The URL string to parse. Left in a valid but unspecified
      * state after the call.
      * @param ignore_www Whether to ignore the "www" subdomain. Default is false.
-     * @return A host object representing the host part of the URL.
+     * @return A hostname object representing the host part of the URL.
      */
-    static host from_url(std::string&& url,
+    static hostname from_url(std::string&& url,
                         const bool ignore_www = DEFAULT_IGNORE_WWW);
 
     /**
@@ -167,33 +181,33 @@ class host {
     static bool is_psl_loaded() noexcept;
 
     /**
-     * @brief Remove "www." from the beginning of a hostname.
-     * @param host The hostname to process.
-     * @return The hostname without "www." if it was present.
+     * @brief Remove "www." from the beginning of a hostname string.
+     * @param host The hostname text to process.
+     * @return The text without a leading "www." if it was present.
      */
     static std::string_view remove_www(const std::string_view& host) noexcept;
 
    public:
     /**
-     * @brief Construct a host object from a hostname string.
+     * @brief Construct a hostname object from a hostname string.
      * @param host The hostname to parse.
      * @param ignore_www Whether to ignore the "www" subdomain. Default is false.
      */
-    host(std::string host, const bool ignore_www = DEFAULT_IGNORE_WWW);
+    hostname(std::string host, const bool ignore_www = DEFAULT_IGNORE_WWW);
 
     /**
-     * @brief Default constructor for the host class.
-     * Creates an empty host object.
+     * @brief Default constructor for the hostname class.
+     * Creates an empty hostname object.
      */
-    host() noexcept = default;
+    hostname() noexcept = default;
 
     /**
-     * @brief Equality operator for comparing two host objects.
+     * @brief Equality operator for comparing two hostname objects.
      */
-    bool operator==(const host& other) const noexcept;
+    bool operator==(const hostname& other) const noexcept;
 
     /**
-     * @brief Equality operator for comparing a host object with a string.
+     * @brief Equality operator for comparing a hostname object with a string.
      */
     bool operator==(const std::string& other) const noexcept;
 
@@ -224,40 +238,264 @@ class host {
     mutable std::string fulldomain_;
 };
 
-// Extra headroom (bytes) reserved beyond a URL's own length in url's single
-// internal storage buffer. Parsing itself never needs this - every field is
-// a non-expanding substring of the input (case-folding only), so the sum of
-// all fields' lengths can never exceed the URL's length; reserving exactly
-// that is provably enough. The headroom only matters for mutating setters
-// added *after* construction (not yet implemented): if a setter's new value
-// is longer than the field's current span, it gets appended past the
-// initially-parsed content, consuming this headroom before url would need
-// to grow (reallocate) its buffer. Override before #include "urlparser.h"
-// for special cases (e.g. programs that rebuild many long fields via
-// setters on the same url instance).
-#ifndef URLPARSER_ARENA_EXTRA_CAPACITY
-#define URLPARSER_ARENA_EXTRA_CAPACITY 32
-#endif
+/**
+ * @brief An IPv4 address used as a URL's host, e.g. "192.0.2.1".
+ *
+ * A plain 32-bit value type (internally just a uint32_t), so every
+ * operation - comparisons, ++/--/+=/-=, to_uint32() - is a single native
+ * integer instruction; there's no PSL, no subdomain/domain/suffix, and no
+ * family tag to branch on the way a combined IPv4-or-IPv6 type would need.
+ *
+ * Parsing/formatting use the platform's own inet_pton/inet_ntop (POSIX) or
+ * InetPtonA/InetNtopA (Windows) rather than hand-written: even IPv4's text
+ * format has edge cases (leading zeros, legacy octal/hex octets) better
+ * left to a battle-tested implementation than re-derived here.
+ */
+class ipv4 {
+   public:
+    /** @brief Default-constructs 0.0.0.0. */
+    ipv4() noexcept = default;
+
+    /** @throws std::invalid_argument if `text` isn't a valid IPv4 address. */
+    static ipv4 parse(std::string_view text);
+
+    /** @brief Checks validity without throwing. */
+    static bool is_valid(std::string_view text) noexcept;
+
+    /** @brief Constructs from a 32-bit representation (host byte order), e.g. 0xC0A80101 = 192.168.1.1. */
+    static ipv4 from_uint32(uint32_t address) noexcept;
+
+    /** @brief Canonical dotted-decimal text form, e.g. "192.0.2.1". */
+    std::string str() const;
+
+    /** @brief The address as a 32-bit integer (host byte order). Always valid - never throws. */
+    uint32_t to_uint32() const noexcept { return value_; }
+
+    /** @brief The address as 4 bytes, most significant first. */
+    std::array<uint8_t, 4> bytes() const noexcept;
+
+    ipv4& operator++() noexcept {
+        ++value_;
+        return *this;
+    }
+    ipv4 operator++(int) noexcept {
+        ipv4 tmp = *this;
+        ++value_;
+        return tmp;
+    }
+    ipv4& operator--() noexcept {
+        --value_;
+        return *this;
+    }
+    ipv4 operator--(int) noexcept {
+        ipv4 tmp = *this;
+        --value_;
+        return tmp;
+    }
+    /** @brief Steps the address by `delta`, wrapping around mod 2^32. */
+    ipv4& operator+=(int64_t delta) noexcept {
+        value_ += static_cast<uint32_t>(delta);
+        return *this;
+    }
+    ipv4& operator-=(int64_t delta) noexcept {
+        value_ -= static_cast<uint32_t>(delta);
+        return *this;
+    }
+
+    friend ipv4 operator+(ipv4 lhs, int64_t delta) noexcept { return lhs += delta; }
+    friend ipv4 operator-(ipv4 lhs, int64_t delta) noexcept { return lhs -= delta; }
+    /** @brief Distance between two addresses (always fits in int64_t: the range is only 2^32). */
+    friend int64_t operator-(const ipv4& a, const ipv4& b) noexcept {
+        return static_cast<int64_t>(a.value_) - static_cast<int64_t>(b.value_);
+    }
+
+    friend bool operator==(const ipv4& a, const ipv4& b) noexcept { return a.value_ == b.value_; }
+    friend bool operator!=(const ipv4& a, const ipv4& b) noexcept { return a.value_ != b.value_; }
+    friend bool operator<(const ipv4& a, const ipv4& b) noexcept { return a.value_ < b.value_; }
+    friend bool operator<=(const ipv4& a, const ipv4& b) noexcept { return a.value_ <= b.value_; }
+    friend bool operator>(const ipv4& a, const ipv4& b) noexcept { return a.value_ > b.value_; }
+    friend bool operator>=(const ipv4& a, const ipv4& b) noexcept { return a.value_ >= b.value_; }
+
+   private:
+    explicit ipv4(uint32_t v) noexcept : value_(v) {}
+    uint32_t value_ = 0;
+};
+
+/**
+ * @brief An IPv6 address used as a URL's host, e.g. "2001:db8::1".
+ *
+ * A plain 128-bit value type, stored as two 64-bit halves (high64()/
+ * low64()) since C++ has no portable 128-bit integer - arithmetic is two
+ * native 64-bit add-with-carry operations, not a byte-array loop.
+ *
+ * Parsing/formatting use the platform's own inet_pton/inet_ntop (POSIX) or
+ * InetPtonA/InetNtopA (Windows): IPv6's text format (:: compression,
+ * embedded IPv4 tails, zone IDs on some platforms) has enough edge cases
+ * that a hand-written parser is far more likely to introduce bugs than to
+ * avoid them.
+ */
+class ipv6 {
+   public:
+    /** @brief Default-constructs "::" (all zero). */
+    ipv6() noexcept = default;
+
+    /**
+     * @brief Parse an IPv6 address from text.
+     * Accepts a bracketed literal ("[::1]", as it appears in a URL's host
+     * component) or a bare one ("::1").
+     * @throws std::invalid_argument if `text` isn't a valid IPv6 address.
+     */
+    static ipv6 parse(std::string_view text);
+
+    /** @brief Checks validity (bracketed or bare) without throwing. */
+    static bool is_valid(std::string_view text) noexcept;
+
+    /** @brief Constructs from the two 64-bit halves (high64, then low64), in host byte order. */
+    static ipv6 from_uint64_pair(uint64_t high, uint64_t low) noexcept;
+
+    /** @brief Canonical (RFC 5952) text form, no brackets: "2001:db8::1", not "[2001:db8::1]". */
+    std::string str() const;
+
+    /** @brief The address as 16 bytes, most significant first. */
+    std::array<uint8_t, 16> bytes() const noexcept;
+
+    /** @brief The high 64 bits (first 8 bytes). */
+    uint64_t high64() const noexcept { return hi_; }
+    /** @brief The low 64 bits (last 8 bytes). */
+    uint64_t low64() const noexcept { return lo_; }
+
+    ipv6& operator++() noexcept {
+        add_bits(1);
+        return *this;
+    }
+    ipv6 operator++(int) noexcept {
+        ipv6 tmp = *this;
+        ++(*this);
+        return tmp;
+    }
+    ipv6& operator--() noexcept {
+        add_bits(~uint64_t{0});  // two's-complement bit pattern of -1
+        return *this;
+    }
+    ipv6 operator--(int) noexcept {
+        ipv6 tmp = *this;
+        --(*this);
+        return tmp;
+    }
+    /** @brief Steps the address by `delta`, wrapping around mod 2^128. */
+    ipv6& operator+=(int64_t delta) noexcept {
+        add_bits(static_cast<uint64_t>(delta));
+        return *this;
+    }
+    ipv6& operator-=(int64_t delta) noexcept {
+        // -delta's bit pattern, computed in unsigned arithmetic so this is
+        // well-defined even when delta == INT64_MIN (no positive int64_t
+        // counterpart, so negating it as a signed value would overflow).
+        add_bits(~static_cast<uint64_t>(delta) + 1);
+        return *this;
+    }
+
+    friend ipv6 operator+(ipv6 lhs, int64_t delta) noexcept { return lhs += delta; }
+    friend ipv6 operator-(ipv6 lhs, int64_t delta) noexcept { return lhs -= delta; }
+
+    friend bool operator==(const ipv6& a, const ipv6& b) noexcept {
+        return a.hi_ == b.hi_ && a.lo_ == b.lo_;
+    }
+    friend bool operator!=(const ipv6& a, const ipv6& b) noexcept { return !(a == b); }
+    friend bool operator<(const ipv6& a, const ipv6& b) noexcept {
+        return a.hi_ != b.hi_ ? a.hi_ < b.hi_ : a.lo_ < b.lo_;
+    }
+    friend bool operator<=(const ipv6& a, const ipv6& b) noexcept { return !(b < a); }
+    friend bool operator>(const ipv6& a, const ipv6& b) noexcept { return b < a; }
+    friend bool operator>=(const ipv6& a, const ipv6& b) noexcept { return !(a < b); }
+
+   private:
+    ipv6(uint64_t hi, uint64_t lo) noexcept : hi_(hi), lo_(lo) {}
+
+    // Adds the 128-bit sign-extension of the two's-complement 64-bit
+    // pattern `low64_bits` to (hi_, lo_), wrapping mod 2^128.
+    void add_bits(uint64_t low64_bits) noexcept;
+
+    uint64_t hi_ = 0;
+    uint64_t lo_ = 0;
+};
+
+/** @brief `hostname`, `ipv4`, or `ipv6`: whatever a URL's host actually is (RFC 3986's `host` grammar). */
+using host = std::variant<hostname, ipv4, ipv6>;
+
+/**
+ * @brief The text form of a host, whichever of hostname/ipv4/ipv6 it is -
+ * equivalent to `std::visit([](const auto& h) { return h.str(); }, host)`,
+ * for callers who just want the string and don't care which alternative
+ * it came from.
+ */
+std::string str(const host& h);
+
+/**
+ * @brief Classifies and parses an already-isolated host string (no scheme,
+ * no path - e.g. what url::extract_host() or url::host_text() gives you)
+ * as whichever of hostname/ipv4/ipv6 it actually is.
+ * @param host_text The host text, e.g. "example.com", "192.0.2.1", or
+ * "[2001:db8::1]" (a bracketed IPv6 literal, as it appears in a URL).
+ * @param ignore_www Only meaningful when the result is a hostname; ignored for IPs.
+ */
+host parse_host(std::string_view host_text, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
+
+/**
+ * @brief Classifies and parses a host string literal.
+ * Disambiguation overload: without this, parse_host("literal") would be
+ * ambiguous between the string_view and string&& overloads.
+ */
+host parse_host(const char* host_text, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
+
+/**
+ * @brief Classifies and parses an already-isolated host string, taking
+ * ownership of it. When the text turns out to be a domain name, this
+ * reuses its existing allocation to build the resulting hostname instead
+ * of copying into a new one (IPs don't keep the text at all, parsed or
+ * not, so there's nothing to reuse for them either way).
+ * @param host_text The host text. Left in a valid but unspecified state.
+ */
+host parse_host(std::string&& host_text, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
+
+/**
+ * @brief Extracts the host from a full URL and classifies/parses it, in one
+ * step - equivalent to `parse_host(url::extract_host(url), ignore_www)`.
+ */
+host parse_host_from_url(std::string_view url, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
+
+/**
+ * @brief Classifies and parses the host of a URL string literal.
+ * Disambiguation overload, same reason as parse_host(const char*, bool).
+ */
+host parse_host_from_url(const char* url, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
+
+/**
+ * @brief Extracts the host from a full URL and classifies/parses it, taking
+ * ownership of the URL string - reuses its allocation end-to-end (extract,
+ * then classify) when the result turns out to be a hostname.
+ * @param url The URL string. Left in a valid but unspecified state.
+ */
+host parse_host_from_url(std::string&& url, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
 
 /**
  * @brief Represents a URL.
  *
  * The url class provides functionalities for parsing and managing URLs. It
- * allows access to various components of a URL such as protocol, subdomain,
- * domain, suffix, query, fragment, userinfo, port, and parameters.
+ * allows access to various components of a URL such as protocol, host,
+ * query, fragment, userinfo, port, and parameters.
  *
- * Like host, url is a plain value type - parsing happens once in the
- * constructor; the only deferred work is building the (cheap) host, which
- * only happens if `.host()`/`.domain()`/`.suffix()`/`.subdomain()` is
- * actually called.
+ * Like hostname, url is a plain value type - parsing happens once in the
+ * constructor; the only deferred work is classifying/building the (cheap)
+ * host, which only happens if `.host()` is actually called.
  *
  * Internally, all string fields (scheme, userinfo, host, path, params,
- * query, fragment) are carved out of a single owned buffer, sized once at
- * construction (see URLPARSER_ARENA_EXTRA_CAPACITY) - instead of each field
- * being its own separately heap-allocated std::string. Since fields are
- * stored as (offset, length) pairs into that one buffer rather than raw
- * pointers, copying a url is automatically correct (no dangling views) with
- * no custom copy/move logic needed.
+ * query, fragment) are carved out of a single owned buffer, sized exactly
+ * once at construction - instead of each field being its own separately
+ * heap-allocated std::string. Since fields are stored as (offset, length)
+ * pairs into that one buffer rather than raw pointers, copying a url is
+ * automatically correct (no dangling views) with no custom copy/move logic
+ * needed.
  */
 class url {
    public:
@@ -313,12 +551,6 @@ class url {
     std::string str() const noexcept;
     /** @brief The protocol of the URL (e.g., "http", "https", "ftp"). */
     std::string_view protocol() const noexcept { return field(scheme_); }
-    /** @brief The subdomain of the URL (e.g., "www" in "www.example.com"). */
-    const std::string& subdomain() const noexcept;
-    /** @brief The domain of the URL (e.g., "example" in "www.example.com"). */
-    const std::string& domain() const noexcept;
-    /** @brief The suffix of the URL (e.g., "com" in "www.example.com"). */
-    const std::string& suffix() const noexcept;
     /** @brief The query string of the URL (e.g., "a=1&b=2"). */
     std::string_view query() const noexcept { return field(query_); }
     /** @brief The fragment of the URL (the part after '#'). */
@@ -327,15 +559,17 @@ class url {
     std::string_view userinfo() const noexcept { return field(userinfo_); }
     /** @brief The path, with '.'/'..' segments resolved. */
     std::string abspath() const noexcept;
-    /** @brief The domain name, i.e. "<domain>.<suffix>". */
-    std::string domain_name() const noexcept;
-    /** @brief The full domain of the URL (e.g., "example.com"). */
-    std::string_view full_domain() const noexcept { return field(host_); }
+    /** @brief The raw host text (e.g., "example.com", "192.0.2.1", or "[::1]"), before hostname/ip classification. */
+    std::string_view host_text() const noexcept { return field(host_); }
     /** @brief The port number of the URL, or 0 if not specified. */
     int port() const noexcept { return port_; }
     /** @brief The '&'-separated query parameters, split into a vector. */
     QueryParams params() const noexcept;
-    /** @brief The host object representing the host part of the URL. */
+    /**
+     * @brief The host part of the URL, classified as a hostname, ipv4, or ipv6.
+     * Use std::get_if<hostname>/<ipv4>/<ipv6>(&url.host()) or std::visit to
+     * access it - see the file-level docs for an example.
+     */
     const urlparser::host& host() const noexcept;
 
    private:
@@ -373,7 +607,22 @@ std::ostream& operator<<(std::ostream& os, const urlparser::QueryParams& dt);
 std::ostream& operator<<(std::ostream& os, const urlparser::url& dt);
 
 /**
- * @brief Output stream operator for host.
+ * @brief Output stream operator for hostname.
+ */
+std::ostream& operator<<(std::ostream& os, const urlparser::hostname& dt);
+
+/**
+ * @brief Output stream operator for ipv4.
+ */
+std::ostream& operator<<(std::ostream& os, const urlparser::ipv4& dt);
+
+/**
+ * @brief Output stream operator for ipv6.
+ */
+std::ostream& operator<<(std::ostream& os, const urlparser::ipv6& dt);
+
+/**
+ * @brief Output stream operator for the host variant (hostname/ipv4/ipv6).
  */
 std::ostream& operator<<(std::ostream& os, const urlparser::host& dt);
 #endif  // URLPARSER_H

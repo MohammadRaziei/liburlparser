@@ -14,10 +14,20 @@
 
 #include <algorithm>
 #include <charconv>
+#include <cstring>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
+
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#endif
 
 #include "public_suffix_list_dat.h"
 
@@ -53,20 +63,29 @@ struct AuthorityBounds {
 // url::extract_host() (the cheap host-only shortcut) call this, so they can
 // never disagree with each other about port/userinfo handling the way two
 // independently-written scans eventually would.
+//
+// An IPv6 host is written in brackets ("[::1]:8080") specifically so the
+// address's own colons don't get confused with the port separator - so
+// colons between '[' and ']' are skipped when looking for colon_pos.
 AuthorityBounds scan_authority(std::string_view url, size_t position) noexcept {
     size_t authority_end = url.length();
     size_t at_pos = std::string::npos;
     size_t colon_pos = std::string::npos;
+    bool in_ip_literal = false;
     for (size_t i = position; i < url.length(); ++i) {
         char c = url[i];
         if (c == '/' || c == '?' || c == '#') {
             authority_end = i;
             break;
         }
-        if (c == '@') {
+        if (c == '[') {
+            in_ip_literal = true;
+        } else if (c == ']') {
+            in_ip_literal = false;
+        } else if (c == '@') {
             at_pos = i;
             colon_pos = std::string::npos;  // a ':' before '@' is userinfo, not a port
-        } else if (c == ':' && colon_pos == std::string::npos) {
+        } else if (c == ':' && !in_ip_literal && colon_pos == std::string::npos) {
             colon_pos = i;
         }
     }
@@ -104,16 +123,16 @@ std::vector<std::string> split(const std::string& str, const char delim) noexcep
 
 }  // namespace
 
-bool urlparser::url::is_psl_loaded() noexcept { return urlparser::host::is_psl_loaded(); }
+bool urlparser::url::is_psl_loaded() noexcept { return urlparser::hostname::is_psl_loaded(); }
 
 urlparser::url::url(std::string_view url, const bool ignore_www)
     : ignore_www_(ignore_www) {
     // Every field is a non-expanding substring of url (case-folding only
     // changes case, never length), so their combined length can never
-    // exceed url.size() - reserving exactly that (plus the configurable
-    // headroom, for future setters) means storage_ never reallocates
-    // during parsing, so the Spans we hand out below stay valid forever.
-    storage_.reserve(url.size() + URLPARSER_ARENA_EXTRA_CAPACITY);
+    // exceed url.size() - reserving exactly that means storage_ never
+    // reallocates during parsing, so the Spans we hand out below stay valid
+    // forever.
+    storage_.reserve(url.size());
 
     auto appendAsIs = [this](std::string_view src) -> Span {
         const auto pos = static_cast<uint32_t>(storage_.size());
@@ -406,21 +425,18 @@ bool urlparser::url::operator==(const urlparser::url& other) const noexcept {
            field(fragment_) == other.field(other.fragment_);
 }
 
-/// Builds (once, cached) the host for this URL. ignore_www is always passed
-/// as false here since host_ has already had "www." stripped, at
-/// construction time, if requested.
+/// Builds (once, cached) the host for this URL: whichever of
+/// hostname/ipv4/ipv6 it actually is. ignore_www is always passed as false
+/// here since host_ has already had "www." stripped, at construction time,
+/// if requested.
 const urlparser::host& urlparser::url::ensure_host() const noexcept {
     if (!host_cache_) {
-        host_cache_.emplace(std::string(field(host_)), false);
+        host_cache_ = urlparser::parse_host(field(host_), false);
     }
     return *host_cache_;
 }
 
 const urlparser::host& urlparser::url::host() const noexcept { return ensure_host(); }
-const std::string& urlparser::url::suffix() const noexcept { return ensure_host().suffix(); }
-const std::string& urlparser::url::subdomain() const noexcept { return ensure_host().subdomain(); }
-const std::string& urlparser::url::domain() const noexcept { return ensure_host().domain(); }
-std::string urlparser::url::domain_name() const noexcept { return ensure_host().domain_name(); }
 
 std::ostream& operator<<(std::ostream& os, const urlparser::QueryParams& v) {
     os << "[";
@@ -566,45 +582,45 @@ PSL& psl() {
 
 }  // namespace urlparser::detail
 
-void urlparser::host::load_psl_from_path(const std::string& filepath) {
+void urlparser::hostname::load_psl_from_path(const std::string& filepath) {
     urlparser::detail::psl() = urlparser::detail::PSL::fromPath(filepath);
 }
 
-void urlparser::host::load_psl_from_string(const std::string& filestr) {
+void urlparser::hostname::load_psl_from_string(const std::string& filestr) {
     urlparser::detail::psl() = urlparser::detail::PSL::fromString(filestr);
 }
 
-bool urlparser::host::is_psl_loaded() noexcept {
+bool urlparser::hostname::is_psl_loaded() noexcept {
     return urlparser::detail::psl().numLevels() > 0;
 }
 
-std::string_view urlparser::host::remove_www(const std::string_view& host) noexcept {
+std::string_view urlparser::hostname::remove_www(const std::string_view& host) noexcept {
     if (host.compare(0, 4, "www.") != 0) {
         return host;
     }
     return host.substr(4);
 }
 
-urlparser::host::host(std::string host, const bool ignore_www)
+urlparser::hostname::hostname(std::string host, const bool ignore_www)
     : host_(std::move(host)), ignore_www_(ignore_www) {}
 
-urlparser::host urlparser::host::from_url(std::string_view url, const bool ignore_www) {
-    return urlparser::host(urlparser::url::extract_host(url), ignore_www);
+urlparser::hostname urlparser::hostname::from_url(std::string_view url, const bool ignore_www) {
+    return urlparser::hostname(urlparser::url::extract_host(url), ignore_www);
 }
 
-urlparser::host urlparser::host::from_url(const char* url, const bool ignore_www) {
+urlparser::hostname urlparser::hostname::from_url(const char* url, const bool ignore_www) {
     return from_url(std::string_view(url), ignore_www);
 }
 
-urlparser::host urlparser::host::from_url(const std::string& url, const bool ignore_www) {
-    return urlparser::host(urlparser::url::extract_host(url), ignore_www);
+urlparser::hostname urlparser::hostname::from_url(const std::string& url, const bool ignore_www) {
+    return urlparser::hostname(urlparser::url::extract_host(url), ignore_www);
 }
 
-urlparser::host urlparser::host::from_url(std::string&& url, const bool ignore_www) {
-    return urlparser::host(urlparser::url::extract_host(std::move(url)), ignore_www);
+urlparser::hostname urlparser::hostname::from_url(std::string&& url, const bool ignore_www) {
+    return urlparser::hostname(urlparser::url::extract_host(std::move(url)), ignore_www);
 }
 
-void urlparser::host::ensure_parsed() const noexcept {
+void urlparser::hostname::ensure_parsed() const noexcept {
     if (parsed_) return;
     parsed_ = true;
 
@@ -633,17 +649,17 @@ void urlparser::host::ensure_parsed() const noexcept {
     }
 }
 
-const std::string& urlparser::host::suffix() const noexcept {
+const std::string& urlparser::hostname::suffix() const noexcept {
     ensure_parsed();
     return suffix_;
 }
 
-const std::string& urlparser::host::subdomain() const noexcept {
+const std::string& urlparser::hostname::subdomain() const noexcept {
     ensure_parsed();
     return subdomain_;
 }
 
-const std::string& urlparser::host::domain() const noexcept {
+const std::string& urlparser::hostname::domain() const noexcept {
     ensure_parsed();
     return domain_;
 }
@@ -652,28 +668,220 @@ const std::string& urlparser::host::domain() const noexcept {
 // original host string (the PSL-dependent split above never touches
 // fulldomain_ in that case), so this skips the PSL lookup entirely for what
 // is, by far, the most common call pattern.
-const std::string& urlparser::host::full_domain() const noexcept {
+const std::string& urlparser::hostname::full_domain() const noexcept {
     if (!ignore_www_) return host_;
     ensure_parsed();
     return fulldomain_;
 }
 
-const std::string& urlparser::host::str() const noexcept { return full_domain(); }
+const std::string& urlparser::hostname::str() const noexcept { return full_domain(); }
 
-std::string urlparser::host::domain_name() const noexcept {
+std::string urlparser::hostname::domain_name() const noexcept {
     ensure_parsed();
     return domain_ + "." + suffix_;
 }
 
-bool urlparser::host::operator==(const urlparser::host& other) const noexcept {
+bool urlparser::hostname::operator==(const urlparser::hostname& other) const noexcept {
     return full_domain() == other.full_domain();
 }
 
-bool urlparser::host::operator==(const std::string& other) const noexcept {
+bool urlparser::hostname::operator==(const std::string& other) const noexcept {
     return full_domain() == other;
 }
 
-std::ostream& operator<<(std::ostream& os, const urlparser::host& dt) {
+std::ostream& operator<<(std::ostream& os, const urlparser::hostname& dt) {
     os << dt.str();
+    return os;
+}
+
+// --- ipv4 / ipv6 ------------------------------------------------------------
+
+namespace {
+// URLs write IPv6 host literals wrapped in brackets ("[::1]"); inet_pton
+// wants the bare address ("::1"). IPv4 addresses are never bracketed, so
+// this is a no-op for them.
+std::string_view strip_ip_brackets(std::string_view s) noexcept {
+    if (s.size() >= 2 && s.front() == '[' && s.back() == ']') {
+        return s.substr(1, s.size() - 2);
+    }
+    return s;
+}
+
+// inet_pton/InetPtonA need a NUL-terminated C string; string_view isn't
+// guaranteed one. INET6_ADDRSTRLEN (46) is long enough for any valid
+// address (including a fully-expanded IPv6 one), so anything longer than
+// that can't possibly be valid and is rejected up front instead of being
+// silently truncated into the buffer.
+bool make_c_string(std::string_view s, char (&buf)[INET6_ADDRSTRLEN]) noexcept {
+    if (s.empty() || s.size() >= sizeof(buf)) return false;
+    std::memcpy(buf, s.data(), s.size());
+    buf[s.size()] = '\0';
+    return true;
+}
+
+#ifdef _WIN32
+int platform_inet_pton(int af, const char* src, void* dst) { return InetPtonA(af, src, dst); }
+const char* platform_inet_ntop(int af, const void* src, char* dst, size_t size) {
+    return InetNtopA(af, const_cast<void*>(src), dst, size);
+}
+#else
+int platform_inet_pton(int af, const char* src, void* dst) { return inet_pton(af, src, dst); }
+const char* platform_inet_ntop(int af, const void* src, char* dst, size_t size) {
+    return inet_ntop(af, src, dst, size);
+}
+#endif
+
+uint64_t be_bytes_to_u64(const uint8_t* p) noexcept {
+    uint64_t v = 0;
+    for (int i = 0; i < 8; ++i) v = (v << 8) | p[i];
+    return v;
+}
+
+void u64_to_be_bytes(uint64_t v, uint8_t* p) noexcept {
+    for (int i = 7; i >= 0; --i) {
+        p[i] = static_cast<uint8_t>(v & 0xFF);
+        v >>= 8;
+    }
+}
+}  // namespace
+
+// --- ipv4 --------------------------------------------------------------
+
+bool urlparser::ipv4::is_valid(std::string_view text) noexcept {
+    char buf[INET6_ADDRSTRLEN];
+    std::array<uint8_t, 4> bytes{};
+    return make_c_string(text, buf) && platform_inet_pton(AF_INET, buf, bytes.data()) == 1;
+}
+
+urlparser::ipv4 urlparser::ipv4::parse(std::string_view text) {
+    char buf[INET6_ADDRSTRLEN];
+    std::array<uint8_t, 4> bytes{};
+    if (make_c_string(text, buf) && platform_inet_pton(AF_INET, buf, bytes.data()) == 1) {
+        return ipv4((static_cast<uint32_t>(bytes[0]) << 24) | (static_cast<uint32_t>(bytes[1]) << 16) |
+                    (static_cast<uint32_t>(bytes[2]) << 8) | static_cast<uint32_t>(bytes[3]));
+    }
+    throw std::invalid_argument("ipv4::parse: not a valid IPv4 address: " + std::string(text));
+}
+
+urlparser::ipv4 urlparser::ipv4::from_uint32(uint32_t address) noexcept { return ipv4(address); }
+
+std::array<uint8_t, 4> urlparser::ipv4::bytes() const noexcept {
+    return {static_cast<uint8_t>(value_ >> 24), static_cast<uint8_t>(value_ >> 16),
+            static_cast<uint8_t>(value_ >> 8), static_cast<uint8_t>(value_)};
+}
+
+std::string urlparser::ipv4::str() const {
+    char buf[INET6_ADDRSTRLEN];
+    const auto b = bytes();
+    // bytes() always comes from a validated parse or from_uint32(), so
+    // inet_ntop failing here isn't a real-world case - the API is noexcept
+    // (well, str() itself may still allocate but never throws for reasons
+    // other than allocation failure), so fail safe (empty string) rather
+    // than use an unwritten buffer.
+    if (!platform_inet_ntop(AF_INET, b.data(), buf, sizeof(buf))) return {};
+    return std::string(buf);
+}
+
+std::ostream& operator<<(std::ostream& os, const urlparser::ipv4& dt) {
+    os << dt.str();
+    return os;
+}
+
+// --- ipv6 --------------------------------------------------------------
+
+bool urlparser::ipv6::is_valid(std::string_view text) noexcept {
+    char buf[INET6_ADDRSTRLEN];
+    std::array<uint8_t, 16> bytes{};
+    return make_c_string(strip_ip_brackets(text), buf) &&
+           platform_inet_pton(AF_INET6, buf, bytes.data()) == 1;
+}
+
+urlparser::ipv6 urlparser::ipv6::parse(std::string_view text) {
+    char buf[INET6_ADDRSTRLEN];
+    std::array<uint8_t, 16> bytes{};
+    if (make_c_string(strip_ip_brackets(text), buf) &&
+        platform_inet_pton(AF_INET6, buf, bytes.data()) == 1) {
+        return ipv6(be_bytes_to_u64(bytes.data()), be_bytes_to_u64(bytes.data() + 8));
+    }
+    throw std::invalid_argument("ipv6::parse: not a valid IPv6 address: " + std::string(text));
+}
+
+urlparser::ipv6 urlparser::ipv6::from_uint64_pair(uint64_t high, uint64_t low) noexcept {
+    return ipv6(high, low);
+}
+
+std::array<uint8_t, 16> urlparser::ipv6::bytes() const noexcept {
+    std::array<uint8_t, 16> out{};
+    u64_to_be_bytes(hi_, out.data());
+    u64_to_be_bytes(lo_, out.data() + 8);
+    return out;
+}
+
+std::string urlparser::ipv6::str() const {
+    char buf[INET6_ADDRSTRLEN];
+    const auto b = bytes();
+    if (!platform_inet_ntop(AF_INET6, b.data(), buf, sizeof(buf))) return {};
+    return std::string(buf);
+}
+
+void urlparser::ipv6::add_bits(uint64_t low64_bits) noexcept {
+    const uint64_t old_lo = lo_;
+    lo_ += low64_bits;
+    const bool carried = lo_ < old_lo;
+    const bool negative = (low64_bits >> 63) & 1;
+    hi_ += static_cast<uint64_t>(carried) + (negative ? ~uint64_t{0} : 0);
+}
+
+std::ostream& operator<<(std::ostream& os, const urlparser::ipv6& dt) {
+    os << dt.str();
+    return os;
+}
+
+// --- host classification (hostname / ipv4 / ipv6) -----------------------
+
+urlparser::host urlparser::parse_host(std::string_view host_text, bool ignore_www) noexcept {
+    if (ipv4::is_valid(host_text)) return ipv4::parse(host_text);
+    if (ipv6::is_valid(host_text)) return ipv6::parse(host_text);
+    return hostname(std::string(host_text), ignore_www);
+}
+
+urlparser::host urlparser::parse_host(const char* host_text, bool ignore_www) noexcept {
+    return parse_host(std::string_view(host_text), ignore_www);
+}
+
+urlparser::host urlparser::parse_host(std::string&& host_text, bool ignore_www) noexcept {
+    // is_valid() only reads host_text - checking IP-ness first, before
+    // deciding whether to consume it, is what lets the hostname branch
+    // below still steal the buffer via std::move().
+    if (ipv4::is_valid(host_text)) return ipv4::parse(host_text);
+    if (ipv6::is_valid(host_text)) return ipv6::parse(host_text);
+    return hostname(std::move(host_text), ignore_www);
+}
+
+urlparser::host urlparser::parse_host_from_url(std::string_view url_text, bool ignore_www) noexcept {
+    return parse_host(urlparser::url::extract_host(url_text), ignore_www);
+}
+
+urlparser::host urlparser::parse_host_from_url(const char* url_text, bool ignore_www) noexcept {
+    return parse_host_from_url(std::string_view(url_text), ignore_www);
+}
+
+urlparser::host urlparser::parse_host_from_url(std::string&& url_text, bool ignore_www) noexcept {
+    // extract_host(string&&) reuses url_text's own buffer (erase() in
+    // place) instead of allocating a new host-sized string; parse_host
+    // (string&&) then reuses *that* buffer again for the hostname case -
+    // so a URL string the caller already owns and doesn't need afterward
+    // goes from "URL" to classified "hostname" with zero new allocations
+    // beyond the hostname value type itself (none - it just takes
+    // ownership of the buffer it's handed).
+    return parse_host(urlparser::url::extract_host(std::move(url_text)), ignore_www);
+}
+
+std::string urlparser::str(const host& h) {
+    return std::visit([](const auto& v) -> std::string { return v.str(); }, h);
+}
+
+std::ostream& operator<<(std::ostream& os, const urlparser::host& dt) {
+    std::visit([&os](const auto& h) { os << h; }, dt);
     return os;
 }

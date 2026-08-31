@@ -136,11 +136,11 @@ the input, with case-folding as the only transformation applied (which
 never changes length). Delimiters (`://`, `@`, `:`, `?`, `#`, `;`) are
 stripped, never kept. So the sum of every field's length is provably `<=
 url.size()`. Reserving exactly that guarantees `storage_` never reallocates
-during parsing — no guesswork, no 1.5× fudge factor needed. A small
-`URLPARSER_ARENA_EXTRA_CAPACITY` macro (default 32 bytes, overridable
-before `#include`) adds headroom for the future: if/when setters are added,
-a value that grows past its original span gets appended at the end of
-`storage_` (bump-allocator style) instead of reallocating immediately.
+during parsing — no guesswork, no fudge factor, and no speculative
+headroom "for future setters" either: an earlier version of this code
+reserved an extra 32 bytes for exactly that reason, but nothing ever grew
+into it (`url` has no setters), so it was pure waste on every single `url`
+constructed. Removed - `storage_` now takes exactly what parsing needs.
 
 **Why offsets and not `std::string_view` fields directly:** a `string_view`
 is a raw pointer + length. If `url` stored raw views into its own

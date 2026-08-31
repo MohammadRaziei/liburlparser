@@ -9,8 +9,10 @@ Run explicitly with memray enabled (it's disabled by default so normal
 `@pytest.mark.limit_leaks` fails the test if the process's net allocations
 after the marked function returns exceed the given threshold - i.e. if
 objects created inside are not being freed. This targets the C++/Python
-boundary (nanobind wrapper objects + the PIMPL `shared_ptr<Impl>` on the
-C++ side), which is exactly where reference-counting bugs would show up.
+boundary (nanobind wrapper objects, and - since url::host()/parse_host()
+build a std::variant<hostname, ipv4, ipv6> - nanobind's variant caster
+dispatching to whichever alternative's own caster applies), which is
+exactly where reference-counting bugs would show up.
 """
 from __future__ import annotations
 
@@ -18,7 +20,7 @@ import gc
 
 import pytest
 
-from liburlparser import Host, Url
+from liburlparser import Hostname, Url, parse_host_from_url
 
 URLS = [
     "https://www.example.com/path?query=1",
@@ -26,6 +28,8 @@ URLS = [
     "https://api.github.io/v1/resource",
     "https://blog.subdomain.example.com.au/post/123",
     "http://plain.org",
+    "http://192.168.1.1:8080/admin",
+    "http://[2001:db8::1]:8080/x",
 ]
 
 
@@ -38,38 +42,41 @@ def test_url_construction_does_not_leak():
 
 
 @pytest.mark.limit_leaks("1 MB")
-def test_host_construction_does_not_leak():
+def test_hostname_construction_does_not_leak():
     for _ in range(20_000):
         for u in URLS:
-            Host.from_url(u)
+            Hostname.from_url(u)
     gc.collect()
 
 
 @pytest.mark.limit_leaks("1 MB")
-def test_host_lazy_fields_do_not_leak():
-    """Exercises the lazy-parse path (ensureParsed) repeatedly, since that's
-    the newest code path (caches domain/subdomain/suffix on first access)."""
+def test_hostname_lazy_fields_do_not_leak():
+    """Exercises the lazy-parse path (ensure_parsed) repeatedly, since that's
+    the PSL-dependent code path (caches domain/subdomain/suffix on first access)."""
     for _ in range(20_000):
         for u in URLS:
-            h = Host.from_url(u)
+            h = Hostname.from_url(u)
             _ = h.domain, h.subdomain, h.suffix, h.full_domain
-    gc.collect()
 
 
 @pytest.mark.limit_leaks("1 MB")
 def test_url_host_roundtrip_does_not_leak():
-    """Url -> .host -> field access, the most common real-world call chain."""
+    """Url -> .host -> str, the most common real-world call chain - and, since
+    URLS includes IPv4/IPv6 hosts too, exercises all three variant
+    alternatives' casters (Hostname/IPv4/IPv6), not just the hostname one."""
     for _ in range(20_000):
         for u in URLS:
             url = Url(u)
-            _ = url.host.full_domain
+            _ = str(url.host)
     gc.collect()
 
 
 @pytest.mark.limit_leaks("1 MB")
-def test_host_extract_from_url_does_not_leak():
-    """Exercises Host::fromUrl + the dict-conversion path (a separate
-    nanobind boundary crossing: C++ std::string -> Python dict)."""
+def test_parse_host_from_url_does_not_leak():
+    """Exercises parse_host_from_url()'s std::variant<hostname, ipv4, ipv6>
+    return value directly (not via Url.host), across all three URLS' host
+    kinds, plus the to_dict() dispatch on whichever type comes back."""
     for _ in range(20_000):
         for u in URLS:
-            Host.extract_from_url(u)
+            host = parse_host_from_url(u)
+            _ = host.to_dict()

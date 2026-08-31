@@ -170,6 +170,11 @@ endif()
 add_library(urlparser STATIC ${SOURCES})
 add_library(url::base ALIAS urlparser)
 target_include_directories(urlparser PRIVATE ${GENERATED_HEADERS_DIR})
+if(WIN32)
+    # urlparser::ip uses InetPtonA/InetNtopA (ws2tcpip.h) for IPv4/IPv6
+    # parsing and formatting instead of hand-rolling that logic.
+    target_link_libraries(urlparser PUBLIC ws2_32)
+endif()
 
 
 target_include_directories(urlparser

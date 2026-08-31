@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include "urlparser.h"
@@ -55,9 +56,11 @@ std::vector<HostData> load_host_data(const std::string& filename) {
 
 
 // Runs all field checks for a single CSV row. Non-fatal (EXPECT_*) so every
-// mismatched field is reported, not just the first one.
+// mismatched field is reported, not just the first one. Every row in
+// host_data.csv is a domain name (see tests/data/host_data.csv), so
+// from_url() always lands on the hostname alternative.
 static void check_host_row(int *utest_result, const HostData& host_data) {
-    urlparser::host host = urlparser::host::from_url(host_data.url, host_data.ignore_www);
+    urlparser::hostname host = urlparser::hostname::from_url(host_data.url, host_data.ignore_www);
     EXPECT_STREQ(host.str().c_str(), host_data.host.c_str());
     EXPECT_STREQ(host.subdomain().c_str(), host_data.subdomain.c_str());
     EXPECT_STREQ(host.domain().c_str(), host_data.domain.c_str());
@@ -66,7 +69,7 @@ static void check_host_row(int *utest_result, const HostData& host_data) {
 }
 
 UTEST(CSVHostTest, CheckPSLisLoaded){
-    ASSERT_TRUE(urlparser::host::is_psl_loaded());
+    ASSERT_TRUE(urlparser::hostname::is_psl_loaded());
 }
 
 UTEST(CSVHostTest, HostDataInput) {
@@ -85,26 +88,26 @@ UTEST(CSVHostTest, HostDataInput) {
 // --- str()/full_domain(): the PSL-free fast path -------------------------
 
 UTEST(HostTest, StrEqualsFulldomain) {
-    urlparser::host host("www.example.com");
+    urlparser::hostname host("www.example.com");
     EXPECT_STREQ(host.str().c_str(), host.full_domain().c_str());
 }
 
 UTEST(HostTest, FulldomainWithoutIgnoreWwwKeepsWww) {
-    urlparser::host host("www.example.com", false);
+    urlparser::hostname host("www.example.com", false);
     EXPECT_STREQ(host.full_domain().c_str(), "www.example.com");
 }
 
 UTEST(HostTest, FulldomainWithIgnoreWwwStripsWww) {
-    urlparser::host host("www.example.com", true);
+    urlparser::hostname host("www.example.com", true);
     EXPECT_STREQ(host.full_domain().c_str(), "example.com");
 }
 
-// --- operator==: value equality (host-vs-host and host-vs-string) -------
+// --- operator==: value equality (hostname-vs-hostname and hostname-vs-string) -
 
 UTEST(HostTest, EqualityComparesByValue) {
-    urlparser::host a("example.com");
-    urlparser::host b("example.com");
-    urlparser::host c("other.com");
+    urlparser::hostname a("example.com");
+    urlparser::hostname b("example.com");
+    urlparser::hostname c("other.com");
     EXPECT_TRUE(a == b);
     EXPECT_FALSE(a == c);
     EXPECT_TRUE(a == std::string("example.com"));
@@ -112,8 +115,8 @@ UTEST(HostTest, EqualityComparesByValue) {
 }
 
 UTEST(HostTest, CopyIsIndependentValue) {
-    urlparser::host original("www.example.co.uk", true);
-    urlparser::host copy = original;
+    urlparser::hostname original("www.example.co.uk", true);
+    urlparser::hostname copy = original;
     EXPECT_TRUE(original == copy);
     // Force the lazy PSL-dependent split on the copy only.
     (void)copy.suffix();
@@ -122,7 +125,7 @@ UTEST(HostTest, CopyIsIndependentValue) {
 }
 
 UTEST(HostTest, DefaultConstructedHostIsEmpty) {
-    urlparser::host host;
+    urlparser::hostname host;
     EXPECT_STREQ(host.str().c_str(), "");
     EXPECT_STREQ(host.domain().c_str(), "");
     EXPECT_STREQ(host.suffix().c_str(), "");
@@ -133,8 +136,8 @@ UTEST(HostTest, DefaultConstructedHostIsEmpty) {
 UTEST(HostTest, FromUrlRvalueOverloadMatchesLvalueOverload) {
     const std::string url = "http://mohammad:123@www.google.com/about";
 
-    urlparser::host from_lvalue = urlparser::host::from_url(url, true);
-    urlparser::host from_rvalue = urlparser::host::from_url(std::string(url), true);
+    urlparser::hostname from_lvalue = urlparser::hostname::from_url(url, true);
+    urlparser::hostname from_rvalue = urlparser::hostname::from_url(std::string(url), true);
 
     EXPECT_TRUE(from_lvalue == from_rvalue);
     EXPECT_STREQ(from_lvalue.str().c_str(), from_rvalue.str().c_str());
@@ -180,17 +183,25 @@ UTEST(HostTest, ExtractHostDoesNotConfusePortWithUserinfoColon) {
         "host.example.com");
 }
 
+// Regression test: an IPv6 literal's own colons must not be mistaken for
+// the port separator either - that's exactly why URLs bracket them.
+UTEST(HostTest, ExtractHostDoesNotConfusePortWithIPv6Colons) {
+    EXPECT_STREQ(
+        urlparser::url::extract_host("http://[2001:db8::1]:8080/x").c_str(),
+        "[2001:db8::1]");
+}
+
 UTEST(HostTest, FromUrlWithPortMatchesFullUrlParserForDomainAndSuffix) {
     const std::string full_url =
         "https://m.raziei:1234@www.ee.aut.ac.ir:80/home?o=10&k=v#frag";
 
-    urlparser::host h = urlparser::host::from_url(full_url, true);
-    urlparser::url u(full_url, true);
-
-    EXPECT_STREQ(h.str().c_str(), u.host().str().c_str());
-    EXPECT_STREQ(h.suffix().c_str(), u.suffix().c_str());
-    EXPECT_STREQ(h.domain().c_str(), u.domain().c_str());
-    EXPECT_STREQ(h.subdomain().c_str(), u.subdomain().c_str());
+    urlparser::hostname h = urlparser::hostname::from_url(full_url, true);
+    const auto* u_host = std::get_if<urlparser::hostname>(&urlparser::url(full_url, true).host());
+    ASSERT_TRUE(u_host != nullptr);
+    EXPECT_STREQ(h.str().c_str(), u_host->str().c_str());
+    EXPECT_STREQ(h.suffix().c_str(), u_host->suffix().c_str());
+    EXPECT_STREQ(h.domain().c_str(), u_host->domain().c_str());
+    EXPECT_STREQ(h.subdomain().c_str(), u_host->subdomain().c_str());
 }
 
 // --- version class --------------------------------------------------------
@@ -212,15 +223,193 @@ UTEST(HostTest, LoadPslFromStringChangesFutureLookups) {
     // the same as the real PSL would give, just confirming a reload of the
     // *same* content round-trips correctly (we restore the real PSL right
     // after, so we don't leak this into other tests).
-    urlparser::host before("example.co.uk");
+    urlparser::hostname before("example.co.uk");
     const std::string suffix_before = before.suffix();
 
-    urlparser::host::load_psl_from_string("uk\nco.uk\n");
-    urlparser::host after("example.co.uk");
+    urlparser::hostname::load_psl_from_string("uk\nco.uk\n");
+    urlparser::hostname after("example.co.uk");
     EXPECT_STREQ(after.suffix().c_str(), "co.uk");
 
     // Restore the real PSL so later tests in this binary aren't affected.
-    urlparser::host::load_psl_from_path(makeAbsolutePath("../public_suffix_list.dat"));
-    urlparser::host restored("example.co.uk");
+    urlparser::hostname::load_psl_from_path(makeAbsolutePath("../public_suffix_list.dat"));
+    urlparser::hostname restored("example.co.uk");
     EXPECT_STREQ(restored.suffix().c_str(), suffix_before.c_str());
+}
+
+// --- ipv4 ------------------------------------------------------------------
+
+UTEST(Ipv4Test, ParseAndStrRoundTrip) {
+    auto a = urlparser::ipv4::parse("192.168.1.1");
+    EXPECT_STREQ(a.str().c_str(), "192.168.1.1");
+}
+
+UTEST(Ipv4Test, ToUint32AndBack) {
+    auto a = urlparser::ipv4::parse("192.168.1.1");
+    EXPECT_EQ(a.to_uint32(), 0xC0A80101u);
+    auto b = urlparser::ipv4::from_uint32(0x08080808u);
+    EXPECT_STREQ(b.str().c_str(), "8.8.8.8");
+}
+
+UTEST(Ipv4Test, IsValidRejectsGarbageAndHostnames) {
+    EXPECT_TRUE(urlparser::ipv4::is_valid("1.2.3.4"));
+    EXPECT_FALSE(urlparser::ipv4::is_valid("www.example.com"));
+    EXPECT_FALSE(urlparser::ipv4::is_valid(""));
+    EXPECT_FALSE(urlparser::ipv4::is_valid("1.2.3.4.5"));
+    EXPECT_FALSE(urlparser::ipv4::is_valid("999.1.1.1"));
+}
+
+UTEST(Ipv4Test, ParseThrowsOnGarbage) {
+    bool threw = false;
+    try { (void)urlparser::ipv4::parse("not-an-ip"); }
+    catch (const std::invalid_argument&) { threw = true; }
+    EXPECT_TRUE(threw);
+}
+
+UTEST(Ipv4Test, IncrementDecrementWrapAround) {
+    auto a = urlparser::ipv4::parse("255.255.255.255");
+    ++a;
+    EXPECT_STREQ(a.str().c_str(), "0.0.0.0");
+    --a;
+    EXPECT_STREQ(a.str().c_str(), "255.255.255.255");
+
+    auto b = urlparser::ipv4::parse("0.0.0.0");
+    --b;
+    EXPECT_STREQ(b.str().c_str(), "255.255.255.255");
+}
+
+UTEST(Ipv4Test, PlusEqualsMinusEqualsAcrossOctetBoundary) {
+    auto a = urlparser::ipv4::parse("10.0.0.0");
+    a += 256;
+    EXPECT_STREQ(a.str().c_str(), "10.0.1.0");
+    a -= 512;
+    EXPECT_STREQ(a.str().c_str(), "9.255.255.0");
+}
+
+UTEST(Ipv4Test, MinusInt64MinDoesNotCrash) {
+    // Edge case: negating INT64_MIN as a signed int64_t is undefined
+    // behavior; operator-= must compute this without ever doing that.
+    auto a = urlparser::ipv4::parse("1.2.3.4");
+    a -= INT64_MIN;
+    (void)a.str();  // just must not crash/UB; exact wraparound value isn't the point here
+}
+
+UTEST(Ipv4Test, FreeOperatorsAndDistance) {
+    auto a = urlparser::ipv4::parse("1.2.3.4");
+    auto b = a + 1;
+    EXPECT_STREQ(b.str().c_str(), "1.2.3.5");
+    EXPECT_EQ(b - a, 1);
+}
+
+UTEST(Ipv4Test, Comparisons) {
+    EXPECT_TRUE(urlparser::ipv4::parse("1.0.0.0") < urlparser::ipv4::parse("2.0.0.0"));
+    EXPECT_TRUE(urlparser::ipv4::parse("1.0.0.0") == urlparser::ipv4::parse("1.0.0.0"));
+}
+
+// --- ipv6 ------------------------------------------------------------------
+
+UTEST(Ipv6Test, ParseBracketedAndBareAgree) {
+    auto a = urlparser::ipv6::parse("[2001:db8::1]");
+    auto b = urlparser::ipv6::parse("2001:db8::1");
+    EXPECT_TRUE(a == b);
+    EXPECT_STREQ(a.str().c_str(), "2001:db8::1");
+}
+
+UTEST(Ipv6Test, IsValidRejectsGarbageAndIPv4) {
+    EXPECT_TRUE(urlparser::ipv6::is_valid("::1"));
+    EXPECT_TRUE(urlparser::ipv6::is_valid("[::1]"));
+    EXPECT_FALSE(urlparser::ipv6::is_valid("192.168.1.1"));
+    EXPECT_FALSE(urlparser::ipv6::is_valid("not-an-ip"));
+}
+
+UTEST(Ipv6Test, ParseThrowsOnGarbage) {
+    bool threw = false;
+    try { (void)urlparser::ipv6::parse("not-an-ip"); }
+    catch (const std::invalid_argument&) { threw = true; }
+    EXPECT_TRUE(threw);
+}
+
+UTEST(Ipv6Test, IncrementWrapsAcross64BitBoundary) {
+    auto a = urlparser::ipv6::parse("::");
+    ++a;
+    EXPECT_STREQ(a.str().c_str(), "::1");
+
+    auto b = urlparser::ipv6::parse("::");
+    --b;
+    EXPECT_STREQ(b.str().c_str(), "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff");
+
+    // Carry must propagate from the low 64 bits into the high 64 bits.
+    auto c = urlparser::ipv6::from_uint64_pair(0, 0xFFFFFFFFFFFFFFFFull);
+    ++c;
+    EXPECT_EQ(c.high64(), 1u);
+    EXPECT_EQ(c.low64(), 0u);
+}
+
+UTEST(Ipv6Test, MinusInt64MinDoesNotCrash) {
+    auto a = urlparser::ipv6::parse("::1");
+    a -= INT64_MIN;
+    (void)a.str();
+}
+
+UTEST(Ipv6Test, HighLowRoundTrip) {
+    auto a = urlparser::ipv6::from_uint64_pair(0x2001'0db8'0000'0000ull, 0x1ull);
+    EXPECT_EQ(a.high64(), 0x2001'0db8'0000'0000ull);
+    EXPECT_EQ(a.low64(), 0x1ull);
+}
+
+// --- host = std::variant<hostname, ipv4, ipv6> ------------------------------
+
+UTEST(ParseHostTest, ClassifiesDomainIPv4AndIPv6) {
+    EXPECT_TRUE(std::holds_alternative<urlparser::hostname>(urlparser::parse_host("example.com")));
+    EXPECT_TRUE(std::holds_alternative<urlparser::ipv4>(urlparser::parse_host("192.0.2.1")));
+    EXPECT_TRUE(std::holds_alternative<urlparser::ipv6>(urlparser::parse_host("[::1]")));
+}
+
+UTEST(ParseHostTest, RvalueOverloadMatchesViewOverload) {
+    const std::string text = "example.com";
+    auto a = urlparser::parse_host(text);
+    auto b = urlparser::parse_host(std::string(text));
+    ASSERT_TRUE(std::holds_alternative<urlparser::hostname>(a));
+    ASSERT_TRUE(std::holds_alternative<urlparser::hostname>(b));
+    EXPECT_TRUE(std::get<urlparser::hostname>(a) == std::get<urlparser::hostname>(b));
+}
+
+UTEST(ParseHostFromUrlTest, ExtractsAndClassifies) {
+    auto a = urlparser::parse_host_from_url("http://192.168.1.1:8080/x");
+    ASSERT_TRUE(std::holds_alternative<urlparser::ipv4>(a));
+    EXPECT_STREQ(std::get<urlparser::ipv4>(a).str().c_str(), "192.168.1.1");
+
+    auto b = urlparser::parse_host_from_url("https://www.example.com/x", true);
+    ASSERT_TRUE(std::holds_alternative<urlparser::hostname>(b));
+    EXPECT_STREQ(std::get<urlparser::hostname>(b).str().c_str(), "example.com");
+}
+
+UTEST(ParseHostFromUrlTest, IPv6WithPortIsClassifiedCorrectly) {
+    auto a = urlparser::parse_host_from_url("http://[2001:db8::1]:8080/x");
+    ASSERT_TRUE(std::holds_alternative<urlparser::ipv6>(a));
+    EXPECT_STREQ(std::get<urlparser::ipv6>(a).str().c_str(), "2001:db8::1");
+}
+
+// --- url::host(): returns the classified variant, not just a hostname ------
+
+UTEST(UrlHostTest, DomainUrlHoldsHostname) {
+    urlparser::url u("https://www.example.com/x", true);
+    EXPECT_TRUE(std::holds_alternative<urlparser::hostname>(u.host()));
+}
+
+UTEST(UrlHostTest, IPv4UrlHoldsIpv4NotGarbagePsl) {
+    // Regression test: before hostname/ipv4/ipv6 were split, an IPv4 host
+    // was run through PSL matching as if it were a domain name, so
+    // "192.168.1.1" produced suffix()="1", domain()="1", subdomain()=
+    // "192.168" - nonsense. Now it's simply not a hostname at all.
+    urlparser::url u("http://192.168.1.1/path", false);
+    const auto* v4 = std::get_if<urlparser::ipv4>(&u.host());
+    ASSERT_TRUE(v4 != nullptr);
+    EXPECT_STREQ(v4->str().c_str(), "192.168.1.1");
+}
+
+UTEST(UrlHostTest, IPv6UrlHoldsIpv6) {
+    urlparser::url u("http://[2001:db8::1]:8080/x", false);
+    const auto* v6 = std::get_if<urlparser::ipv6>(&u.host());
+    ASSERT_TRUE(v6 != nullptr);
+    EXPECT_STREQ(v6->str().c_str(), "2001:db8::1");
 }
