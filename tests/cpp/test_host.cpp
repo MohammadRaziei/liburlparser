@@ -389,6 +389,18 @@ UTEST(ParseHostFromUrlTest, IPv6WithPortIsClassifiedCorrectly) {
     EXPECT_STREQ(std::get<urlparser::ipv6>(a).str().c_str(), "2001:db8::1");
 }
 
+// The urlparser::str(host) free function must work uniformly across all
+// three variant alternatives - this is exactly what the README's C++
+// example demonstrates (urlparser::str(h) without a std::get_if/visit).
+UTEST(HostStrFreeFunctionTest, WorksForHostnameIpv4AndIpv6) {
+    urlparser::host h1 = urlparser::hostname("example.com");
+    urlparser::host h2 = urlparser::ipv4::parse("192.168.1.1");
+    urlparser::host h3 = urlparser::ipv6::parse("::1");
+    EXPECT_STREQ(urlparser::str(h1).c_str(), "example.com");
+    EXPECT_STREQ(urlparser::str(h2).c_str(), "192.168.1.1");
+    EXPECT_STREQ(urlparser::str(h3).c_str(), "::1");
+}
+
 // --- url::host(): returns the classified variant, not just a hostname ------
 
 UTEST(UrlHostTest, DomainUrlHoldsHostname) {

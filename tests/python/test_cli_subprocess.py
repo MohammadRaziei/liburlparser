@@ -91,6 +91,43 @@ def test_specific_parts(args, expected_output):
     assert stdout.strip() == expected_output
 
 
+@pytest.mark.parametrize(("host","expected"), [
+    (
+        "192.168.1.1",
+        {"type": "ipv4", "str": "192.168.1.1", "as_int": 3232235777},
+    ),
+    (
+        "2001:db8::1",
+        {"type": "ipv6", "str": "2001:db8::1"},
+    ),
+])
+def test_host_parsing_ip_addresses(host, expected):
+    """--host must classify IP addresses as ipv4/ipv6 (via parse_host), not
+    run them through domain-name/PSL logic the way it used to - see
+    ARCHITECTURE.md section 10."""
+    stdout, stderr, returncode = run_cli_command([
+        sys.executable, "-m", "liburlparser", "--host", host
+    ])
+    assert returncode == 0
+    assert stderr == ""
+    parsed = json.loads(stdout)
+    for key, value in expected.items():
+        assert parsed[key] == value
+
+
+def test_url_parsing_ipv6_with_port():
+    """--url with a bracketed IPv6 host + explicit port must classify the
+    host as ipv6 without the port digits leaking into it."""
+    stdout, stderr, returncode = run_cli_command([
+        sys.executable, "-m", "liburlparser", "--url", "http://[2001:db8::1]:8080/x"
+    ])
+    assert returncode == 0
+    assert stderr == ""
+    parsed = json.loads(stdout)
+    assert parsed["host"]["type"] == "ipv6"
+    assert parsed["host"]["str"] == "2001:db8::1"
+
+
 def test_invalid_part():
     """Test error handling for invalid part"""
     stdout, stderr, returncode = run_cli_command([

@@ -81,6 +81,21 @@ int main() {
         }
     }
 
+    // --- parse_host()/parse_host_from_url(): classify a bare host or a
+    // full URL directly, without going through urlparser::url at all ---
+    {
+        // Classifying an already-isolated host string:
+        show(std::holds_alternative<urlparser::hostname>(urlparser::parse_host("example.com")));
+        show(std::holds_alternative<urlparser::ipv4>(urlparser::parse_host("192.0.2.1")));
+        show(std::holds_alternative<urlparser::ipv6>(urlparser::parse_host("[::1]")));
+
+        // Extracting + classifying straight from a full URL in one step -
+        // urlparser::str() gets the text form regardless of which
+        // alternative it turned out to be, no std::get_if/visit needed.
+        urlparser::host h = urlparser::parse_host_from_url("http://192.168.1.1:8080/x");
+        show(urlparser::str(h));
+    }
+
     const urlparser::url url(
         "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
         "home?o=10&k=helloworld#aboutus",
