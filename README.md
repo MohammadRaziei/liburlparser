@@ -66,7 +66,11 @@ Here are some key features of **liburlparser**:
    - It offers an intuitive interface that remains consistent across both C++ and Python.
 
 2. **Clean Code Design**:
-   - The library provides two separate classes: `Url` and `Host`.
+   - The library provides separate classes for each concept: `Url`, and
+     `Hostname`/`IPv4`/`IPv6` for whatever a URL's host actually is (RFC
+     3986 defines a host as either a domain name or an IP address, never
+     both - liburlparser mirrors that directly instead of forcing IP
+     addresses through domain-name-shaped fields).
    - This separation allows for cleaner and more organized code when dealing with URLs.
 
 3. **Public Suffix List Support**:
@@ -76,20 +80,25 @@ Here are some key features of **liburlparser**:
 4. **Automatic Public Suffix List Updates**:
    - Before each build and deployment, liburlparser updates the public_suffix_list automatically.
 
-5. **Host Properties**:
-   - The `Host` class includes properties such as subdomain, domain, domain name, and suffix.
+5. **Hostname Properties**:
+   - The `Hostname` class includes properties such as subdomain, domain, domain name, and suffix.
 
-6. **URL Properties**:
-   - The `Url` class provides properties like protocol, userinfo, host (and all host properties), port, path, query parameters, and fragment.
+6. **IPv4 / IPv6 Support**:
+   - `IPv4`/`IPv6` addresses used as a URL's host are recognized and parsed
+     as such - not run through domain-name logic. Both support integer
+     conversion and arithmetic (`+`, `-`, `+=`, `-=`, increment/decrement).
+
+7. **URL Properties**:
+   - The `Url` class provides properties like protocol, userinfo, host (classified as `Hostname`/`IPv4`/`IPv6`), port, path, query parameters, and fragment.
 
 <!--
 * Multiple programming language supported such as `Python`, `C++` and `Shell`
 * Intuitive interface and identical in C++ and Python
-* Provide two seperated class Url and Host for the purpose of clean code
+* Provide separate classes (Url, Hostname, IPv4, IPv6) for the purpose of clean code
 * Also support [public_suffix_list](https://publicsuffix.org/list/public_suffix_list.dat) for known combinatorial suffix such as "ac.ir"
 * Support unknown suffix like "google.comm" (it detect "comm" as suffix)
 * Update public_suffix_list automatically before each build and deploy
-* Host properties:
+* Hostname properties:
   * subdomain
   * domain
   * domain_name
@@ -127,26 +136,48 @@ import liburlparser
 help(liburlparser)
 print(liburlparser.__version__)
 
-from liburlparser import Url, Host
+from liburlparser import Url, Hostname, IPv4, IPv6
 help(Url)
-help(Host)
+help(Hostname)
 ```
 
 parse url and host
 
 ```python
-from liburlparser import Url, Host
+from liburlparser import Url, Hostname, parse_host
 ## parse url:
 url = Url("https://ee.aut.ac.ir/#id") # parse all part of url
-print(url, url.suffix, url.domain, url.fragment, url.host, url.to_dict(), url.to_json())
-## parse host
-host = url.host # ee.aut.ac.ir
+print(url, url.host_text, url.fragment, url.host, url.to_dict(), url.to_json())
+## url.host is a Hostname, IPv4, or IPv6 object - whichever this URL's host
+## actually is (an IP address has no "domain"/"suffix", so it's simply not
+## forced through Hostname at all)
+host = url.host  # a Hostname, here: ee.aut.ac.ir
 # or
-host = Host("ee.aut.ac.ir")
+host = Hostname("ee.aut.ac.ir")
 # or
-host = Host.from_url("https://ee.aut.ac.ir/#id") # the fastest way for parsing host from url
-# all of these methods return an object of Host class which already parse the host part of url
+host = Hostname.from_url("https://ee.aut.ac.ir/#id") # the fastest way for parsing host from url
 print(host, host.domain, host.suffix, host.to_dict(), host.to_json())
+
+## for a host you don't know in advance is a domain or an IP, use parse_host():
+host2 = parse_host("192.168.1.1")   # -> IPv4
+host3 = parse_host("ee.aut.ac.ir")  # -> Hostname
+print(type(host2).__name__, host2, int(host2))       # IPv4 192.168.1.1 3232235777
+print(type(host3).__name__, host3, host3.domain)      # Hostname ee.aut.ac.ir aut
+```
+
+IPv4/IPv6 addresses support integer conversion and arithmetic:
+
+```python
+from liburlparser import IPv4, IPv6
+
+ip = IPv4.parse("192.168.1.1")
+print(int(ip))          # 3232235777
+print(ip + 1)            # 192.168.1.2
+print(ip - IPv4.parse("192.168.1.0"))  # 1 (distance between two addresses)
+
+ip6 = IPv6.parse("2001:db8::1")
+print(ip6.high64, ip6.low64)
+print(ip6 + 1)            # 2001:db8::2
 ```
 
 Also there is some helping api to get better performance for some small tasks
@@ -156,37 +187,30 @@ Also there is some helping api to get better performance for some small tasks
 host_str = Url.extract_host("https://ee.aut.ac.ir/about") # very fast
 ```
 
-if you are fan of `pydomainextractor`, there is some interface similar to it
-
-```python
-import pydomainextractor
-extractor = pydomainextractor.DomainExtractor()
-extractor.extract("ee.aut.ac.ir") # from host
-extractor.extract_from_url("https://ee.aut.ac.ir/about") # from url
-
-# alternatively you can use:
-from liburlparser import Host
-Host.extract("ee.aut.ac.ir") # from host
-Host.extract_from_url("https://ee.aut.ac.ir/about") # from url
-# you can see there is the same api
-```
-
 ### C++
 
 there is some examples in [examples](https://github.com/MohammadRaziei/liburlparser/tree/master/examples) folder
 
 ```c++
 #include "urlparser.h"
+#include <variant>
 ...
 /// for parsing url
-TLD::Url url("https://ee.aut.ac.ir/about");
-std::string domain = url.domain(); // also for subdomain, port, params, ...
-/// for parsing host
-TLD::Host host("ee.aut.ac.ir");
+urlparser::url url("https://ee.aut.ac.ir/about");
+std::string_view host_text = url.host_text(); // the raw host text, unclassified
+
+/// url.host() is a std::variant<hostname, ipv4, ipv6> - whichever this
+/// URL's host actually is
+if (auto* h = std::get_if<urlparser::hostname>(&url.host())) {
+    std::cout << h->domain() << "." << h->suffix();
+}
+
+/// for parsing a host you already have (or a full URL) directly:
+urlparser::hostname host("ee.aut.ac.ir");
 // or
-TLD::Host host = url.host();
-// or
-TLD::Host host = TLD::Host::fromUrl("https://ee.aut.ac.ir/about");
+urlparser::hostname host2 = urlparser::hostname::from_url("https://ee.aut.ac.ir/about");
+// or, when you don't know in advance whether it's a domain or an IP:
+urlparser::host classified = urlparser::parse_host_from_url("http://192.168.1.1/about"); // -> ipv4
 ```
 
 you can see all methods in python we can use in c++ very easily
@@ -273,7 +297,7 @@ Tests were run on a file containing 10 million random domains from various top-l
 
 | Library                                                             | Function                  | Time   |
 | ------------------------------------------------------------------- | ------------------------- | ------ |
-| [liburlparser](https://github.com/mohammadraziei/liburlparser)      | liburlparser.Host         | 1.12s  |
+| [liburlparser](https://github.com/mohammadraziei/liburlparser)      | liburlparser.Hostname     | 1.12s  |
 | [PyDomainExtractor](https://github.com/Intsights/PyDomainExtractor) | pydomainextractor.extract | 1.50s  |
 | [publicsuffix2](https://github.com/nexb/python-publicsuffix2)       | publicsuffix2.get_sld     | 9.92s  |
 | [tldextract](https://github.com/john-kurkowski/tldextract)          | \_\_call\_\_              | 29.23s |
@@ -285,7 +309,7 @@ The test was conducted on a file containing 1 million random urls (Mar. 13rd 202
 
 | Library                                                             | Function                           | Time   |
 | ------------------------------------------------------------------- | ---------------------------------- | ------ |
-| [liburlparser](https://github.com/mohammadraziei/liburlparser)      | liburlparser.Host.from_url         | 2.10s  |
+| [liburlparser](https://github.com/mohammadraziei/liburlparser)      | liburlparser.Hostname.from_url     | 2.10s  |
 | [PyDomainExtractor](https://github.com/Intsights/PyDomainExtractor) | pydomainextractor.extract_from_url | 2.24s  |
 | [publicsuffix2](https://github.com/nexb/python-publicsuffix2)       | publicsuffix2.get_sld              | 10.84s |
 | [tldextract](https://github.com/john-kurkowski/tldextract)          | \_\_call\_\_                       | 36.04s |
