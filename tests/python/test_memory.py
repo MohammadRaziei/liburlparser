@@ -9,7 +9,7 @@ Run explicitly with memray enabled (it's disabled by default so normal
 `@pytest.mark.limit_leaks` fails the test if the process's net allocations
 after the marked function returns exceed the given threshold - i.e. if
 objects created inside are not being freed. This targets the C++/Python
-boundary (nanobind wrapper objects, and - since url::host()/parse_host()
+boundary (nanobind wrapper objects, and - since url::host()/Host::from_url()
 build a std::variant<hostname, ipv4, ipv6> - nanobind's variant caster
 dispatching to whichever alternative's own caster applies), which is
 exactly where reference-counting bugs would show up.
@@ -20,7 +20,7 @@ import gc
 
 import pytest
 
-from liburlparser import Hostname, Url, parse_host_from_url
+from liburlparser import Host, Hostname, Url
 
 URLS = [
     "https://www.example.com/path?query=1",
@@ -72,11 +72,11 @@ def test_url_host_roundtrip_does_not_leak():
 
 
 @pytest.mark.limit_leaks("1 MB")
-def test_parse_host_from_url_does_not_leak():
-    """Exercises parse_host_from_url()'s std::variant<hostname, ipv4, ipv6>
-    return value directly (not via Url.host), across all three URLS' host
+def test_host_from_url_does_not_leak():
+    """Exercises Host.from_url()'s internal std::variant<hostname, ipv4,
+    ipv6> dispatch directly (not via Url.host), across all three URLS' host
     kinds, plus the to_dict() dispatch on whichever type comes back."""
     for _ in range(20_000):
         for u in URLS:
-            host = parse_host_from_url(u)
+            host = Host.from_url(u)
             _ = host.to_dict()

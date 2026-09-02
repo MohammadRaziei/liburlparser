@@ -207,13 +207,14 @@ produces confident-looking garbage (`suffix() == "1"`, `domain() == "1"`
 for `"192.168.1.1"`, since the PSL matcher has no idea it isn't looking at
 a domain name at all).
 
-Instead, `url::host()` returns `const host&`, where
-`host = std::variant<hostname, ipv4, ipv6>` — exactly RFC 3986's own
-grammar, expressed as a type. Getting `domain()`/`suffix()` back means
-narrowing the variant first:
+Instead, `url::host()` returns `const host&`, where `host` wraps
+`std::variant<hostname, ipv4, ipv6>` — exactly RFC 3986's own grammar,
+behind a uniform API matching hostname/ipv4/ipv6/url themselves
+(a constructor that classifies, `from_url()`, `str()`). Getting
+`domain()`/`suffix()` back means narrowing first:
 
 ```cpp
-if (auto* h = std::get_if<urlparser::hostname>(&url.host())) {
+if (auto* h = url.host().try_hostname()) {
     std::cout << h->domain() << "." << h->suffix();
 }
 ```
@@ -222,12 +223,20 @@ which is more ceremony than a bare `url.domain()` call, on purpose: it's
 the compiler (and the reader) being told, explicitly, "this only makes
 sense if the host isn't an IP address" — instead of that assumption being
 silently baked into what `url.domain()` used to return for an IP host.
+`host` is composition over `std::variant`, not inheritance from it —
+deriving public classes from a standard container is a well-known footgun
+(no virtual destructor, and an interface you don't fully control) — so
+`is_hostname()`/`is_ipv4()`/`is_ipv6()`, `get_hostname()`/`get_ipv4()`/
+`get_ipv6()` (throwing, like `std::get<T>()`), and `try_hostname()`/
+`try_ipv4()`/`try_ipv6()` (non-throwing, like `std::get_if<T>()`) are
+hand-written wrappers around the internal variant; `.variant()` gives
+direct access to it for `std::visit` or structured, exhaustive handling.
 
-`parse_host(text, ignore_www)` is the free function that does the
-classification: try `ipv4::is_valid()`, then `ipv6::is_valid()` (both just
-call the platform's own `inet_pton`/`InetPtonA` — see §4.1), and fall back
-to `hostname` if neither matches. `url::ensure_host()` calls exactly this,
-once, the first time `.host()` is requested.
+`host`'s own constructor does the classification: try `ipv4::is_valid()`,
+then `ipv6::is_valid()` (both just call the platform's own `inet_pton`/
+`InetPtonA` — see §4.1), and fall back to `hostname` if neither matches.
+`url::ensure_host()` calls exactly this constructor, once, the first time
+`.host()` is requested.
 
 ### 3.4 `host` is lazy — twice over
 
@@ -237,7 +246,7 @@ different reasons:
 ```mermaid
 sequenceDiagram
     participant U as url
-    participant PH as parse_host()
+    participant PH as host(text) ctor
     participant H as hostname (cached)
     participant PSL as PSL matcher (singleton)
     Note over U: constructor runs -\nno host built, no PSL touched
@@ -299,7 +308,7 @@ actual measurement:
 IPv4's text format has more edge cases than "four dot-separated numbers"
 (leading zeros, legacy octal/hex octets in some parsers), and IPv6's has
 many more (`::` compression, embedded IPv4 tails like `::ffff:192.0.2.1`,
-zone IDs on some platforms). `ipv4::parse()`/`ipv6::parse()` and their
+zone IDs on some platforms). `ipv4`'s/`ipv6`'s constructors and their
 `is_valid()` counterparts call `inet_pton` (POSIX, `<arpa/inet.h>`) or
 `InetPtonA` (Windows, `<ws2tcpip.h>`) instead of re-deriving that grammar
 by hand; formatting back to text uses the matching `inet_ntop`/`InetNtopA`,
@@ -315,11 +324,11 @@ avoid one.
 `url::extract_host()`/`url::host_text()` return `"[2001:db8::1]"` —
 brackets included — for a bracketed IPv6 URL, rather than stripping them.
 This matches RFC 3986's own `IP-literal = "[" ( IPv6address / IPvFuture )
-"]"` grammar: the brackets are part of the host component. `ipv6::parse()`/
-`is_valid()` strip them internally before handing the text to
-`inet_pton` (which doesn't understand brackets itself), so callers never
-need to think about this either way — `ipv6::parse("[::1]")` and
-`ipv6::parse("::1")` produce the identical address.
+"]"` grammar: the brackets are part of the host component. `ipv6`'s
+constructor and `is_valid()` strip them internally before handing the text
+to `inet_pton` (which doesn't understand brackets itself), so callers
+never need to think about this either way — `ipv6("[::1]")` and
+`ipv6("::1")` produce the identical address.
 
 ## 5. The Public Suffix List
 
@@ -376,7 +385,7 @@ These were each measured, not assumed:
 | `::tolower` → hand-written ASCII-only `tolower` | ~4× faster per call. `::tolower` goes through the current C locale on every single call; URLs are ASCII-only per RFC 3986 (internationalized domain names arrive already punycode-encoded), so a branchless range check is both correct and much cheaper. |
 | `CharacterClass` (a heap-allocated `vector<bool>` bitset) → `constexpr` range-check functions | Removed a class and a heap allocation for what were really just two fixed character sets (scheme chars, digits). |
 | `std::stoi` on a copied port substring → `std::from_chars` directly on the input | No intermediate allocation, no locale handling, no exceptions on the success path (error codes instead). |
-| `hostname(const std::string&)` → overload set of `string_view` / `const char*` / `const std::string&` / `std::string&&` | The `string_view`/`const char*` overloads let a caller with only a borrowed buffer (e.g. nanobind's zero-copy Python-string caster) avoid any allocation beyond the final `hostname`'s own string; the `string&&` overload lets a caller with an owned, disposable string (e.g. `parse_host_from_url(std::move(url))`) reuse that buffer via `erase()` instead of copying into a new one. Verified with a direct allocation-count check (`operator new`/`delete` override), not just timing: the rvalue path went from 1 allocation to 0 for the classification step. |
+| `hostname(const std::string&)` → overload set of `string_view` / `const char*` / `const std::string&` / `std::string&&` | The `string_view`/`const char*` overloads let a caller with only a borrowed buffer (e.g. nanobind's zero-copy Python-string caster) avoid any allocation beyond the final `hostname`'s own string; the `string&&` overload lets a caller with an owned, disposable string (e.g. `urlparser::host::from_url(std::move(url))`) reuse that buffer via `erase()` instead of copying into a new one. Verified with a direct allocation-count check (`operator new`/`delete` override), not just timing: the rvalue path went from 1 allocation to 0 for the classification step. |
 | `-fvisibility-inlines-hidden` on the library target | Found by direct measurement, not intuition (see §7). |
 
 **The one that backfired:** replacing `std::string::find()` /
@@ -454,7 +463,7 @@ way its own CMake actually builds it.
 ## 8. The nanobind bindings: same allocation discipline, applied at the Python boundary
 
 `src/binding/main.cpp` exposes `Hostname`, `IPv4`, `IPv6`, and `Url` via
-nanobind, plus module-level `parse_host()`/`parse_host_from_url()`. Two
+nanobind - including `Host`, `Hostname`, `IPv4`, `IPv6`. Two
 details worth calling out because they weren't obvious until measured:
 
 - **`std::variant` support is native.** `#include <nanobind/stl/variant.h>`
@@ -466,7 +475,7 @@ details worth calling out because they weren't obvious until measured:
   one compiles.** nanobind has a *zero-copy* `std::string_view` caster (it
   wraps CPython's own cached UTF-8 buffer directly, no copy at all) in
   addition to its `std::string` caster (which always copies once). Because
-  of this, `Url.extract_host` and `parse_host`/`parse_host_from_url` are
+  of this, `Url.extract_host` and `Host.from_url` are
   explicitly bound to their `std::string_view` overloads rather than
   `const std::string&` or `std::string&&` ones — confirmed with an
   `LD_PRELOAD` malloc-counting shim (`benchmark/python/`), not assumed:

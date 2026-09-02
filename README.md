@@ -144,7 +144,7 @@ help(Hostname)
 parse url and host
 
 ```python
-from liburlparser import Url, Hostname, parse_host
+from liburlparser import Url, Hostname, Host
 ## parse url:
 url = Url("https://ee.aut.ac.ir/#id") # parse all part of url
 print(url, url.host_text, url.fragment, url.host, url.to_dict(), url.to_json())
@@ -158,11 +158,11 @@ host = Hostname("ee.aut.ac.ir")
 host = Hostname.from_url("https://ee.aut.ac.ir/#id") # the fastest way for parsing host from url
 print(host, host.domain, host.suffix, host.to_dict(), host.to_json())
 
-## for a host you don't know in advance is a domain or an IP, use parse_host():
-host2 = parse_host("192.168.1.1")   # -> IPv4
-host3 = parse_host("ee.aut.ac.ir")  # -> Hostname
-print(type(host2).__name__, host2, int(host2))       # IPv4 192.168.1.1 3232235777
-print(type(host3).__name__, host3, host3.domain)      # Hostname ee.aut.ac.ir aut
+## for a host you don't know in advance is a domain or an IP, use Host():
+host2 = Host("192.168.1.1")   # is_ipv4() -> True
+host3 = Host("ee.aut.ac.ir")  # is_hostname() -> True
+print(host2.is_ipv4(), host2, int(host2.get_ipv4()))          # True 192.168.1.1 3232235777
+print(host3.is_hostname(), host3, host3.get_hostname().domain) # True ee.aut.ac.ir aut
 ```
 
 IPv4/IPv6 addresses support integer conversion and arithmetic:
@@ -170,12 +170,12 @@ IPv4/IPv6 addresses support integer conversion and arithmetic:
 ```python
 from liburlparser import IPv4, IPv6
 
-ip = IPv4.parse("192.168.1.1")
+ip = IPv4("192.168.1.1")
 print(int(ip))          # 3232235777
 print(ip + 1)            # 192.168.1.2
-print(ip - IPv4.parse("192.168.1.0"))  # 1 (distance between two addresses)
+print(ip - IPv4("192.168.1.0"))  # 1 (distance between two addresses)
 
-ip6 = IPv6.parse("2001:db8::1")
+ip6 = IPv6("2001:db8::1")
 print(ip6.high64, ip6.low64)
 print(ip6 + 1)            # 2001:db8::2
 ```
@@ -193,15 +193,14 @@ there is some examples in [examples](https://github.com/MohammadRaziei/liburlpar
 
 ```c++
 #include "urlparser.h"
-#include <variant>
 ...
 /// for parsing url
 urlparser::url url("https://ee.aut.ac.ir/about");
 std::string_view host_text = url.host_text(); // the raw host text, unclassified
 
-/// url.host() is a std::variant<hostname, ipv4, ipv6> - whichever this
-/// URL's host actually is
-if (auto* h = std::get_if<urlparser::hostname>(&url.host())) {
+/// url.host() is a urlparser::host (hostname/ipv4/ipv6, whichever this
+/// URL's host actually is)
+if (auto* h = url.host().try_hostname()) {
     std::cout << h->domain() << "." << h->suffix();
 }
 
@@ -210,7 +209,7 @@ urlparser::hostname host("ee.aut.ac.ir");
 // or
 urlparser::hostname host2 = urlparser::hostname::from_url("https://ee.aut.ac.ir/about");
 // or, when you don't know in advance whether it's a domain or an IP:
-urlparser::host classified = urlparser::parse_host_from_url("http://192.168.1.1/about"); // -> ipv4
+urlparser::host classified = urlparser::host::from_url("http://192.168.1.1/about"); // -> is_ipv4() true
 ```
 
 you can see all methods in python we can use in c++ very easily
