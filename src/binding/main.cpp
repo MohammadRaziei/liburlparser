@@ -56,7 +56,7 @@ inline nb::dict host_to_dict(const urlparser::host& host) {
                 dict["low64"] = h.low64();
             }
         },
-        host);
+        host.variant());
     return dict;
 }
 
@@ -80,7 +80,7 @@ inline std::string host_to_json(const urlparser::host& host) {
                     + ", \"low64\": " + std::to_string(h.low64()) + "}";
             }
         },
-        host);
+        host.variant());
 }
 
 inline std::string url_to_json(const urlparser::url& url) {
@@ -117,6 +117,7 @@ NB_MODULE(_urlparser_py, m) {
            :toctree: _generate
 
            Url
+           Host
            Hostname
            IPv4
            IPv6
@@ -125,6 +126,7 @@ NB_MODULE(_urlparser_py, m) {
     nb::class_<urlparser::hostname> hostname_cls(m, "Hostname");
     nb::class_<urlparser::ipv4> ipv4_cls(m, "IPv4");
     nb::class_<urlparser::ipv6> ipv6_cls(m, "IPv6");
+    nb::class_<urlparser::host> host_cls(m, "Host");
     nb::class_<urlparser::url> url_cls(m, "Url");
 
     // --- Hostname: a domain name (subdomain/domain/suffix via PSL) --------
@@ -167,9 +169,10 @@ NB_MODULE(_urlparser_py, m) {
     // --- IPv4: a 32-bit address with integer-like arithmetic ---------------
     ipv4_cls
         .def(nb::init<>())
-        .def_static("parse", &urlparser::ipv4::parse, nb::arg("text"))
+        .def(nb::init<std::string_view>(), nb::arg("text"))
         .def_static("is_valid", &urlparser::ipv4::is_valid, nb::arg("text"))
         .def_static("from_int", &urlparser::ipv4::from_uint32, nb::arg("address"))
+        .def_static("from_url", &urlparser::ipv4::from_url, nb::arg("urlstr"))
         .def_prop_ro("as_int", &urlparser::ipv4::to_uint32)
         .def("__int__", &urlparser::ipv4::to_uint32)
         .def("__str__", &urlparser::ipv4::str)
@@ -203,9 +206,10 @@ NB_MODULE(_urlparser_py, m) {
     // --- IPv6: a 128-bit address, exposed as (high64, low64) ---------------
     ipv6_cls
         .def(nb::init<>())
-        .def_static("parse", &urlparser::ipv6::parse, nb::arg("text"))
+        .def(nb::init<std::string_view>(), nb::arg("text"))
         .def_static("is_valid", &urlparser::ipv6::is_valid, nb::arg("text"))
         .def_static("from_uint64_pair", &urlparser::ipv6::from_uint64_pair, nb::arg("high"), nb::arg("low"))
+        .def_static("from_url", &urlparser::ipv6::from_url, nb::arg("urlstr"))
         .def_prop_ro("high64", &urlparser::ipv6::high64)
         .def_prop_ro("low64", &urlparser::ipv6::low64)
         .def("__str__", &urlparser::ipv6::str)
@@ -234,15 +238,37 @@ NB_MODULE(_urlparser_py, m) {
                 + ", \"low64\": " + std::to_string(v.low64()) + "}";
         });
 
-    // --- module-level classification: whichever of the three it turns out to be ---
-    m.def("parse_host",
-          static_cast<urlparser::host (*)(std::string_view, bool)>(&urlparser::parse_host),
-          nb::arg("host_text"), nb::arg("ignore_www") = false,
-          "Classify and parse a bare host string as a Hostname, IPv4, or IPv6.");
-    m.def("parse_host_from_url",
-          static_cast<urlparser::host (*)(std::string_view, bool)>(&urlparser::parse_host_from_url),
-          nb::arg("url"), nb::arg("ignore_www") = false,
-          "Extract the host from a full URL and classify/parse it in one step.");
+    // --- Host: hostname/ipv4/ipv6, wrapped in one uniform, ergonomic type --
+    host_cls
+        .def(nb::init<std::string_view, bool>(), nb::arg("host_text"), nb::arg("ignore_www") = false)
+        .def_static("from_url",
+                    static_cast<urlparser::host (*)(std::string_view, bool)>(&urlparser::host::from_url),
+                    nb::arg("urlstr"), nb::arg("ignore_www") = false)
+        .def("is_hostname", &urlparser::host::is_hostname)
+        .def("is_ipv4", &urlparser::host::is_ipv4)
+        .def("is_ipv6", &urlparser::host::is_ipv6)
+        .def("is_ip", &urlparser::host::is_ip)
+        .def("get_hostname", &urlparser::host::get_hostname)
+        .def("get_ipv4", &urlparser::host::get_ipv4)
+        .def("get_ipv6", &urlparser::host::get_ipv6)
+        // try_*() returns None instead of a null pointer in Python.
+        .def("try_hostname", [](const urlparser::host& h) -> nb::object {
+            if (auto* p = h.try_hostname()) return nb::cast(*p);
+            return nb::none();
+        })
+        .def("try_ipv4", [](const urlparser::host& h) -> nb::object {
+            if (auto* p = h.try_ipv4()) return nb::cast(*p);
+            return nb::none();
+        })
+        .def("try_ipv6", [](const urlparser::host& h) -> nb::object {
+            if (auto* p = h.try_ipv6()) return nb::cast(*p);
+            return nb::none();
+        })
+        .def("__eq__", [](const urlparser::host& a, const urlparser::host& b) { return a == b; })
+        .def("to_dict", host_to_dict)
+        .def("to_json", host_to_json)
+        .def("__str__", &urlparser::host::str)
+        .def("__repr__", [](const urlparser::host& h) { return "<Host '" + h.str() + "'>"; });
 
     // --- Url ----------------------------------------------------------------
     url_cls
@@ -253,9 +279,8 @@ NB_MODULE(_urlparser_py, m) {
                     nb::arg("urlstr"))
         .def_prop_ro("protocol", &urlparser::url::protocol)
         .def_prop_ro("userinfo", &urlparser::url::userinfo)
-        // Returns a Hostname, IPv4, or IPv6 object, whichever this URL's
-        // host actually is (nanobind's std::variant support dispatches to
-        // the right one automatically).
+        // Returns a Host (hostname/ipv4/ipv6, wrapped uniformly) - see
+        // is_hostname()/is_ipv4()/is_ipv6()/get_*()/try_*() on Host.
         .def_prop_ro("host", &urlparser::url::host, nb::rv_policy::copy)
         .def_prop_ro("host_text", &urlparser::url::host_text)
         .def_prop_ro("port", &urlparser::url::port)

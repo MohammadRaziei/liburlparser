@@ -256,14 +256,23 @@ class ipv4 {
     /** @brief Default-constructs 0.0.0.0. */
     ipv4() noexcept = default;
 
-    /** @throws std::invalid_argument if `text` isn't a valid IPv4 address. */
-    static ipv4 parse(std::string_view text);
+    /**
+     * @brief Parse an IPv4 address from text.
+     * @throws std::invalid_argument if `text` isn't a valid IPv4 address.
+     */
+    ipv4(std::string_view text);
 
-    /** @brief Checks validity without throwing. */
+    /** @brief Checks validity without throwing or constructing. */
     static bool is_valid(std::string_view text) noexcept;
 
     /** @brief Constructs from a 32-bit representation (host byte order), e.g. 0xC0A80101 = 192.168.1.1. */
     static ipv4 from_uint32(uint32_t address) noexcept;
+
+    /**
+     * @brief Extract the host from a URL and parse it as an IPv4 address.
+     * @throws std::invalid_argument if the URL's host isn't a valid IPv4 address.
+     */
+    static ipv4 from_url(std::string_view url);
 
     /** @brief Canonical dotted-decimal text form, e.g. "192.0.2.1". */
     std::string str() const;
@@ -345,13 +354,19 @@ class ipv6 {
      * component) or a bare one ("::1").
      * @throws std::invalid_argument if `text` isn't a valid IPv6 address.
      */
-    static ipv6 parse(std::string_view text);
+    ipv6(std::string_view text);
 
-    /** @brief Checks validity (bracketed or bare) without throwing. */
+    /** @brief Checks validity (bracketed or bare) without throwing or constructing. */
     static bool is_valid(std::string_view text) noexcept;
 
     /** @brief Constructs from the two 64-bit halves (high64, then low64), in host byte order. */
     static ipv6 from_uint64_pair(uint64_t high, uint64_t low) noexcept;
+
+    /**
+     * @brief Extract the host from a URL and parse it as an IPv6 address.
+     * @throws std::invalid_argument if the URL's host isn't a valid IPv6 address.
+     */
+    static ipv6 from_url(std::string_view url);
 
     /** @brief Canonical (RFC 5952) text form, no brackets: "2001:db8::1", not "[2001:db8::1]". */
     std::string str() const;
@@ -420,63 +435,125 @@ class ipv6 {
     uint64_t lo_ = 0;
 };
 
-/** @brief `hostname`, `ipv4`, or `ipv6`: whatever a URL's host actually is (RFC 3986's `host` grammar). */
-using host = std::variant<hostname, ipv4, ipv6>;
-
 /**
- * @brief The text form of a host, whichever of hostname/ipv4/ipv6 it is -
- * equivalent to `std::visit([](const auto& h) { return h.str(); }, host)`,
- * for callers who just want the string and don't care which alternative
- * it came from.
+ * @brief `hostname`, `ipv4`, or `ipv6`: whatever a URL's host actually is
+ * (RFC 3986's `host` grammar), wrapped in a uniform API that matches
+ * hostname/ipv4/ipv6/url themselves: a constructor that just parses, plus
+ * from_url() and str().
+ *
+ * Internally this is a std::variant<hostname, ipv4, ipv6> held by value
+ * (composition, not inheritance - deriving public classes from a standard
+ * container is a well-known footgun: no virtual destructor, and an
+ * interface you don't fully control). is_hostname()/is_ipv4()/is_ipv6(),
+ * get_hostname()/get_ipv4()/get_ipv6() (throwing, like std::get<T>()), and
+ * try_hostname()/try_ipv4()/try_ipv6() (non-throwing, like
+ * std::get_if<T>()) cover the common cases without needing std::variant at
+ * all; variant() gives direct access to the underlying std::variant for
+ * std::visit or structured, exhaustive handling.
  */
-std::string str(const host& h);
+class host {
+   public:
+    using variant_type = std::variant<hostname, ipv4, ipv6>;
 
-/**
- * @brief Classifies and parses an already-isolated host string (no scheme,
- * no path - e.g. what url::extract_host() or url::host_text() gives you)
- * as whichever of hostname/ipv4/ipv6 it actually is.
- * @param host_text The host text, e.g. "example.com", "192.0.2.1", or
- * "[2001:db8::1]" (a bracketed IPv6 literal, as it appears in a URL).
- * @param ignore_www Only meaningful when the result is a hostname; ignored for IPs.
- */
-host parse_host(std::string_view host_text, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
+    /** @brief Default-constructs an empty hostname. */
+    host() noexcept = default;
 
-/**
- * @brief Classifies and parses a host string literal.
- * Disambiguation overload: without this, parse_host("literal") would be
- * ambiguous between the string_view and string&& overloads.
- */
-host parse_host(const char* host_text, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
+    /** @brief Wraps an already-classified hostname/ipv4/ipv6 as a host. */
+    static host wrap(hostname h) noexcept {
+        host result;
+        result.value_ = std::move(h);
+        return result;
+    }
+    static host wrap(ipv4 v) noexcept {
+        host result;
+        result.value_ = v;
+        return result;
+    }
+    static host wrap(ipv6 v) noexcept {
+        host result;
+        result.value_ = v;
+        return result;
+    }
 
-/**
- * @brief Classifies and parses an already-isolated host string, taking
- * ownership of it. When the text turns out to be a domain name, this
- * reuses its existing allocation to build the resulting hostname instead
- * of copying into a new one (IPs don't keep the text at all, parsed or
- * not, so there's nothing to reuse for them either way).
- * @param host_text The host text. Left in a valid but unspecified state.
- */
-host parse_host(std::string&& host_text, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
+    /**
+     * @brief Classify and parse an already-isolated host string (no
+     * scheme, no path - e.g. what url::host_text() gives you) as whichever
+     * of hostname/ipv4/ipv6 it actually is. Never throws: anything that
+     * isn't a valid IPv4/IPv6 address becomes a hostname.
+     * @param host_text The host text, e.g. "example.com", "192.0.2.1", or
+     * "[2001:db8::1]" (a bracketed IPv6 literal, as it appears in a URL).
+     * @param ignore_www Only meaningful if the result is a hostname; ignored for IPs.
+     */
+    host(std::string_view host_text, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
 
-/**
- * @brief Extracts the host from a full URL and classifies/parses it, in one
- * step - equivalent to `parse_host(url::extract_host(url), ignore_www)`.
- */
-host parse_host_from_url(std::string_view url, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
+    /**
+     * @brief Classify a host string literal.
+     * Disambiguation overload: without this, host("literal") would be
+     * ambiguous between the string_view and string&& overloads.
+     */
+    host(const char* host_text, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
 
-/**
- * @brief Classifies and parses the host of a URL string literal.
- * Disambiguation overload, same reason as parse_host(const char*, bool).
- */
-host parse_host_from_url(const char* url, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
+    /**
+     * @brief Classify an already-isolated host string, taking ownership of
+     * it. When the text turns out to be a domain name, this reuses its
+     * existing allocation to build the resulting hostname instead of
+     * copying into a new one.
+     * @param host_text The host text. Left in a valid but unspecified state.
+     */
+    host(std::string&& host_text, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
 
-/**
- * @brief Extracts the host from a full URL and classifies/parses it, taking
- * ownership of the URL string - reuses its allocation end-to-end (extract,
- * then classify) when the result turns out to be a hostname.
- * @param url The URL string. Left in a valid but unspecified state.
- */
-host parse_host_from_url(std::string&& url, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
+    /**
+     * @brief Extract the host from a full URL and classify/parse it, in
+     * one step.
+     */
+    static host from_url(std::string_view url, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
+
+    /**
+     * @brief Classify and parse the host of a URL string literal.
+     * Disambiguation overload, same reason as host(const char*, bool).
+     */
+    static host from_url(const char* url, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
+
+    /**
+     * @brief Extract the host from a full URL and classify/parse it,
+     * taking ownership of the URL string - reuses its allocation
+     * end-to-end (extract, then classify) when the result is a hostname.
+     * @param url The URL string. Left in a valid but unspecified state.
+     */
+    static host from_url(std::string&& url, bool ignore_www = DEFAULT_IGNORE_WWW) noexcept;
+
+    bool is_hostname() const noexcept { return std::holds_alternative<hostname>(value_); }
+    bool is_ipv4() const noexcept { return std::holds_alternative<ipv4>(value_); }
+    bool is_ipv6() const noexcept { return std::holds_alternative<ipv6>(value_); }
+    /** @brief True for either IP family - the opposite of is_hostname(). */
+    bool is_ip() const noexcept { return !is_hostname(); }
+
+    /** @throws std::bad_variant_access if this isn't a hostname. */
+    const hostname& get_hostname() const { return std::get<hostname>(value_); }
+    /** @throws std::bad_variant_access if this isn't an ipv4. */
+    const ipv4& get_ipv4() const { return std::get<ipv4>(value_); }
+    /** @throws std::bad_variant_access if this isn't an ipv6. */
+    const ipv6& get_ipv6() const { return std::get<ipv6>(value_); }
+
+    /** @brief nullptr if this isn't a hostname. */
+    const hostname* try_hostname() const noexcept { return std::get_if<hostname>(&value_); }
+    /** @brief nullptr if this isn't an ipv4. */
+    const ipv4* try_ipv4() const noexcept { return std::get_if<ipv4>(&value_); }
+    /** @brief nullptr if this isn't an ipv6. */
+    const ipv6* try_ipv6() const noexcept { return std::get_if<ipv6>(&value_); }
+
+    /** @brief The text form, whichever of hostname/ipv4/ipv6 this is. */
+    std::string str() const;
+
+    /** @brief Direct access to the underlying variant - for std::visit, std::get, etc. */
+    const variant_type& variant() const noexcept { return value_; }
+
+    friend bool operator==(const host& a, const host& b) noexcept { return a.value_ == b.value_; }
+    friend bool operator!=(const host& a, const host& b) noexcept { return !(a == b); }
+
+   private:
+    variant_type value_;
+};
 
 /**
  * @brief Represents a URL.

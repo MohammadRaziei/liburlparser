@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from . import Url, __doc__, __version__, parse_host, utils
+from . import Host, Url, __doc__, __version__, utils
 
 
 def show_if_not_none(_str, _class, _parts):
@@ -24,11 +24,10 @@ def main(args):
         sys.stderr.write("Error: Either --url or --host argument must be provided\n")
         exit(1)
     show_if_not_none(args.url, Url, args.parts)
-    # parse_host classifies --host as a Hostname, IPv4, or IPv6 (rather than
+    # Host classifies --host as a Hostname, IPv4, or IPv6 (rather than
     # always treating it as a literal domain name the way the Hostname
-    # constructor alone would) - it's callable just like a class, so
-    # show_if_not_none's `_class(_str)` call works unchanged.
-    show_if_not_none(args.host, parse_host, args.parts)
+    # constructor alone would).
+    show_if_not_none(args.host, Host, args.parts)
     if args.version:
         sys.stdout.write(__version__)
     if args.doc:

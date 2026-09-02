@@ -431,7 +431,7 @@ bool urlparser::url::operator==(const urlparser::url& other) const noexcept {
 /// if requested.
 const urlparser::host& urlparser::url::ensure_host() const noexcept {
     if (!host_cache_) {
-        host_cache_ = urlparser::parse_host(field(host_), false);
+        host_cache_ = urlparser::host(field(host_), false);
     }
     return *host_cache_;
 }
@@ -753,17 +753,22 @@ bool urlparser::ipv4::is_valid(std::string_view text) noexcept {
     return make_c_string(text, buf) && platform_inet_pton(AF_INET, buf, bytes.data()) == 1;
 }
 
-urlparser::ipv4 urlparser::ipv4::parse(std::string_view text) {
+urlparser::ipv4::ipv4(std::string_view text) {
     char buf[INET6_ADDRSTRLEN];
     std::array<uint8_t, 4> bytes{};
     if (make_c_string(text, buf) && platform_inet_pton(AF_INET, buf, bytes.data()) == 1) {
-        return ipv4((static_cast<uint32_t>(bytes[0]) << 24) | (static_cast<uint32_t>(bytes[1]) << 16) |
-                    (static_cast<uint32_t>(bytes[2]) << 8) | static_cast<uint32_t>(bytes[3]));
+        value_ = (static_cast<uint32_t>(bytes[0]) << 24) | (static_cast<uint32_t>(bytes[1]) << 16) |
+                 (static_cast<uint32_t>(bytes[2]) << 8) | static_cast<uint32_t>(bytes[3]);
+        return;
     }
-    throw std::invalid_argument("ipv4::parse: not a valid IPv4 address: " + std::string(text));
+    throw std::invalid_argument("ipv4: not a valid IPv4 address: " + std::string(text));
 }
 
 urlparser::ipv4 urlparser::ipv4::from_uint32(uint32_t address) noexcept { return ipv4(address); }
+
+urlparser::ipv4 urlparser::ipv4::from_url(std::string_view url_text) {
+    return ipv4(std::string_view(urlparser::url::extract_host(url_text)));
+}
 
 std::array<uint8_t, 4> urlparser::ipv4::bytes() const noexcept {
     return {static_cast<uint8_t>(value_ >> 24), static_cast<uint8_t>(value_ >> 16),
@@ -796,18 +801,24 @@ bool urlparser::ipv6::is_valid(std::string_view text) noexcept {
            platform_inet_pton(AF_INET6, buf, bytes.data()) == 1;
 }
 
-urlparser::ipv6 urlparser::ipv6::parse(std::string_view text) {
+urlparser::ipv6::ipv6(std::string_view text) {
     char buf[INET6_ADDRSTRLEN];
     std::array<uint8_t, 16> bytes{};
     if (make_c_string(strip_ip_brackets(text), buf) &&
         platform_inet_pton(AF_INET6, buf, bytes.data()) == 1) {
-        return ipv6(be_bytes_to_u64(bytes.data()), be_bytes_to_u64(bytes.data() + 8));
+        hi_ = be_bytes_to_u64(bytes.data());
+        lo_ = be_bytes_to_u64(bytes.data() + 8);
+        return;
     }
-    throw std::invalid_argument("ipv6::parse: not a valid IPv6 address: " + std::string(text));
+    throw std::invalid_argument("ipv6: not a valid IPv6 address: " + std::string(text));
 }
 
 urlparser::ipv6 urlparser::ipv6::from_uint64_pair(uint64_t high, uint64_t low) noexcept {
     return ipv6(high, low);
+}
+
+urlparser::ipv6 urlparser::ipv6::from_url(std::string_view url_text) {
+    return ipv6(std::string_view(urlparser::url::extract_host(url_text)));
 }
 
 std::array<uint8_t, 16> urlparser::ipv6::bytes() const noexcept {
@@ -839,49 +850,56 @@ std::ostream& operator<<(std::ostream& os, const urlparser::ipv6& dt) {
 
 // --- host classification (hostname / ipv4 / ipv6) -----------------------
 
-urlparser::host urlparser::parse_host(std::string_view host_text, bool ignore_www) noexcept {
-    if (ipv4::is_valid(host_text)) return ipv4::parse(host_text);
-    if (ipv6::is_valid(host_text)) return ipv6::parse(host_text);
-    return hostname(std::string(host_text), ignore_www);
+urlparser::host::host(std::string_view host_text, bool ignore_www) noexcept {
+    if (ipv4::is_valid(host_text)) {
+        value_ = ipv4(host_text);
+    } else if (ipv6::is_valid(host_text)) {
+        value_ = ipv6(host_text);
+    } else {
+        value_ = hostname(std::string(host_text), ignore_www);
+    }
 }
 
-urlparser::host urlparser::parse_host(const char* host_text, bool ignore_www) noexcept {
-    return parse_host(std::string_view(host_text), ignore_www);
-}
+urlparser::host::host(const char* host_text, bool ignore_www) noexcept
+    : host(std::string_view(host_text), ignore_www) {}
 
-urlparser::host urlparser::parse_host(std::string&& host_text, bool ignore_www) noexcept {
+urlparser::host::host(std::string&& host_text, bool ignore_www) noexcept {
     // is_valid() only reads host_text - checking IP-ness first, before
     // deciding whether to consume it, is what lets the hostname branch
     // below still steal the buffer via std::move().
-    if (ipv4::is_valid(host_text)) return ipv4::parse(host_text);
-    if (ipv6::is_valid(host_text)) return ipv6::parse(host_text);
-    return hostname(std::move(host_text), ignore_www);
+    if (ipv4::is_valid(host_text)) {
+        value_ = ipv4(host_text);
+    } else if (ipv6::is_valid(host_text)) {
+        value_ = ipv6(host_text);
+    } else {
+        value_ = hostname(std::move(host_text), ignore_www);
+    }
 }
 
-urlparser::host urlparser::parse_host_from_url(std::string_view url_text, bool ignore_www) noexcept {
-    return parse_host(urlparser::url::extract_host(url_text), ignore_www);
+urlparser::host urlparser::host::from_url(std::string_view url_text, bool ignore_www) noexcept {
+    return host(urlparser::url::extract_host(url_text), ignore_www);
 }
 
-urlparser::host urlparser::parse_host_from_url(const char* url_text, bool ignore_www) noexcept {
-    return parse_host_from_url(std::string_view(url_text), ignore_www);
+urlparser::host urlparser::host::from_url(const char* url_text, bool ignore_www) noexcept {
+    return from_url(std::string_view(url_text), ignore_www);
 }
 
-urlparser::host urlparser::parse_host_from_url(std::string&& url_text, bool ignore_www) noexcept {
+urlparser::host urlparser::host::from_url(std::string&& url_text, bool ignore_www) noexcept {
     // extract_host(string&&) reuses url_text's own buffer (erase() in
-    // place) instead of allocating a new host-sized string; parse_host
-    // (string&&) then reuses *that* buffer again for the hostname case -
-    // so a URL string the caller already owns and doesn't need afterward
-    // goes from "URL" to classified "hostname" with zero new allocations
-    // beyond the hostname value type itself (none - it just takes
+    // place) instead of allocating a new host-sized string; the
+    // host(string&&) constructor then reuses *that* buffer again for the
+    // hostname case - so a URL string the caller already owns and doesn't
+    // need afterward goes from "URL" to classified "hostname" with zero
+    // new allocations beyond the host object itself (none - it just takes
     // ownership of the buffer it's handed).
-    return parse_host(urlparser::url::extract_host(std::move(url_text)), ignore_www);
+    return host(urlparser::url::extract_host(std::move(url_text)), ignore_www);
 }
 
-std::string urlparser::str(const host& h) {
-    return std::visit([](const auto& v) -> std::string { return v.str(); }, h);
+std::string urlparser::host::str() const {
+    return std::visit([](const auto& v) -> std::string { return v.str(); }, value_);
 }
 
 std::ostream& operator<<(std::ostream& os, const urlparser::host& dt) {
-    std::visit([&os](const auto& h) { os << h; }, dt);
+    os << dt.str();
     return os;
 }

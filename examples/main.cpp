@@ -35,9 +35,9 @@ int main() {
             "home?o=10&k=helloworld#aboutus",
             true);
 
-        // url.host() is a std::variant<hostname, ipv4, ipv6>; this URL's
-        // host is a domain name, so it holds a hostname.
-        const auto* h = std::get_if<urlparser::hostname>(&url.host());
+        // url.host() is a urlparser::host (hostname/ipv4/ipv6, whichever
+        // this URL's host actually is); this URL's host is a domain name.
+        const auto* h = url.host().try_hostname();
         show(h != nullptr);
         show(h->suffix());
         show(h->domain());
@@ -48,7 +48,7 @@ int main() {
     // --- IPv4 host: urlparser::ipv4, with its integer/arithmetic API ---
     {
         const urlparser::url url("http://192.168.1.1:8080/admin", true);
-        const auto* v4 = std::get_if<urlparser::ipv4>(&url.host());
+        const auto* v4 = url.host().try_ipv4();
         show(v4 != nullptr);
         show(v4->str());
         show(v4->to_uint32());
@@ -63,7 +63,7 @@ int main() {
     // --- IPv6 host: urlparser::ipv6 ---
     {
         const urlparser::url url("http://[2001:db8::1]:8080/x", true);
-        const auto* v6 = std::get_if<urlparser::ipv6>(&url.host());
+        const auto* v6 = url.host().try_ipv6();
         show(v6 != nullptr);
         show(v6->str());
         show((*v6 + 1).str());
@@ -72,28 +72,30 @@ int main() {
     }
 
     // --- std::visit for generic handling of whichever host type it is ---
+    // (.variant() is the escape hatch for callers who want std::visit/
+    // std::get instead of the named is_*/get_*/try_* methods below.)
     {
         for (const char* raw : {"https://example.com/", "http://8.8.8.8/", "http://[::1]/"}) {
             const urlparser::url url(raw, false);
             std::visit(
                 [](const auto& host) { std::cout << "  -> " << host.str() << "\n"; },
-                url.host());
+                url.host().variant());
         }
     }
 
-    // --- parse_host()/parse_host_from_url(): classify a bare host or a
-    // full URL directly, without going through urlparser::url at all ---
+    // --- host(...)/host::from_url(): classify a bare host or a full URL
+    // directly, without going through urlparser::url at all ---
     {
         // Classifying an already-isolated host string:
-        show(std::holds_alternative<urlparser::hostname>(urlparser::parse_host("example.com")));
-        show(std::holds_alternative<urlparser::ipv4>(urlparser::parse_host("192.0.2.1")));
-        show(std::holds_alternative<urlparser::ipv6>(urlparser::parse_host("[::1]")));
+        show(urlparser::host("example.com").is_hostname());
+        show(urlparser::host("192.0.2.1").is_ipv4());
+        show(urlparser::host("[::1]").is_ipv6());
 
         // Extracting + classifying straight from a full URL in one step -
-        // urlparser::str() gets the text form regardless of which
-        // alternative it turned out to be, no std::get_if/visit needed.
-        urlparser::host h = urlparser::parse_host_from_url("http://192.168.1.1:8080/x");
-        show(urlparser::str(h));
+        // .str() gets the text form regardless of which alternative it
+        // turned out to be, no try_*/get_*/visit needed.
+        urlparser::host h = urlparser::host::from_url("http://192.168.1.1:8080/x");
+        show(h.str());
     }
 
     const urlparser::url url(
@@ -113,7 +115,7 @@ int main() {
     }
     show(_url == url);
 
-    urlparser::host _host = urlparser::hostname::from_url(_url.str());
+    urlparser::host _host = urlparser::host::wrap(urlparser::hostname::from_url(_url.str()));
     _host = _url.host();
     show(_host);
 
@@ -128,6 +130,32 @@ int main() {
             "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
             "home?o=10&k=helloworld#aboutus",
             true);
+    toc;
+
+    // --- speed of from_url() across every host kind: hostname/ipv4/ipv6,
+    // and host (which additionally has to classify which of the three it
+    // is before parsing) ---
+    tic;
+    for (int i = 0; i < 10'000'000; ++i)
+        urlparser::ipv4::from_url("http://192.168.1.1:8080/admin");
+    toc;
+
+    tic;
+    for (int i = 0; i < 10'000'000; ++i)
+        urlparser::ipv6::from_url("http://[2001:db8::1]:8080/x");
+    toc;
+
+    tic;
+    for (int i = 0; i < 10'000'000; ++i)
+        urlparser::host::from_url(
+            "https://m.raziei:1234@www.ee.aut.ac.ir:80/"
+            "home?o=10&k=helloworld#aboutus",
+            true);
+    toc;
+
+    tic;
+    for (int i = 0; i < 10'000'000; ++i)
+        urlparser::host::from_url("http://192.168.1.1:8080/admin");
     toc;
 
     show(urlparser::hostname("www.ee.aut.ac.ir").suffix());
@@ -162,7 +190,7 @@ int main() {
     show(urlparser::url("http://mohammad:123@www.google.com?about", true).host_text());
     // note: hostname(str) treats str literally as a host - use hostname::from_url() to parse a full URL
     show(urlparser::hostname("http://mohammad:123@www.google.com?about", true) == "google.com");
-    const urlparser::host host2 = urlparser::hostname::from_url("http://mohammad:123@www.google.com?about", true);
+    const urlparser::host host2 = urlparser::host::wrap(urlparser::hostname::from_url("http://mohammad:123@www.google.com?about", true));
     const urlparser::url url2("http://mohammad:123@www.google.com?about", true);
     tic;
     const auto a = url2.host_text();

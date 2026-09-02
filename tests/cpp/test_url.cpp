@@ -76,8 +76,8 @@ static void check_url_row(int *utest_result, const UrlData& url_data) {
     EXPECT_STREQ(std::string(url.protocol()).c_str(), url_data.protocol.c_str());
     EXPECT_STREQ(std::string(url.userinfo()).c_str(), url_data.userinfo.c_str());
     EXPECT_STREQ(std::string(url.host_text()).c_str(), url_data.full_domain.c_str());
-    EXPECT_STREQ(urlparser::str(url.host()).c_str(), url_data.full_domain.c_str());
-    const auto* h = std::get_if<urlparser::hostname>(&url.host());
+    EXPECT_STREQ(url.host().str().c_str(), url_data.full_domain.c_str());
+    const auto* h = url.host().try_hostname();
     ASSERT_TRUE(h != nullptr);
     EXPECT_STREQ(h->subdomain().c_str(), url_data.subdomain.c_str());
     EXPECT_STREQ(h->domain().c_str(), url_data.domain.c_str());
@@ -195,8 +195,8 @@ UTEST(UrlTest, CopyIsIndependentValue) {
     EXPECT_STREQ(copy.str().c_str(), original.str().c_str());
     // Force lazy host construction on the copy only, then confirm both
     // still report identical, correct results.
-    const auto* copy_h = std::get_if<urlparser::hostname>(&copy.host());
-    const auto* original_h = std::get_if<urlparser::hostname>(&original.host());
+    const auto* copy_h = copy.host().try_hostname();
+    const auto* original_h = original.host().try_hostname();
     ASSERT_TRUE(copy_h != nullptr);
     ASSERT_TRUE(original_h != nullptr);
     EXPECT_STREQ(original_h->domain().c_str(), copy_h->domain().c_str());
