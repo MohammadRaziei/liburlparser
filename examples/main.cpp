@@ -162,17 +162,6 @@ int main() {
     show(urlparser::hostname("aut.ac.ir").full_domain());
     show(urlparser::hostname("ee.aut.ac.ir").full_domain());
 
-    urlparser::host host; 
-    host = urlparser::host::from_url("http://192.168.1.1:8080/admin");
-    show(host);
-
-    host = urlparser::host::from_url("https://m.raziei:1234@www.ee.aut.ac.ir:80/"
-            "home?o=10&k=helloworld#aboutus");
-    show(host);
-
-    host = urlparser::host::from_url("http://[2001:db8::1]:8080/x");
-    show(host);
-
     show_attr(url, is_psl_loaded);
     show(url);
     show_attr(url, str);

@@ -239,6 +239,51 @@ class hostname {
 };
 
 /**
+ * @brief A handle to the library's Public Suffix List matcher.
+ *
+ * There's exactly one PSL - loaded lazily, on first use, and shared by
+ * every `hostname` - so `psl` holds no data of its own; constructing one
+ * (`urlparser::psl()`) is free, and every instance is a handle onto that
+ * same shared matcher. `hostname`'s own PSL-related static methods
+ * (load_psl_from_path/load_psl_from_string/is_psl_loaded) are equivalent
+ * to calling these; `psl` exists as a small, dedicated, object-oriented
+ * handle for code (and the Python bindings) that wants one.
+ */
+class psl {
+   public:
+    psl() noexcept = default;
+
+    /** @brief The URL the bundled PSL data was downloaded from. */
+    std::string_view source_url() const noexcept;
+
+    /** @brief Whether a PSL is currently loaded (true even for the bundled default). */
+    bool is_loaded() const noexcept;
+
+    /**
+     * @brief Load the Public Suffix List from a file, replacing whatever
+     * was loaded before (including the bundled default).
+     * @throws std::invalid_argument If the file cannot be opened or parsed.
+     */
+    void load_from_path(const std::string& filepath) const;
+
+    /**
+     * @brief Load the Public Suffix List from a string, replacing whatever
+     * was loaded before (including the bundled default).
+     * @throws std::invalid_argument If the content cannot be parsed.
+     */
+    void load_from_string(const std::string& filestr) const;
+
+    /**
+     * @brief Check whether `text` is itself a recognized public suffix
+     * (e.g. "co.uk", "com") - not the suffix *of* some hostname the way
+     * `hostname::suffix()` extracts one, but whether this exact text is a
+     * listed entry. Unlike `hostname::suffix()`'s fallback for unknown
+     * TLDs, an unrecognized word like "comm" correctly returns false here.
+     */
+    bool is_suffix(std::string_view text) const noexcept;
+};
+
+/**
  * @brief An IPv4 address used as a URL's host, e.g. "192.0.2.1".
  *
  * A plain 32-bit value type (internally just a uint32_t), so every

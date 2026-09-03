@@ -516,6 +516,20 @@ struct PSL {
 
     size_t numLevels() const noexcept { return levels.size(); }
 
+    /**
+     * Whether `text` is itself a recognized entry in the list (e.g.
+     * "co.uk", "com"), not just "the last label of some domain under an
+     * unrecognized TLD" the way getTLD()'s fallback treats any unmatched
+     * single-label input - so, unlike getTLD(text) == text, this correctly
+     * says false for a made-up word like "comm". Case-insensitive.
+     */
+    bool isSuffix(const std::string& text) const noexcept {
+        if (text.empty()) return false;
+        std::string reversed(text.rbegin(), text.rend());
+        std::transform(reversed.begin(), reversed.end(), reversed.begin(), ascii_tolower);
+        return levels.find(reversed) != levels.end();
+    }
+
    private:
     // Mapping of a reversed rule string to its level (segment count).
     std::unordered_map<std::string, size_t> levels;
@@ -599,6 +613,26 @@ std::string_view urlparser::hostname::remove_www(const std::string_view& host) n
         return host;
     }
     return host.substr(4);
+}
+
+// --- psl -----------------------------------------------------------------
+
+std::string_view urlparser::psl::source_url() const noexcept { return PUBLIC_SUFFIX_LIST_URL; }
+
+bool urlparser::psl::is_loaded() const noexcept {
+    return urlparser::detail::psl().numLevels() > 0;
+}
+
+void urlparser::psl::load_from_path(const std::string& filepath) const {
+    urlparser::detail::psl() = urlparser::detail::PSL::fromPath(filepath);
+}
+
+void urlparser::psl::load_from_string(const std::string& filestr) const {
+    urlparser::detail::psl() = urlparser::detail::PSL::fromString(filestr);
+}
+
+bool urlparser::psl::is_suffix(std::string_view text) const noexcept {
+    return urlparser::detail::psl().isSuffix(std::string(text));
 }
 
 urlparser::hostname::hostname(std::string host, const bool ignore_www)

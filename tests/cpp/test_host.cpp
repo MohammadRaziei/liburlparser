@@ -236,6 +236,46 @@ UTEST(HostTest, LoadPslFromStringChangesFutureLookups) {
     EXPECT_STREQ(restored.suffix().c_str(), suffix_before.c_str());
 }
 
+// --- urlparser::psl: an object-oriented handle onto the same PSL --------
+
+UTEST(PslTest, IsLoadedAndSourceUrl) {
+    urlparser::psl p;
+    EXPECT_TRUE(p.is_loaded());
+    EXPECT_TRUE(!p.source_url().empty());
+}
+
+UTEST(PslTest, IsSuffixRecognizesRealEntries) {
+    urlparser::psl p;
+    EXPECT_TRUE(p.is_suffix("com"));
+    EXPECT_TRUE(p.is_suffix("co.uk"));
+    EXPECT_TRUE(p.is_suffix("com.au"));
+    EXPECT_TRUE(p.is_suffix("github.io"));
+}
+
+UTEST(PslTest, IsSuffixRejectsNonSuffixes) {
+    urlparser::psl p;
+    EXPECT_FALSE(p.is_suffix("comm"));            // made-up word, not a real TLD
+    EXPECT_FALSE(p.is_suffix("example.com"));     // a full domain, not a suffix itself
+    EXPECT_FALSE(p.is_suffix(""));
+}
+
+UTEST(PslTest, IsSuffixIsCaseInsensitive) {
+    urlparser::psl p;
+    EXPECT_TRUE(p.is_suffix("COM"));
+    EXPECT_TRUE(p.is_suffix("Co.Uk"));
+}
+
+// Regression/consistency test: hostname::suffix()'s fallback for an
+// unrecognized single-label TLD (see ensure_parsed()) returns that label
+// as a best-effort guess even though it isn't a real, listed suffix -
+// is_suffix() must not be fooled by that fallback into reporting true.
+UTEST(PslTest, IsSuffixDistinguishesFromSuffixFallbackGuess) {
+    urlparser::psl p;
+    urlparser::hostname h("google.comm");
+    EXPECT_STREQ(h.suffix().c_str(), "comm");
+    EXPECT_FALSE(p.is_suffix(h.suffix()));
+}
+
 // --- ipv4 ------------------------------------------------------------------
 
 UTEST(Ipv4Test, ConstructAndStrRoundTrip) {

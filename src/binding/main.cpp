@@ -11,15 +11,6 @@
 namespace nb = nanobind;
 using namespace nb::literals;
 
-class Psl{
-public:
-    Psl() {};
-    std::string url() const {return PUBLIC_SUFFIX_LIST_URL;}
-    void loadFromPath(const std::string& filename) {urlparser::hostname::load_psl_from_path(filename);}
-    void loadFromString(const std::string& str) {urlparser::hostname::load_psl_from_string(str);}
-    bool isLoaded() const {return urlparser::hostname::is_psl_loaded();}
-};
-
 inline nb::dict hostname_to_dict(const urlparser::hostname& host) {
     nb::dict dict;
     dict["type"] = "hostname";
@@ -296,14 +287,17 @@ NB_MODULE(_urlparser_py, m) {
             return "<Url '" + url.str() + "'>";
         });
 
-    nb::class_<Psl> psl(m, "Psl", nb::dynamic_attr());
+    nb::class_<urlparser::psl> psl(m, "Psl", nb::dynamic_attr());
 
     psl.def(nb::init<>())
-       .def_prop_ro("url", &Psl::url)
-       .def("is_loaded", &Psl::isLoaded, "check whether psl is loaded or not")
-       .def("load_from_path", &Psl::loadFromPath, nb::arg("filepath"), "load PSL from path")
-       .def("load_from_string", &Psl::loadFromString, nb::arg("string"), "load PSL from string")
-       .def("__repr__", [](const Psl& p) -> std::string {
-            return std::string("<PSL : ") + (p.isLoaded() ? "loaded" : "not loaded") + ">";
+       .def_prop_ro("url", &urlparser::psl::source_url)
+       .def("is_loaded", &urlparser::psl::is_loaded, "check whether psl is loaded or not")
+       .def("load_from_path", &urlparser::psl::load_from_path, nb::arg("filepath"), "load PSL from path")
+       .def("load_from_string", &urlparser::psl::load_from_string, nb::arg("string"), "load PSL from string")
+       .def("is_suffix", &urlparser::psl::is_suffix, nb::arg("text"),
+            "check whether text is itself a recognized public suffix (e.g. \"co.uk\"), "
+            "not the suffix *of* some hostname")
+       .def("__repr__", [](const urlparser::psl& p) -> std::string {
+            return std::string("<PSL : ") + (p.is_loaded() ? "loaded" : "not loaded") + ">";
         });
 }

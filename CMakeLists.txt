@@ -67,6 +67,11 @@ endif()
 # Locate the public suffix list file: prefer the copy already committed in
 # the repo (source dir); only download into the build dir if it's missing.
 set(PUBLIC_SUFFIX_LIST_URL "https://publicsuffix.org/list/public_suffix_list.dat")
+# urlparser::psl::source_url() (src/urlparser.cpp) needs this. Several
+# targets compile urlparser.cpp directly (the static library, the Python
+# module, the test binary) rather than linking a shared build of it, so
+# this is set at directory scope here rather than repeated per-target.
+add_compile_definitions(PUBLIC_SUFFIX_LIST_URL="${PUBLIC_SUFFIX_LIST_URL}")
 set(PUBLIC_SUFFIX_LIST_DAT_NAME "public_suffix_list.dat")
 
 if(EXISTS "${PROJECT_SOURCE_DIR}/${PUBLIC_SUFFIX_LIST_DAT_NAME}")
@@ -145,9 +150,6 @@ if(DEFINED PYTHON_PROJECT_NAME)
     )
 
     target_include_directories(${NB_MODULE} PRIVATE include src ${GENERATED_HEADERS_DIR})
-    target_compile_definitions(${NB_MODULE} PRIVATE
-            PUBLIC_SUFFIX_LIST_URL="${PUBLIC_SUFFIX_LIST_URL}"
-    )
 
     if(DEFINED SKBUILD)
         install(TARGETS ${NB_MODULE}
