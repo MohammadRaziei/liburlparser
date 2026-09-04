@@ -12,21 +12,17 @@
 #include "urlparser.h"
 
 #include <algorithm>
+#include <array>
+#include <cctype>
 #include <charconv>
+#include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
-
-#ifdef _WIN32
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#else
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#endif
 
 #include "public_suffix_list_dat.h"
 
@@ -688,9 +684,9 @@ std::ostream& operator<<(std::ostream& os, const urlparser::hostname& dt) {
 // --- ipv4 / ipv6 ------------------------------------------------------------
 
 namespace {
-// URLs write IPv6 host literals wrapped in brackets ("[::1]"); inet_pton
-// wants the bare address ("::1"). IPv4 addresses are never bracketed, so
-// this is a no-op for them.
+// URLs write IPv6 host literals wrapped in brackets ("[::1]"); the parser
+// below wants the bare address ("::1"). IPv4 addresses are never
+// bracketed, so this is a no-op for them.
 std::string_view strip_ip_brackets(std::string_view s) noexcept {
     if (s.size() >= 2 && s.front() == '[' && s.back() == ']') {
         return s.substr(1, s.size() - 2);
@@ -698,29 +694,191 @@ std::string_view strip_ip_brackets(std::string_view s) noexcept {
     return s;
 }
 
-// inet_pton/InetPtonA need a NUL-terminated C string; string_view isn't
-// guaranteed one. INET6_ADDRSTRLEN (46) is long enough for any valid
-// address (including a fully-expanded IPv6 one), so anything longer than
-// that can't possibly be valid and is rejected up front instead of being
-// silently truncated into the buffer.
-bool make_c_string(std::string_view s, char (&buf)[INET6_ADDRSTRLEN]) noexcept {
-    if (s.empty() || s.size() >= sizeof(buf)) return false;
-    std::memcpy(buf, s.data(), s.size());
-    buf[s.size()] = '\0';
+// Parses one dotted-quad octet ("0".."255", no sign, no leading zeros
+// beyond a single "0") from [begin, end). Returns end-of-octet iterator
+// on success, or `begin` (i.e. no progress) on failure - the empty range
+// signals "not a valid octet" without needing a separate bool out-param.
+std::string_view::const_iterator parse_ipv4_octet(std::string_view::const_iterator begin,
+                                                    std::string_view::const_iterator end,
+                                                    uint8_t& out) noexcept {
+    if (begin == end || !std::isdigit(static_cast<unsigned char>(*begin))) return begin;
+    if (*begin == '0') {
+        out = 0;
+        return begin + 1;  // "0" is valid; "00", "01" (leading zeros) are not
+    }
+    unsigned value = 0;
+    auto it = begin;
+    for (; it != end && std::isdigit(static_cast<unsigned char>(*it)) && it - begin < 3; ++it) {
+        value = value * 10 + static_cast<unsigned>(*it - '0');
+    }
+    if (value > 255) return begin;
+    out = static_cast<uint8_t>(value);
+    return it;
+}
+
+// Strict dotted-quad IPv4 parser: exactly 4 octets, each 0-255, separated
+// by literal '.', nothing else in the string (no leading/trailing junk,
+// no whitespace, no alternate bases like the octal/hex forms some libc
+// inet_aton()s historically accepted).
+bool parse_ipv4(std::string_view text, std::array<uint8_t, 4>& out) noexcept {
+    auto it = text.begin();
+    const auto end = text.end();
+    for (int i = 0; i < 4; ++i) {
+        if (i > 0) {
+            if (it == end || *it != '.') return false;
+            ++it;
+        }
+        auto next = parse_ipv4_octet(it, end, out[i]);
+        if (next == it) return false;
+        it = next;
+    }
+    return it == end;
+}
+
+std::string format_ipv4(const std::array<uint8_t, 4>& bytes) {
+    std::string out;
+    out.reserve(15);
+    for (int i = 0; i < 4; ++i) {
+        if (i > 0) out += '.';
+        out += std::to_string(bytes[i]);
+    }
+    return out;
+}
+
+// Parses one IPv6 hextet (1-4 hex digits) from [begin, end) into a 16-bit
+// value. Same no-progress-on-failure convention as parse_ipv4_octet.
+std::string_view::const_iterator parse_ipv6_hextet(std::string_view::const_iterator begin,
+                                                     std::string_view::const_iterator end,
+                                                     uint16_t& out) noexcept {
+    unsigned value = 0;
+    auto it = begin;
+    for (; it != end && std::isxdigit(static_cast<unsigned char>(*it)) && it - begin < 4; ++it) {
+        char c = *it;
+        unsigned digit = std::isdigit(static_cast<unsigned char>(c))
+                              ? static_cast<unsigned>(c - '0')
+                              : static_cast<unsigned>(std::tolower(static_cast<unsigned char>(c)) - 'a' + 10);
+        value = (value << 4) | digit;
+    }
+    if (it == begin) return begin;
+    out = static_cast<uint16_t>(value);
+    return it;
+}
+
+// Full IPv6 text-form parser: 8 colon-separated hextets, with an optional
+// single "::" run standing in for one or more all-zero hextets, and an
+// optional trailing embedded IPv4 ("::ffff:192.0.2.1"). Splits on the
+// (at most one) "::" first, then parses each side independently and
+// zero-fills the gap - the standard approach for this grammar.
+bool parse_ipv6(std::string_view text, std::array<uint8_t, 16>& out) noexcept {
+    if (text.size() < 2) return false;
+
+    size_t compress_pos = text.find("::");
+    if (compress_pos != std::string_view::npos && text.find("::", compress_pos + 1) != std::string_view::npos) {
+        return false;  // "::" may appear at most once
+    }
+
+    std::string_view left = compress_pos == std::string_view::npos ? text : text.substr(0, compress_pos);
+    std::string_view right =
+        compress_pos == std::string_view::npos ? std::string_view{} : text.substr(compress_pos + 2);
+
+    // Parses a run of ':'-separated hextets into `groups` (max 8), with
+    // support for one trailing embedded IPv4 literal (counts as 2
+    // hextets). Returns false on any malformed content.
+    auto parse_side = [](std::string_view side, std::array<uint16_t, 8>& groups, int& count) noexcept -> bool {
+        count = 0;
+        if (side.empty()) return true;
+        auto it = side.begin();
+        const auto end = side.end();
+        while (true) {
+            // Embedded IPv4 tail: only valid as the last group, detected
+            // by a '.' appearing before the next ':'.
+            auto colon_or_end = std::find(it, end, ':');
+            if (std::find(it, colon_or_end, '.') != colon_or_end) {
+                std::array<uint8_t, 4> v4{};
+                if (!parse_ipv4(std::string_view(&*it, static_cast<size_t>(end - it)), v4)) return false;
+                if (count > 6) return false;
+                groups[count++] = static_cast<uint16_t>((v4[0] << 8) | v4[1]);
+                groups[count++] = static_cast<uint16_t>((v4[2] << 8) | v4[3]);
+                it = end;
+                break;
+            }
+            uint16_t hextet = 0;
+            auto next = parse_ipv6_hextet(it, colon_or_end, hextet);
+            if (next != colon_or_end || count >= 8) return false;
+            groups[count++] = hextet;
+            it = colon_or_end;
+            if (it == end) break;
+            ++it;                 // skip ':'
+            if (it == end) return false;  // trailing lone ':'
+        }
+        return true;
+    };
+
+    std::array<uint16_t, 8> left_groups{}, right_groups{};
+    int left_count = 0, right_count = 0;
+    if (!parse_side(left, left_groups, left_count)) return false;
+    if (!parse_side(right, right_groups, right_count)) return false;
+
+    int total = left_count + right_count;
+    if (compress_pos == std::string_view::npos) {
+        if (total != 8) return false;
+    } else {
+        if (total >= 8) return false;  // "::" must stand in for >=1 hextet
+    }
+
+    std::array<uint16_t, 8> groups{};
+    for (int i = 0; i < left_count; ++i) groups[i] = left_groups[i];
+    for (int i = 0; i < right_count; ++i) groups[8 - right_count + i] = right_groups[i];
+
+    for (int i = 0; i < 8; ++i) {
+        out[2 * i] = static_cast<uint8_t>(groups[i] >> 8);
+        out[2 * i + 1] = static_cast<uint8_t>(groups[i] & 0xFF);
+    }
     return true;
 }
 
-#ifdef _WIN32
-int platform_inet_pton(int af, const char* src, void* dst) { return InetPtonA(af, src, dst); }
-const char* platform_inet_ntop(int af, const void* src, char* dst, size_t size) {
-    return InetNtopA(af, const_cast<void*>(src), dst, size);
+// Formats per RFC 5952: lowercase hex, the longest run of >=2 zero
+// hextets (leftmost wins on ties) compressed to "::", no leading zeros
+// within a hextet.
+std::string format_ipv6(const std::array<uint8_t, 16>& bytes) {
+    std::array<uint16_t, 8> groups{};
+    for (int i = 0; i < 8; ++i) {
+        groups[i] = static_cast<uint16_t>((bytes[2 * i] << 8) | bytes[2 * i + 1]);
+    }
+
+    int best_start = -1, best_len = 0;
+    for (int i = 0; i < 8;) {
+        if (groups[i] != 0) {
+            ++i;
+            continue;
+        }
+        int j = i;
+        while (j < 8 && groups[j] == 0) ++j;
+        if (j - i > best_len) {
+            best_len = j - i;
+            best_start = i;
+        }
+        i = j;
+    }
+    if (best_len < 2) best_start = -1;  // RFC 5952: don't compress a single zero group
+
+    std::string out;
+    out.reserve(39);
+    char buf[5];
+    for (int i = 0; i < 8;) {
+        if (i == best_start) {
+            out += "::";
+            i += best_len;
+            continue;
+        }
+        if (!out.empty() && out.back() != ':') out += ':';
+        int n = std::snprintf(buf, sizeof(buf), "%x", groups[i]);
+        out.append(buf, static_cast<size_t>(n));
+        ++i;
+    }
+    if (out.empty()) out = "::";
+    return out;
 }
-#else
-int platform_inet_pton(int af, const char* src, void* dst) { return inet_pton(af, src, dst); }
-const char* platform_inet_ntop(int af, const void* src, char* dst, size_t size) {
-    return inet_ntop(af, src, dst, size);
-}
-#endif
 
 uint64_t be_bytes_to_u64(const uint8_t* p) noexcept {
     uint64_t v = 0;
@@ -739,15 +897,13 @@ void u64_to_be_bytes(uint64_t v, uint8_t* p) noexcept {
 // --- ipv4 --------------------------------------------------------------
 
 bool urlparser::ipv4::is_valid(std::string_view text) noexcept {
-    char buf[INET6_ADDRSTRLEN];
     std::array<uint8_t, 4> bytes{};
-    return make_c_string(text, buf) && platform_inet_pton(AF_INET, buf, bytes.data()) == 1;
+    return parse_ipv4(text, bytes);
 }
 
 urlparser::ipv4::ipv4(std::string_view text) {
-    char buf[INET6_ADDRSTRLEN];
     std::array<uint8_t, 4> bytes{};
-    if (make_c_string(text, buf) && platform_inet_pton(AF_INET, buf, bytes.data()) == 1) {
+    if (parse_ipv4(text, bytes)) {
         value_ = (static_cast<uint32_t>(bytes[0]) << 24) | (static_cast<uint32_t>(bytes[1]) << 16) |
                  (static_cast<uint32_t>(bytes[2]) << 8) | static_cast<uint32_t>(bytes[3]);
         return;
@@ -766,17 +922,7 @@ std::array<uint8_t, 4> urlparser::ipv4::bytes() const noexcept {
             static_cast<uint8_t>(value_ >> 8), static_cast<uint8_t>(value_)};
 }
 
-std::string urlparser::ipv4::str() const {
-    char buf[INET6_ADDRSTRLEN];
-    const auto b = bytes();
-    // bytes() always comes from a validated parse or from_uint32(), so
-    // inet_ntop failing here isn't a real-world case - the API is noexcept
-    // (well, str() itself may still allocate but never throws for reasons
-    // other than allocation failure), so fail safe (empty string) rather
-    // than use an unwritten buffer.
-    if (!platform_inet_ntop(AF_INET, b.data(), buf, sizeof(buf))) return {};
-    return std::string(buf);
-}
+std::string urlparser::ipv4::str() const { return format_ipv4(bytes()); }
 
 std::ostream& operator<<(std::ostream& os, const urlparser::ipv4& dt) {
     os << dt.str();
@@ -786,17 +932,13 @@ std::ostream& operator<<(std::ostream& os, const urlparser::ipv4& dt) {
 // --- ipv6 --------------------------------------------------------------
 
 bool urlparser::ipv6::is_valid(std::string_view text) noexcept {
-    char buf[INET6_ADDRSTRLEN];
     std::array<uint8_t, 16> bytes{};
-    return make_c_string(strip_ip_brackets(text), buf) &&
-           platform_inet_pton(AF_INET6, buf, bytes.data()) == 1;
+    return parse_ipv6(strip_ip_brackets(text), bytes);
 }
 
 urlparser::ipv6::ipv6(std::string_view text) {
-    char buf[INET6_ADDRSTRLEN];
     std::array<uint8_t, 16> bytes{};
-    if (make_c_string(strip_ip_brackets(text), buf) &&
-        platform_inet_pton(AF_INET6, buf, bytes.data()) == 1) {
+    if (parse_ipv6(strip_ip_brackets(text), bytes)) {
         hi_ = be_bytes_to_u64(bytes.data());
         lo_ = be_bytes_to_u64(bytes.data() + 8);
         return;
@@ -819,12 +961,7 @@ std::array<uint8_t, 16> urlparser::ipv6::bytes() const noexcept {
     return out;
 }
 
-std::string urlparser::ipv6::str() const {
-    char buf[INET6_ADDRSTRLEN];
-    const auto b = bytes();
-    if (!platform_inet_ntop(AF_INET6, b.data(), buf, sizeof(buf))) return {};
-    return std::string(buf);
-}
+std::string urlparser::ipv6::str() const { return format_ipv6(bytes()); }
 
 void urlparser::ipv6::add_bits(uint64_t low64_bits) noexcept {
     const uint64_t old_lo = lo_;
