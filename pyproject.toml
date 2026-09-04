@@ -72,6 +72,16 @@ result = "{major}.{minor}.{patch}"
 minversion = "6.0"
 addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
 xfail_strict = true
+# Registered explicitly so --strict-markers doesn't reject test_memory.py's
+# collection when pytest-memray isn't installed (it's an optional extra,
+# see test-extras/CIBW config below - memray has no Windows support, and
+# even elsewhere the marker is normally auto-registered by the plugin
+# itself, which isn't guaranteed to be present at test-collection time).
+# Without the plugin the mark is simply inert - no leak checking happens,
+# same as running pytest without --memray.
+markers = [
+    "limit_leaks(*args, **kwargs): fail if net allocations inside the marked test exceed a threshold (pytest-memray)",
+]
 filterwarnings = [
     "error",
     "ignore:(ast.Str|Attribute s|ast.NameConstant|ast.Num) is deprecated:DeprecationWarning:_pytest",  # Python 3.12
