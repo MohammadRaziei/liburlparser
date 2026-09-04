@@ -500,7 +500,7 @@ urlparser::psl::psl(std::istream& stream) {
 /// initialization-order-fiasco risk across translation units).
 urlparser::psl& urlparser::psl::instance() noexcept {
     static psl the_instance = [] {
-        std::stringstream stream{templates::public_suffix_list_dat};
+        std::stringstream stream{std::string(templates::public_suffix_list_dat)};
         return psl(stream);
     }();
     return the_instance;

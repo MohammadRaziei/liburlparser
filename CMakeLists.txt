@@ -122,28 +122,29 @@ if(DEFINED PYTHON_PROJECT_NAME)
 
     set(NB_MODULE _urlparser_py)
 
+    # Linked STABLE_ABI needs Python >= 3.12 (nanobind's floor for the
+    # in-process stable ABI). Below that, build a regular per-version
+    # extension instead of reaching for split-mode (STABLE_ABI +
+    # BACKEND_MODULE): split-mode ships no nanobind runtime in the wheel
+    # itself and instead depends on a separate 'nanobind-backend' package
+    # at import time - a package that, in practice, isn't reliably
+    # available for every interpreter/platform combination our CI builds
+    # (manylinux cp310 in particular), so installs can fail outright with
+    # "No matching distribution found for nanobind-backend". Linking the
+    # nanobind runtime straight into the extension avoids that dependency
+    # entirely, at the cost of one wheel per Python minor version below 3.12.
+    if(Python_VERSION VERSION_GREATER_EQUAL "3.12")
+        set(NB_ABI_ARGS STABLE_ABI)
+    else()
+        set(NB_ABI_ARGS)
+    endif()
+
     # We are now ready to compile the actual extension module
     nanobind_add_module(
             # Name of the extension
             ${NB_MODULE}
 
-            # Target the stable ABI, floored at Python 3.10 - the lowest
-            # nanobind supports at all (linked-mode STABLE_ABI needs
-            # 3.12; split mode, via BACKEND_MODULE below, gets us down
-            # to 3.10). One wheel then covers 3.10-3.latest, instead of
-            # a separate wheel per minor version.
-            #
-            # Trade-off: split mode moves the nanobind runtime out of
-            # this extension and into a separate 'nanobind-backend'
-            # package (a real runtime dependency now - see
-            # pyproject.toml), loaded via dlopen() at import time. That
-            # is one extra shared-library hop per call across the
-            # Python/C++ boundary (attribute access, string conversion,
-            # exception translation, etc.) - the pure C++ parsing code
-            # in src/urlparser.cpp is completely unaffected, since it
-            # never touches the Python C API at all.
-            STABLE_ABI
-            BACKEND_MODULE nanobind_backend
+            ${NB_ABI_ARGS}
 
             # Source code goes here
             ${PROJECT_SOURCE_DIR}/src/binding/main.cpp ${SOURCES}
