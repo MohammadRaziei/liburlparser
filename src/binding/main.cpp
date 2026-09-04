@@ -127,11 +127,6 @@ NB_MODULE(_urlparser_py, m) {
                     static_cast<urlparser::hostname (*)(std::string_view, bool)>(
                         &urlparser::hostname::from_url),
                     nb::arg("urlstr"), nb::arg("ignore_www") = false)
-        .def_static("load_psl_from_path", &urlparser::hostname::load_psl_from_path,
-                    nb::arg("filepath"))
-        .def_static("load_psl_from_string", &urlparser::hostname::load_psl_from_string,
-                    nb::arg("string"))
-        .def_static("is_psl_loaded", &urlparser::hostname::is_psl_loaded)
         .def_static("remove_www", &urlparser::hostname::remove_www, nb::arg("hoststr"))
         .def_prop_ro("subdomain", &urlparser::hostname::subdomain)
         .def_prop_ro("domain", &urlparser::hostname::domain)
@@ -289,7 +284,8 @@ NB_MODULE(_urlparser_py, m) {
 
     nb::class_<urlparser::psl> psl(m, "Psl", nb::dynamic_attr());
 
-    psl.def(nb::init<>())
+    psl.def_static("instance", &urlparser::psl::instance, nb::rv_policy::reference,
+                   "the one, process-wide shared PSL instance")
        .def_prop_ro("url", &urlparser::psl::source_url)
        .def("is_loaded", &urlparser::psl::is_loaded, "check whether psl is loaded or not")
        .def("load_from_path", &urlparser::psl::load_from_path, nb::arg("filepath"), "load PSL from path")

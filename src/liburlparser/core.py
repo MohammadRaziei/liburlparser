@@ -5,7 +5,7 @@ import warnings
 
 from ._urlparser_py import Host, Hostname, IPv4, IPv6, Psl, Url, __doc__, __version__
 
-psl = Psl()  # psl - already loaded from the data embedded into the compiled extension
+psl = Psl.instance()  # psl - already loaded from the data embedded into the compiled extension
 
 
 def warning_on_one_line(message, category, filename, lineno, file=None, line=None):

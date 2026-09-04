@@ -3,12 +3,11 @@
 // matching - everything liburlparser's core does, in one file. (Previously
 // split across url.h + url.cpp + urlparser_url.cpp + psl.h + psl.cpp +
 // urlparser_host.cpp, with a confusing detail::url class wrapped by another
-// url::Impl, and a PIMPL host::Impl wrapping a separately-loaded PSL.) url
-// and host are now flat value types declared directly in
+// url::Impl, and a PIMPL host::Impl wrapping a separately-loaded PSL.) url,
+// hostname, and psl are now flat value types declared directly in
 // include/urlparser.h - there is nothing to wrap here anymore, just the
-// method bodies. PSL (the one piece that genuinely needs a
-// std::unordered_map) lives entirely here, in urlparser::detail, and never
-// appears in any header at all.
+// method bodies. psl's std::unordered_map is a plain private member, same
+// as any other class's private state - no detail namespace, no PIMPL.
 //
 #include "urlparser.h"
 
@@ -123,7 +122,7 @@ std::vector<std::string> split(const std::string& str, const char delim) noexcep
 
 }  // namespace
 
-bool urlparser::url::is_psl_loaded() noexcept { return urlparser::hostname::is_psl_loaded(); }
+bool urlparser::url::is_psl_loaded() noexcept { return urlparser::psl::instance().is_loaded(); }
 
 urlparser::url::url(std::string_view url, const bool ignore_www)
     : ignore_www_(ignore_www) {
@@ -456,156 +455,125 @@ std::ostream& operator<<(std::ostream& os, const urlparser::url& dt) {
 // host: Public-Suffix-List matching (suffix/domain/subdomain split).
 // ---------------------------------------------------------------------------
 
-namespace urlparser::detail {
+urlparser::psl::psl(std::istream& stream) {
+    levels_.reserve(10'000);
+    std::string line;
+    while (std::getline(stream, line)) {
+        // Only take up to the first whitespace.
+        auto it = std::find_if(line.begin(), line.end(), [](char c) {
+            return std::isspace(static_cast<unsigned char>(c));
+        });
+        line.resize(it - line.begin());
 
-/**
- * Finds the TLD (public suffix) of a hostname according to a Public Suffix
- * List. Internal to this file - host is the only thing that uses it.
- */
-struct PSL {
-    PSL() = default;
-    explicit PSL(std::istream& stream) {
-        levels.reserve(10'000);
-        std::string line;
-        while (std::getline(stream, line)) {
-            // Only take up to the first whitespace.
-            auto it = std::find_if(line.begin(), line.end(), [](char c) {
-                return std::isspace(static_cast<unsigned char>(c));
-            });
-            line.resize(it - line.begin());
+        if (line.empty()) continue;              // blank line
+        if (line.compare(0, 2, "//") == 0) continue;  // comment
 
-            if (line.empty()) continue;              // blank line
-            if (line.compare(0, 2, "//") == 0) continue;  // comment
-
-            if (line[0] == '*') {
-                if (line.size() <= 2 || line[1] != '.') {
-                    throw std::invalid_argument("Wildcard rule must be of form *.<host>");
-                }
-                add(line, 1, 2);
-            } else if (line[0] == '!') {
-                if (line.size() <= 1) {
-                    throw std::invalid_argument("Exception rule has no hostname.");
-                }
-                add(line, -1, 1);
-            } else {
-                add(line, 0, 0);
+        if (line[0] == '*') {
+            if (line.size() <= 2 || line[1] != '.') {
+                throw std::invalid_argument("Wildcard rule must be of form *.<host>");
             }
-        }
-    }
-
-    static PSL fromPath(const std::string& path) {
-        std::ifstream stream(path);
-        if (!stream.good()) {
-            throw std::invalid_argument("Path '" + path + "' is inaccessible.");
-        }
-        return PSL(stream);
-    }
-
-    static PSL fromString(const std::string& str) {
-        std::stringstream stream(str);
-        return PSL(stream);
-    }
-
-    /**
-     * Get just the TLD (public suffix) of the hostname. Works for either
-     * punycoded or unpunycoded hostnames (but not mixed).
-     */
-    std::string getTLD(const std::string& hostname) const {
-        return getLastSegments(hostname, getTLDLength(hostname));
-    }
-
-    size_t numLevels() const noexcept { return levels.size(); }
-
-    /**
-     * Whether `text` is itself a recognized entry in the list (e.g.
-     * "co.uk", "com"), not just "the last label of some domain under an
-     * unrecognized TLD" the way getTLD()'s fallback treats any unmatched
-     * single-label input - so, unlike getTLD(text) == text, this correctly
-     * says false for a made-up word like "comm". Case-insensitive.
-     */
-    bool isSuffix(const std::string& text) const noexcept {
-        if (text.empty()) return false;
-        std::string reversed(text.rbegin(), text.rend());
-        std::transform(reversed.begin(), reversed.end(), reversed.begin(), ascii_tolower);
-        return levels.find(reversed) != levels.end();
-    }
-
-   private:
-    // Mapping of a reversed rule string to its level (segment count).
-    std::unordered_map<std::string, size_t> levels;
-
-    size_t countSegments(const std::string& hostname) const {
-        size_t count = 1;
-        size_t position = hostname.find('.');
-        while (position != std::string::npos) {
-            count += 1;
-            position = hostname.find('.', position + 1);
-        }
-        return count;
-    }
-
-    size_t getTLDLength(const std::string& hostname) const {
-        std::string tld(hostname.rbegin(), hostname.rend());
-        std::transform(tld.begin(), tld.end(), tld.begin(), ascii_tolower);
-
-        while (!tld.empty()) {
-            if (auto it = levels.find(tld); it != levels.end()) {
-                return it->second;
+            add_rule(line, 1, 2);
+        } else if (line[0] == '!') {
+            if (line.size() <= 1) {
+                throw std::invalid_argument("Exception rule has no hostname.");
             }
-            size_t position = tld.rfind('.');
-            tld.resize((position == std::string::npos || position == 0) ? 0 : position);
+            add_rule(line, -1, 1);
+        } else {
+            add_rule(line, 0, 0);
         }
-        return 1;
     }
-
-    std::string getLastSegments(const std::string& hostname, size_t segments) const {
-        size_t position = hostname.size();
-        size_t remaining = segments;
-        while (remaining != 0 && position && position != std::string::npos) {
-            position = hostname.rfind('.', position - 1);
-            remaining -= 1;
-        }
-        if (remaining >= 1) return "";
-
-        const size_t start = (position == std::string::npos) ? 0 : position + 1;
-        std::string result(hostname, start);
-        std::transform(result.begin(), result.end(), result.begin(), ascii_tolower);
-
-        if (!result.empty() && result[0] == '.') {
-            throw std::invalid_argument("Empty segment in " + result);
-        }
-        return result;
-    }
-
-    void add(std::string& rule, int level_adjust, size_t trim) {
-        std::string copy(rule.rbegin(), rule.rend() - trim);
-        size_t length = countSegments(copy) + level_adjust;
-        levels[std::move(copy)] = length;
-    }
-};
+}
 
 /// The one, lazily-and-safely-initialized PSL instance, embedded at compile
 /// time (see public_suffix_list_dat.h). A function-local static gives us
 /// thread-safe, deferred-until-first-use initialization for free (unlike a
 /// namespace-scope static, which would be subject to the usual static-
 /// initialization-order-fiasco risk across translation units).
-PSL& psl() {
-    static PSL instance = PSL::fromString(templates::public_suffix_list_dat);
-    return instance;
+urlparser::psl& urlparser::psl::instance() noexcept {
+    static psl the_instance = [] {
+        std::stringstream stream(std::string(templates::public_suffix_list_dat));
+        return psl(stream);
+    }();
+    return the_instance;
 }
 
-}  // namespace urlparser::detail
+std::string_view urlparser::psl::source_url() const noexcept { return PUBLIC_SUFFIX_LIST_URL; }
 
-void urlparser::hostname::load_psl_from_path(const std::string& filepath) {
-    urlparser::detail::psl() = urlparser::detail::PSL::fromPath(filepath);
+void urlparser::psl::load_from_path(const std::string& filepath) {
+    std::ifstream stream(filepath);
+    if (!stream.good()) {
+        throw std::invalid_argument("Path '" + filepath + "' is inaccessible.");
+    }
+    *this = psl(stream);
 }
 
-void urlparser::hostname::load_psl_from_string(const std::string& filestr) {
-    urlparser::detail::psl() = urlparser::detail::PSL::fromString(filestr);
+void urlparser::psl::load_from_string(const std::string& filestr) {
+    std::stringstream stream(filestr);
+    *this = psl(stream);
 }
 
-bool urlparser::hostname::is_psl_loaded() noexcept {
-    return urlparser::detail::psl().numLevels() > 0;
+bool urlparser::psl::is_suffix(std::string_view text) const noexcept {
+    if (text.empty()) return false;
+    std::string reversed(text.rbegin(), text.rend());
+    std::transform(reversed.begin(), reversed.end(), reversed.begin(), ascii_tolower);
+    return levels_.find(reversed) != levels_.end();
+}
+
+/**
+ * Get just the public suffix of a hostname. Works for either punycoded or
+ * unpunycoded hostnames (but not mixed).
+ */
+std::string urlparser::psl::suffix_of(const std::string& hostname_text) const {
+    return last_segments(hostname_text, suffix_length(hostname_text));
+}
+
+size_t urlparser::psl::segment_count(const std::string& text) const {
+    size_t count = 1;
+    size_t position = text.find('.');
+    while (position != std::string::npos) {
+        count += 1;
+        position = text.find('.', position + 1);
+    }
+    return count;
+}
+
+size_t urlparser::psl::suffix_length(const std::string& hostname_text) const {
+    std::string tld(hostname_text.rbegin(), hostname_text.rend());
+    std::transform(tld.begin(), tld.end(), tld.begin(), ascii_tolower);
+
+    while (!tld.empty()) {
+        if (auto it = levels_.find(tld); it != levels_.end()) {
+            return it->second;
+        }
+        size_t position = tld.rfind('.');
+        tld.resize((position == std::string::npos || position == 0) ? 0 : position);
+    }
+    return 1;
+}
+
+std::string urlparser::psl::last_segments(const std::string& hostname_text, size_t segments) const {
+    size_t position = hostname_text.size();
+    size_t remaining = segments;
+    while (remaining != 0 && position && position != std::string::npos) {
+        position = hostname_text.rfind('.', position - 1);
+        remaining -= 1;
+    }
+    if (remaining >= 1) return "";
+
+    const size_t start = (position == std::string::npos) ? 0 : position + 1;
+    std::string result(hostname_text, start);
+    std::transform(result.begin(), result.end(), result.begin(), ascii_tolower);
+
+    if (!result.empty() && result[0] == '.') {
+        throw std::invalid_argument("Empty segment in " + result);
+    }
+    return result;
+}
+
+void urlparser::psl::add_rule(std::string& rule, int level_adjust, size_t trim) {
+    std::string copy(rule.rbegin(), rule.rend() - trim);
+    size_t length = segment_count(copy) + level_adjust;
+    levels_[std::move(copy)] = length;
 }
 
 std::string_view urlparser::hostname::remove_www(const std::string_view& host) noexcept {
@@ -613,26 +581,6 @@ std::string_view urlparser::hostname::remove_www(const std::string_view& host) n
         return host;
     }
     return host.substr(4);
-}
-
-// --- psl -----------------------------------------------------------------
-
-std::string_view urlparser::psl::source_url() const noexcept { return PUBLIC_SUFFIX_LIST_URL; }
-
-bool urlparser::psl::is_loaded() const noexcept {
-    return urlparser::detail::psl().numLevels() > 0;
-}
-
-void urlparser::psl::load_from_path(const std::string& filepath) const {
-    urlparser::detail::psl() = urlparser::detail::PSL::fromPath(filepath);
-}
-
-void urlparser::psl::load_from_string(const std::string& filestr) const {
-    urlparser::detail::psl() = urlparser::detail::PSL::fromString(filestr);
-}
-
-bool urlparser::psl::is_suffix(std::string_view text) const noexcept {
-    return urlparser::detail::psl().isSuffix(std::string(text));
 }
 
 urlparser::hostname::hostname(std::string host, const bool ignore_www)
@@ -659,7 +607,7 @@ void urlparser::hostname::ensure_parsed() const noexcept {
     parsed_ = true;
 
     fulldomain_ = host_;
-    suffix_ = urlparser::detail::psl().getTLD(host_);
+    suffix_ = urlparser::psl::instance().suffix_of(host_);
     size_t suffix_pos = fulldomain_.rfind("." + suffix_);
     size_t subdomain_pos = 0;
     if (suffix_pos == std::string::npos || suffix_pos < 1) return;

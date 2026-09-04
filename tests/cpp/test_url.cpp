@@ -89,7 +89,7 @@ static void check_url_row(int *utest_result, const UrlData& url_data) {
 }
 
 UTEST(CSVUrlTest, CheckPSLisLoaded){
-    ASSERT_TRUE(urlparser::hostname::is_psl_loaded());
+    ASSERT_TRUE(urlparser::psl::instance().is_loaded());
 }
 
 UTEST(CSVUrlTest, UrlDataInput) {

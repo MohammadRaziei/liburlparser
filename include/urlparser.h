@@ -73,6 +73,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <variant>
 #include <vector>
 
@@ -161,26 +162,6 @@ class hostname {
                         const bool ignore_www = DEFAULT_IGNORE_WWW);
 
     /**
-     * @brief Load the Public Suffix List from a file.
-     * @param filepath Path to the PSL file.
-     * @throws std::runtime_error If the file cannot be opened or parsed.
-     */
-    static void load_psl_from_path(const std::string& filepath);
-
-    /**
-     * @brief Load the Public Suffix List from a string.
-     * @param filestr The PSL content as a string.
-     * @throws std::runtime_error If the content cannot be parsed.
-     */
-    static void load_psl_from_string(const std::string& filestr);
-
-    /**
-     * @brief Check if the Public Suffix List (PSL) is loaded.
-     * @return true if the PSL is loaded, false otherwise.
-     */
-    static bool is_psl_loaded() noexcept;
-
-    /**
      * @brief Remove "www." from the beginning of a hostname string.
      * @param host The hostname text to process.
      * @return The text without a leading "www." if it was present.
@@ -239,48 +220,68 @@ class hostname {
 };
 
 /**
- * @brief A handle to the library's Public Suffix List matcher.
+ * @brief The library's Public Suffix List matcher.
  *
- * There's exactly one PSL - loaded lazily, on first use, and shared by
- * every `hostname` - so `psl` holds no data of its own; constructing one
- * (`urlparser::psl()`) is free, and every instance is a handle onto that
- * same shared matcher. `hostname`'s own PSL-related static methods
- * (load_psl_from_path/load_psl_from_string/is_psl_loaded) are equivalent
- * to calling these; `psl` exists as a small, dedicated, object-oriented
- * handle for code (and the Python bindings) that wants one.
+ * There's exactly one PSL for the whole process - loaded lazily, on first
+ * use - so this is a singleton: get the shared instance via `instance()`,
+ * never construct one directly. `hostname::suffix()`/`domain()`/etc. use
+ * `instance().suffix_of(...)` internally; `is_suffix()` is for code that
+ * wants to check suffix membership directly, independent of any
+ * particular hostname.
  */
 class psl {
    public:
-    psl() noexcept = default;
+    /** @brief The one, lazily-built, shared PSL instance. */
+    static psl& instance() noexcept;
 
     /** @brief The URL the bundled PSL data was downloaded from. */
     std::string_view source_url() const noexcept;
 
     /** @brief Whether a PSL is currently loaded (true even for the bundled default). */
-    bool is_loaded() const noexcept;
+    bool is_loaded() const noexcept { return !levels_.empty(); }
 
     /**
      * @brief Load the Public Suffix List from a file, replacing whatever
      * was loaded before (including the bundled default).
      * @throws std::invalid_argument If the file cannot be opened or parsed.
      */
-    void load_from_path(const std::string& filepath) const;
+    void load_from_path(const std::string& filepath);
 
     /**
      * @brief Load the Public Suffix List from a string, replacing whatever
      * was loaded before (including the bundled default).
      * @throws std::invalid_argument If the content cannot be parsed.
      */
-    void load_from_string(const std::string& filestr) const;
+    void load_from_string(const std::string& filestr);
 
     /**
      * @brief Check whether `text` is itself a recognized public suffix
      * (e.g. "co.uk", "com") - not the suffix *of* some hostname the way
-     * `hostname::suffix()` extracts one, but whether this exact text is a
-     * listed entry. Unlike `hostname::suffix()`'s fallback for unknown
-     * TLDs, an unrecognized word like "comm" correctly returns false here.
+     * suffix_of() extracts one, but whether this exact text is a listed
+     * entry. Unlike suffix_of()'s fallback for unknown TLDs, an
+     * unrecognized word like "comm" correctly returns false here.
      */
     bool is_suffix(std::string_view text) const noexcept;
+
+    /**
+     * @brief The public suffix *of* a hostname (e.g. "co.uk" for
+     * "example.co.uk"), with a best-effort single-label fallback when the
+     * TLD isn't recognized (e.g. "comm" for "example.comm") - this is what
+     * hostname::suffix() uses. Works for punycoded or unpunycoded
+     * hostnames (but not mixed).
+     */
+    std::string suffix_of(const std::string& hostname_text) const;
+
+   private:
+    psl() noexcept = default;
+    explicit psl(std::istream& stream);
+
+    size_t segment_count(const std::string& text) const;
+    size_t suffix_length(const std::string& hostname_text) const;
+    std::string last_segments(const std::string& hostname_text, size_t segments) const;
+    void add_rule(std::string& rule, int level_adjust, size_t trim);
+
+    std::unordered_map<std::string, size_t> levels_;
 };
 
 /**

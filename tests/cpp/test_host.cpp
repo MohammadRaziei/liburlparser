@@ -69,7 +69,7 @@ static void check_host_row(int *utest_result, const HostData& host_data) {
 }
 
 UTEST(CSVHostTest, CheckPSLisLoaded){
-    ASSERT_TRUE(urlparser::hostname::is_psl_loaded());
+    ASSERT_TRUE(urlparser::psl::instance().is_loaded());
 }
 
 UTEST(CSVHostTest, HostDataInput) {
@@ -213,7 +213,7 @@ UTEST(VersionTest, MatchesVersionMacros) {
     EXPECT_STREQ(std::string(urlparser::version::string()).c_str(), URLPARSER_VERSION_STRING);
 }
 
-// --- PSL reload: load_psl_from_string should take effect immediately -------
+// --- PSL reload: load_from_string should take effect immediately -------
 
 UTEST(HostTest, LoadPslFromStringChangesFutureLookups) {
     // A minimal, deliberately different PSL: only "co.uk" (not "com") is a
@@ -226,26 +226,30 @@ UTEST(HostTest, LoadPslFromStringChangesFutureLookups) {
     urlparser::hostname before("example.co.uk");
     const std::string suffix_before = before.suffix();
 
-    urlparser::hostname::load_psl_from_string("uk\nco.uk\n");
+    urlparser::psl::instance().load_from_string("uk\nco.uk\n");
     urlparser::hostname after("example.co.uk");
     EXPECT_STREQ(after.suffix().c_str(), "co.uk");
 
     // Restore the real PSL so later tests in this binary aren't affected.
-    urlparser::hostname::load_psl_from_path(makeAbsolutePath("../public_suffix_list.dat"));
+    urlparser::psl::instance().load_from_path(makeAbsolutePath("../public_suffix_list.dat"));
     urlparser::hostname restored("example.co.uk");
     EXPECT_STREQ(restored.suffix().c_str(), suffix_before.c_str());
 }
 
-// --- urlparser::psl: an object-oriented handle onto the same PSL --------
+// --- urlparser::psl: the real, singleton PSL matcher --------------------
 
 UTEST(PslTest, IsLoadedAndSourceUrl) {
-    urlparser::psl p;
+    auto& p = urlparser::psl::instance();
     EXPECT_TRUE(p.is_loaded());
     EXPECT_TRUE(!p.source_url().empty());
 }
 
+UTEST(PslTest, InstanceIsATrueSingleton) {
+    EXPECT_TRUE(&urlparser::psl::instance() == &urlparser::psl::instance());
+}
+
 UTEST(PslTest, IsSuffixRecognizesRealEntries) {
-    urlparser::psl p;
+    auto& p = urlparser::psl::instance();
     EXPECT_TRUE(p.is_suffix("com"));
     EXPECT_TRUE(p.is_suffix("co.uk"));
     EXPECT_TRUE(p.is_suffix("com.au"));
@@ -253,14 +257,14 @@ UTEST(PslTest, IsSuffixRecognizesRealEntries) {
 }
 
 UTEST(PslTest, IsSuffixRejectsNonSuffixes) {
-    urlparser::psl p;
+    auto& p = urlparser::psl::instance();
     EXPECT_FALSE(p.is_suffix("comm"));            // made-up word, not a real TLD
     EXPECT_FALSE(p.is_suffix("example.com"));     // a full domain, not a suffix itself
     EXPECT_FALSE(p.is_suffix(""));
 }
 
 UTEST(PslTest, IsSuffixIsCaseInsensitive) {
-    urlparser::psl p;
+    auto& p = urlparser::psl::instance();
     EXPECT_TRUE(p.is_suffix("COM"));
     EXPECT_TRUE(p.is_suffix("Co.Uk"));
 }
@@ -270,10 +274,17 @@ UTEST(PslTest, IsSuffixIsCaseInsensitive) {
 // as a best-effort guess even though it isn't a real, listed suffix -
 // is_suffix() must not be fooled by that fallback into reporting true.
 UTEST(PslTest, IsSuffixDistinguishesFromSuffixFallbackGuess) {
-    urlparser::psl p;
+    auto& p = urlparser::psl::instance();
     urlparser::hostname h("google.comm");
     EXPECT_STREQ(h.suffix().c_str(), "comm");
     EXPECT_FALSE(p.is_suffix(h.suffix()));
+}
+
+UTEST(PslTest, SuffixOfMatchesHostnameSuffix) {
+    auto& p = urlparser::psl::instance();
+    EXPECT_STREQ(p.suffix_of("example.co.uk").c_str(), "co.uk");
+    urlparser::hostname h("example.co.uk");
+    EXPECT_STREQ(p.suffix_of("example.co.uk").c_str(), h.suffix().c_str());
 }
 
 // --- ipv4 ------------------------------------------------------------------
