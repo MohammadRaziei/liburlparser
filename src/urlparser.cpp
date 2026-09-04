@@ -458,14 +458,23 @@ std::ostream& operator<<(std::ostream& os, const urlparser::url& dt) {
 urlparser::psl::psl(std::istream& stream) {
     levels_.reserve(10'000);
     std::string line;
+    size_t line_no = 0;
     while (std::getline(stream, line)) {
+        if (version_.empty() && ++line_no <= 16) {
+            constexpr std::string_view tag = "// VERSION:";
+            if (line.compare(0, tag.size(), tag) == 0) {
+                size_t start = line.find_first_not_of(' ', tag.size());
+                if (start != std::string::npos) version_ = line.substr(start);
+            }
+        }
+
         // Only take up to the first whitespace.
         auto it = std::find_if(line.begin(), line.end(), [](char c) {
             return std::isspace(static_cast<unsigned char>(c));
         });
         line.resize(it - line.begin());
 
-        if (line.empty()) continue;              // blank line
+        if (line.empty()) continue;                  // blank line
         if (line.compare(0, 2, "//") == 0) continue;  // comment
 
         if (line[0] == '*') {
@@ -491,7 +500,7 @@ urlparser::psl::psl(std::istream& stream) {
 /// initialization-order-fiasco risk across translation units).
 urlparser::psl& urlparser::psl::instance() noexcept {
     static psl the_instance = [] {
-        std::stringstream stream{templates::public_suffix_list_dat};
+        std::stringstream stream{std::string(templates::public_suffix_list_dat)};
         return psl(stream);
     }();
     return the_instance;

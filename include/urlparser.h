@@ -237,6 +237,9 @@ class psl {
     /** @brief The URL the bundled PSL data was downloaded from. */
     std::string_view source_url() const noexcept;
 
+    /** @brief The "// VERSION: ..." timestamp from the loaded PSL data, empty if absent. */
+    std::string_view version() const noexcept { return version_; }
+
     /** @brief Whether a PSL is currently loaded (true even for the bundled default). */
     bool is_loaded() const noexcept { return !levels_.empty(); }
 
@@ -282,6 +285,7 @@ class psl {
     void add_rule(std::string& rule, int level_adjust, size_t trim);
 
     std::unordered_map<std::string, size_t> levels_;
+    std::string version_;
 };
 
 /**
