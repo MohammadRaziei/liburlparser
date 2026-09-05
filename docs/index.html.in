@@ -3,29 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <title>liburlparser v@PROJECT_VERSION@ - Documentation</title>
-  <meta http-equiv="refresh" content="0; url=cpp/html/index.html">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
+    * { box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      max-width: 640px;
+      max-width: 720px;
       margin: 4rem auto;
-      padding: 0 1rem;
+      padding: 0 1.5rem;
       color: #24292f;
     }
-    h1 { font-size: 1.5rem; }
-    ul { line-height: 2; }
-    a { color: #0366d6; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+    .version { color: #6e7781; font-size: 0.95rem; margin-top: 0; }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .card {
+      display: block;
+      border: 1px solid #d0d7de;
+      border-radius: 8px;
+      padding: 1.1rem 1.2rem;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .card:hover { border-color: #0366d6; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .card-title { font-weight: 600; color: #0366d6; margin-bottom: 0.3rem; }
+    .card-sub { font-size: 0.85rem; color: #6e7781; }
+    .gh-link { color: #0366d6; text-decoration: none; }
+    .gh-link:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
-  <h1>liburlparser v@PROJECT_VERSION@</h1>
-  <p>Redirecting to the C++ API documentation...</p>
-  <ul>
-    <li><a href="cpp/html/index.html">C++ API Reference (Doxygen)</a></li>
-    <li><a href="python/html/index.html">Python API Reference (Sphinx)</a></li>
-    <li><a href="cli/index.html">CLI Reference</a></li>
-    <li><a href="https://github.com/MohammadRaziei/liburlparser">GitHub Repository</a></li>
-  </ul>
+  <h1>liburlparser</h1>
+  <p class="version">v@PROJECT_VERSION@ &nbsp;·&nbsp; <a class="gh-link" href="https://github.com/MohammadRaziei/liburlparser">GitHub Repository</a></p>
+
+  <div class="cards">
+    <a class="card" href="cpp/html/index.html">
+      <div class="card-title">C++ API Reference</div>
+      <div class="card-sub">Doxygen</div>
+    </a>
+    <a class="card" href="python/html/index.html">
+      <div class="card-title">Python API Reference</div>
+      <div class="card-sub">Sphinx</div>
+    </a>
+    <a class="card" href="cli/index.html">
+      <div class="card-title">CLI Reference</div>
+      <div class="card-sub">Command line usage</div>
+    </a>
+  </div>
 </body>
 </html>
