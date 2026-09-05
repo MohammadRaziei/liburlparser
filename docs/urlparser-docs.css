@@ -131,25 +131,11 @@ body {
     content: '';
     position: absolute;
     top: -120px; left: 50%; transform: translateX(-50%);
-    width: 900px; height: 500px;
+    width: 1000px; height: 460px;
     background:
-        radial-gradient(ellipse 380px 260px at 32% 40%, var(--accent-glow) 0%, transparent 70%),
-        radial-gradient(ellipse 380px 260px at 68% 45%, var(--gold-glow) 0%, transparent 70%);
+        radial-gradient(ellipse 340px 240px at 18% 45%, var(--accent-glow) 0%, transparent 70%),
+        radial-gradient(ellipse 340px 240px at 82% 45%, var(--gold-glow) 0%, transparent 70%);
     pointer-events: none;
-}
-.hero-ring {
-    position: absolute;
-    top: -40px; right: 6%;
-    width: 340px; height: 340px;
-    pointer-events: none;
-    opacity: 0.5;
-}
-[data-theme="dark"] .hero-ring { opacity: 0.35; }
-.hero-ring circle {
-    fill: none;
-    stroke: url(#hero-ring-gradient);
-    stroke-width: 3;
-    stroke-linecap: round;
 }
 .hero-eyebrow {
     display: inline-flex; align-items: center; gap: 0.5rem;
@@ -164,7 +150,7 @@ body {
 .hero h1 {
     font-size: 3.2rem; font-weight: 800; letter-spacing: -0.04em;
     margin-bottom: 1.2rem; line-height: 1.1;
-    background: linear-gradient(100deg, var(--accent) 0%, var(--accent) 45%, var(--gold) 100%);
+    background: linear-gradient(95deg, var(--accent) 0%, var(--accent) 46%, var(--gold) 50%, var(--gold) 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
 }
