@@ -106,8 +106,16 @@
             z-index: 100;
         }
 
-        .navbar-logo { width: 32px; height: 32px; flex-shrink: 0; }
-        .navbar-logo > * { width: 100%; height: auto; }
+        .navbar-logo {
+            height: 26px;
+            display: flex;
+            align-items: center;
+            background: #fff;
+            border-radius: 5px;
+            padding: 2px 5px;
+            flex-shrink: 0;
+        }
+        .navbar-logo svg { height: 100%; width: auto; display: block; }
 
         .navbar-brand {
             font-size: 1rem;
@@ -428,7 +436,6 @@
     <nav class="navbar">
         <a href="../index.html" class="navbar-brand-link">
             <div class="navbar-logo">@LOGO_CONTENT@</div>
-            <span class="navbar-brand">@PROJECT_NAME@</span>
         </a>
         <span class="navbar-title">Coverage Dashboard</span>
         <a href="https://github.com/mohammadraziei/liburlparser" target="_blank" class="navbar-back">
