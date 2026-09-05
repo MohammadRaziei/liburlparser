@@ -1,0 +1,15 @@
+<!--
+URLPARSER_ASCII_ART
+
+  UrlParser — fast RFC 3986 URL parser
+  with native bindings for C++ and Python.
+
+  Author  : Mohammad Raziei
+  Email   : mohammadraziei1375@gmail.com
+  GitHub  : https://github.com/mohammadraziei/liburlparser
+  License : MIT
+  Version : URLPARSER_VERSION
+
+  Generated automatically by the liburlparser build system.
+  Do not edit manually.
+-->

@@ -114,6 +114,34 @@ configure_file(
 add_custom_target(urlparser_docs_index DEPENDS ${URLPARSER_INDEX_OUT})
 
 
+# ── CLI Reference (Markdown pages) ─────────────────────────────
+# Same page/section renderer ctoon uses for its CLI docs
+# (docs/convert_page.py + page.html.in/section.html.in), so the CLI
+# reference gets its own themed multi-page site instead of a single
+# plain Markdown file.
+
+set(URLPARSER_DOCS_SRC ${CMAKE_CURRENT_SOURCE_DIR})
+set(LOGO_SQ ${PROJECT_SOURCE_DIR}/docs/images/logo/liburlparser-logo-2.svg)
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/UrlParserPages.cmake)
+
+urlparser_add_section(
+    NAME  cli
+    TITLE "CLI Reference"
+    SOURCES
+        "cli/index.md:Overview"
+        "cli/installation.md:Installation"
+        "cli/options.md:Options"
+        "cli/examples.md:Examples"
+)
+
+# The section pages reference "../urlparser-sq.svg" as their favicon
+# (see convert_page.py); copy the logo there so it resolves once served.
+file(MAKE_DIRECTORY ${URLPARSER_DOCS_OUT})
+file(COPY_FILE ${LOGO_SQ} ${URLPARSER_DOCS_OUT}/urlparser-sq.svg)
+file(COPY_FILE ${CMAKE_CURRENT_SOURCE_DIR}/urlparser-docs.css ${URLPARSER_DOCS_OUT}/urlparser-docs.css)
+
+
 # ── Master target ─────────────────────────────────────────────
 
 add_custom_target(urlparser_docs
@@ -122,3 +150,18 @@ add_custom_target(urlparser_docs
 )
 
 add_dependencies(urlparser_docs urlparser_docs_cpp urlparser_docs_python urlparser_docs_index)
+urlparser_finalize_pages(urlparser_docs)
+
+
+# ── Post-process: inject HTML comment into all output HTML files ──
+
+add_custom_command(TARGET urlparser_docs POST_BUILD
+    COMMAND ${CMAKE_COMMAND}
+        -DOUTPUT_DIR=${URLPARSER_DOCS_OUT}
+        -DCOMMENT_IN=${CMAKE_CURRENT_SOURCE_DIR}/initial_comment.in
+        -DASCII_ART_FILE=${CMAKE_CURRENT_SOURCE_DIR}/images/liburlparser-sq.txt
+        -DPROJECT_VERSION=${PROJECT_VERSION}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/InjectComment.cmake
+    COMMENT "Injecting HTML comments into documentation pages"
+    VERBATIM
+)
