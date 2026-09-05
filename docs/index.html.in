@@ -1,59 +1,453 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-  <meta charset="UTF-8">
-  <title>liburlparser v@PROJECT_VERSION@ - Documentation</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      max-width: 720px;
-      margin: 4rem auto;
-      padding: 0 1.5rem;
-      color: #24292f;
-    }
-    h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
-    .version { color: #6e7781; font-size: 0.95rem; margin-top: 0; }
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1rem;
-      margin: 2rem 0;
-    }
-    .card {
-      display: block;
-      border: 1px solid #d0d7de;
-      border-radius: 8px;
-      padding: 1.1rem 1.2rem;
-      text-decoration: none;
-      color: inherit;
-      transition: border-color .15s, box-shadow .15s;
-    }
-    .card:hover { border-color: #0366d6; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-    .card-title { font-weight: 600; color: #0366d6; margin-bottom: 0.3rem; }
-    .card-sub { font-size: 0.85rem; color: #6e7781; }
-    .gh-link { color: #0366d6; text-decoration: none; }
-    .gh-link:hover { text-decoration: underline; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>liburlparser Documentation</title>
+    <link rel="icon" href="@FAVICON@" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" id="hljs-theme-dark" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <link rel="stylesheet" id="hljs-theme-light" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css" disabled>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/cmake.min.js"></script>
+    <link rel="stylesheet" href="urlparser-docs.css">
 </head>
 <body>
-  <h1>liburlparser</h1>
-  <p class="version">v@PROJECT_VERSION@ &nbsp;·&nbsp; <a class="gh-link" href="https://github.com/MohammadRaziei/liburlparser">GitHub Repository</a></p>
 
-  <div class="cards">
-    <a class="card" href="cpp/html/index.html">
-      <div class="card-title">C++ API Reference</div>
-      <div class="card-sub">Doxygen</div>
+<!-- Topbar -->
+<header class="topbar">
+    <a class="topbar-brand" href="#">
+        <div class="topbar-logo">@LOGO_CONTENT@</div>
+        <span class="topbar-name">liburlparser</span>
+        <span class="topbar-sep"></span>
+        <span class="topbar-subtitle">Documentation</span>
     </a>
-    <a class="card" href="python/html/index.html">
-      <div class="card-title">Python API Reference</div>
-      <div class="card-sub">Sphinx</div>
-    </a>
-    <a class="card" href="cli/index.html">
-      <div class="card-title">CLI Reference</div>
-      <div class="card-sub">Command line usage</div>
-    </a>
-  </div>
+    <div class="topbar-actions">
+        <span class="topbar-version">v@PROJECT_VERSION@</span>
+        <a class="topbar-gh" href="https://github.com/mohammadraziei/liburlparser" target="_blank">
+            <i class="fa-brands fa-github"></i> GitHub
+        </a>
+        <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+            <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"/></svg>
+            <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"/></svg>
+        </button>
+    </div>
+</header>
+
+<!-- Hero -->
+<div class="hero">
+    <div class="hero-eyebrow">
+        <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M6 4v4M4 6h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        C++ · Python · CLI
+    </div>
+    <h1>liburlparser Documentation</h1>
+    <p class="hero-desc">
+        A high-performance, RFC 3986-compliant URL parsing library written in C++, with a Python
+        extension and a command-line tool built on the same core. Extracts protocol, host, domain,
+        subdomain, suffix, path, query, and fragment — with accurate Public Suffix List based domain
+        extraction, and native IPv4/IPv6 host support.
+    </p>
+    <div class="hero-stats">
+        <div class="hero-stat">
+            <div class="hero-stat-num">C++17</div>
+            <div class="hero-stat-label">Core language</div>
+        </div>
+        <div class="hero-stat-div"></div>
+        <div class="hero-stat">
+            <div class="hero-stat-num">2</div>
+            <div class="hero-stat-label">Language bindings</div>
+        </div>
+        <div class="hero-stat-div"></div>
+        <div class="hero-stat">
+            <div class="hero-stat-num">MIT</div>
+            <div class="hero-stat-label">License</div>
+        </div>
+        <div class="hero-stat-div"></div>
+        <div class="hero-stat">
+            <div class="hero-stat-num">3.19+</div>
+            <div class="hero-stat-label">CMake required</div>
+        </div>
+    </div>
+</div>
+
+<div class="wrap">
+
+<!-- API References -->
+<div class="section">
+    <div class="section-header">
+        <div class="section-label">API References</div>
+        <div class="section-title">Language Documentation</div>
+        <div class="section-desc">Full API reference for each language binding, generated from source.</div>
+    </div>
+    <div class="tabbed-panel" id="docs-panel">
+        <div class="tab-bar" id="docs-tabs">
+            <button class="tab-btn active" data-tab="docs-cli" onclick="switchTab('docs','cli')">
+                <i class="fa-solid fa-terminal"></i> CLI
+            </button>
+            <button class="tab-btn" data-tab="docs-cpp" onclick="switchTab('docs','cpp')">
+                <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> C++
+            </button>
+            <button class="tab-btn" data-tab="docs-python" onclick="switchTab('docs','python')">
+                <i class="fa-brands fa-python"></i> Python
+            </button>
+        </div>
+
+        <div class="tab-content" id="docs-cpp">
+            <div class="doc-card-inner">
+                <div class="doc-card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                </div>
+                <div class="doc-card-body">
+                    <div class="doc-card-title">C++ API <span class="card-badge">C++17</span></div>
+                    <p class="doc-card-desc">Core library. Covers <code>urlparser::url</code> and <code>urlparser::host</code> (with <code>hostname</code>, <code>ipv4</code>, and <code>ipv6</code> host variants), the lazily-loaded <code>urlparser::psl</code> Public Suffix List, and every accessor for protocol, userinfo, path, query, and fragment.</p>
+                    <div class="doc-card-meta"><span class="doc-meta-item"><i class="fa-solid fa-book"></i> Generated with Doxygen</span></div>
+                    <a href="cpp/html/index.html" class="doc-card-btn">Open C++ Reference <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="docs-python">
+            <div class="doc-card-inner">
+                <div class="doc-card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                </div>
+                <div class="doc-card-body">
+                    <div class="doc-card-title">Python API <span class="card-badge">Python 3.10+</span></div>
+                    <p class="doc-card-desc">nanobind-based extension module exposing <code>Url</code>, <code>Host</code>, <code>Hostname</code>, <code>IPv4</code>, and <code>IPv6</code> with the same interface as the C++ core, plus the <code>liburlparser.utils</code> helpers. Ships pre-built wheels for Linux, macOS, and Windows.</p>
+                    <div class="doc-card-meta"><span class="doc-meta-item"><i class="fa-solid fa-book"></i> Generated with Sphinx</span></div>
+                    <a href="python/html/index.html" class="doc-card-btn">Open Python Reference <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content active" id="docs-cli">
+            <div class="doc-card-inner">
+                <div class="doc-card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                </div>
+                <div class="doc-card-body">
+                    <div class="doc-card-title">CLI Reference <span class="card-badge">v@PROJECT_VERSION@</span></div>
+                    <p class="doc-card-desc">Command-line tool for parsing a URL or a bare host straight from the terminal via <code>python -m liburlparser</code>. Covers <code>--url</code>, <code>--host</code>, field selection with <code>--parts</code>, and JSON output.</p>
+                    <div class="doc-card-meta"><span class="doc-meta-item"><i class="fa-solid fa-file-lines"></i> Written in Markdown</span></div>
+                    <a href="cli/index.html" class="doc-card-btn">Open CLI Reference <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Installation -->
+<div class="section">
+    <div class="section-header">
+        <div class="section-label">Get Started</div>
+        <div class="section-title">Installation</div>
+        <div class="section-desc">Add liburlparser to your project in seconds.</div>
+    </div>
+    <div class="tabbed-panel" id="install-panel">
+        <div class="tab-bar" id="install-tabs">
+            <button class="tab-btn active" data-tab="install-cli" onclick="switchTab('install','cli')">
+                <i class="fa-solid fa-terminal"></i> CLI
+            </button>
+            <button class="tab-btn" data-tab="install-cpp" onclick="switchTab('install','cpp')">
+                <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> C++
+            </button>
+            <button class="tab-btn" data-tab="install-python" onclick="switchTab('install','python')">
+                <i class="fa-brands fa-python"></i> Python
+            </button>
+        </div>
+
+        <div class="tab-content" id="install-python">
+            <div class="code-wrap">
+                <div class="code-label">
+                    <div class="code-lang-row"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-lang">bash</span></div>
+                    <button class="copy-btn" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i> copy</button>
+                </div>
+                <pre><code class="language-bash">pip install liburlparser</code></pre>
+            </div>
+            <div class="install-note">
+                Requires Python 3.10+. Ships a pre-built native extension for Linux, macOS, and Windows — no compiler needed.
+            </div>
+        </div>
+
+        <div class="tab-content" id="install-cpp">
+            <div class="code-wrap">
+                <div class="code-label">
+                    <div class="code-lang-row"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-lang">CMake — FetchContent</span></div>
+                    <button class="copy-btn" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i> copy</button>
+                </div>
+                <pre><code class="language-cmake"># CMakeLists.txt
+include(FetchContent)
+FetchContent_Declare(
+  liburlparser
+  GIT_REPOSITORY https://github.com/mohammadraziei/liburlparser.git
+  GIT_TAG        master
+)
+FetchContent_MakeAvailable(liburlparser)
+
+target_link_libraries(my_app PRIVATE url::base)</code></pre>
+            </div>
+            <div class="install-note">
+                Requires CMake 3.19+ and a C++17-compatible compiler. Link against <code>url::base</code> and include <code>urlparser.h</code>.
+            </div>
+        </div>
+
+        <div class="tab-content active" id="install-cli">
+            <div class="section-label" style="margin-bottom:1rem">Option 1 — pip <span style="font-size:0.75rem;color:var(--fg2);text-transform:none;letter-spacing:0">(recommended)</span></div>
+            <div class="code-wrap">
+                <div class="code-label">
+                    <div class="code-lang-row"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-lang">bash</span></div>
+                    <button class="copy-btn" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i> copy</button>
+                </div>
+                <pre><code class="language-bash">pip install liburlparser</code></pre>
+            </div>
+            <div class="install-note" style="margin-bottom:1.5rem">
+                The Python package ships a pre-built native extension — no compiler or CMake needed. After install, the CLI is available as <code>python -m liburlparser</code>.
+            </div>
+
+            <div class="section-label" style="margin-bottom:1rem">Option 2 — build with CMake</div>
+            <div class="code-wrap">
+                <div class="code-label">
+                    <div class="code-lang-row"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-lang">bash</span></div>
+                    <button class="copy-btn" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i> copy</button>
+                </div>
+                <pre><code class="language-bash">git clone https://github.com/mohammadraziei/liburlparser.git
+cd liburlparser
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON=ON
+cmake --build build -j$(nproc)</code></pre>
+            </div>
+            <div class="install-note">
+                Requires CMake 3.19+, a C++17-compatible compiler, and Python 3.10+. Useful for a custom build configuration or a platform without a pre-built wheel.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Examples -->
+<div class="section">
+    <div class="section-header">
+        <div class="section-label">Usage</div>
+        <div class="section-title">Quick Examples</div>
+        <div class="section-desc">Parse a URL or host and pull out its parts in a few lines of code.</div>
+    </div>
+    <div class="tabbed-panel" id="example-panel">
+        <div class="tab-bar" id="example-tabs">
+            <button class="tab-btn active" data-tab="example-cli" onclick="switchTab('example','cli')">
+                <i class="fa-solid fa-terminal"></i> CLI
+            </button>
+            <button class="tab-btn" data-tab="example-cpp" onclick="switchTab('example','cpp')">
+                <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> C++
+            </button>
+            <button class="tab-btn" data-tab="example-python" onclick="switchTab('example','python')">
+                <i class="fa-brands fa-python"></i> Python
+            </button>
+        </div>
+
+        <div class="tab-content" id="example-python">
+            <div class="code-wrap">
+                <div class="code-label">
+                    <div class="code-lang-row"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-lang">python</span></div>
+                    <button class="copy-btn" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i> copy</button>
+                </div>
+                <pre><code class="language-python">from liburlparser import Url, Host
+
+# Parse a URL
+url = Url("https://mail.google.com/about")
+print(url.domain)    # google
+print(url.suffix)    # com
+print(url.protocol)  # https
+
+# Parse a bare host
+host = Host("mail.google.com")
+print(host.subdomain)  # mail
+print(host.domain)     # google
+print(host.suffix)     # com
+
+# IPv4 / IPv6 hosts are classified automatically too
+ip_host = Host("192.168.1.1")</code></pre>
+            </div>
+        </div>
+
+        <div class="tab-content" id="example-cpp">
+            <div class="code-wrap">
+                <div class="code-label">
+                    <div class="code-lang-row"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-lang">c++</span></div>
+                    <button class="copy-btn" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i> copy</button>
+                </div>
+                <pre><code class="language-cpp">#include &lt;iostream&gt;
+#include "urlparser.h"
+
+int main() {
+    // Parse a URL
+    urlparser::url url("https://www.example.com/path?param=value#section");
+
+    std::cout &lt;&lt; "Protocol: " &lt;&lt; url.protocol()  &lt;&lt; "\n";
+    std::cout &lt;&lt; "Domain: "   &lt;&lt; url.domain()    &lt;&lt; "\n";
+    std::cout &lt;&lt; "Suffix: "   &lt;&lt; url.suffix()    &lt;&lt; "\n";
+    std::cout &lt;&lt; "Path: "     &lt;&lt; url.abspath()   &lt;&lt; "\n";
+    std::cout &lt;&lt; "Query: "    &lt;&lt; url.query()     &lt;&lt; "\n";
+    std::cout &lt;&lt; "Fragment: " &lt;&lt; url.fragment()  &lt;&lt; "\n";
+
+    // Access query parameters
+    for (const auto&amp; param : url.params()) {
+        std::cout &lt;&lt; param.first &lt;&lt; " = " &lt;&lt; param.second &lt;&lt; "\n";
+    }
+
+    // Get the host object directly
+    urlparser::host host = url.host();
+    std::cout &lt;&lt; "Full domain: " &lt;&lt; host.full_domain() &lt;&lt; "\n";
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="tab-content active" id="example-cli">
+            <div class="code-wrap">
+                <div class="code-label">
+                    <div class="code-lang-row"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-lang">bash</span></div>
+                    <button class="copy-btn" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i> copy</button>
+                </div>
+                <pre><code class="language-bash"># Parse a full URL, print it as JSON
+python -m liburlparser --url "https://www.example.com/about?x=1"
+
+# Classify a bare host (domain, IPv4, or IPv6 - picked automatically)
+python -m liburlparser --host "192.168.1.1"
+
+# Pull out just the parts you want
+python -m liburlparser --url "https://www.example.com/about" --parts domain suffix
+
+# Version / docstring
+python -m liburlparser --version
+python -m liburlparser --doc</code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-brand">
+                <div class="footer-logo">@LOGO_CONTENT@</div>
+                <span class="footer-name">liburlparser</span>
+            </div>
+            <div class="footer-tagline">
+                A fast, RFC 3986-compliant URL parsing library,
+                with native bindings for C++ and Python.
+            </div>
+            <div class="footer-copy">
+                &copy; 2025 <a href="https://github.com/mohammadraziei">Mohammad Raziei</a>
+                &nbsp;·&nbsp; <a href="https://github.com/mohammadraziei/liburlparser/blob/main/LICENSE">MIT License</a>
+                &nbsp;·&nbsp; v@PROJECT_VERSION@
+            </div>
+        </div>
+
+        <div>
+            <div class="footer-links-title">Resources</div>
+            <div class="footer-links">
+                <a class="footer-link" href="https://github.com/mohammadraziei/liburlparser" target="_blank">
+                    <i class="fa-brands fa-github"></i> Source code
+                </a>
+                <a class="footer-link" href="cpp/html/index.html">
+                    <i class="fa-solid fa-book"></i> C++ reference
+                </a>
+                <a class="footer-link" href="python/html/index.html">
+                    <i class="fa-brands fa-python"></i> Python reference
+                </a>
+                <a class="footer-link" href="cli/index.html">
+                    <i class="fa-solid fa-terminal"></i> CLI reference
+                </a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script>
+    // ── State ────────────────────────────────────────────────
+    // Single source of truth — like React state but vanilla JS.
+    // All panels (docs, install, example) are always in sync.
+    const PANELS = ['docs', 'install', 'example'];
+    const STORAGE_KEY = 'urlparser-docs';
+
+    const state = {
+        theme: 'dark',
+        lang:  'cli',
+    };
+
+    function setState(patch) {
+        Object.assign(state, patch);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        render();
+    }
+
+    function render() {
+        // Theme
+        document.documentElement.setAttribute('data-theme', state.theme);
+        document.getElementById('hljs-theme-dark').disabled  = (state.theme !== 'dark');
+        document.getElementById('hljs-theme-light').disabled = (state.theme !== 'light');
+
+        // Tabs — sync all panels to state.lang, fallback to first tab if lang absent
+        PANELS.forEach(panel => {
+            const btns  = document.querySelectorAll('#' + panel + '-tabs .tab-btn');
+            const panes = document.querySelectorAll('#' + panel + '-panel .tab-content');
+
+            // Check if this panel actually has the requested lang
+            const targetPane = document.getElementById(panel + '-' + state.lang);
+            const effectiveLang = targetPane ? state.lang : (btns[0] ? btns[0].dataset.tab.replace(panel + '-', '') : null);
+            if (!effectiveLang) return;
+
+            btns.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === panel + '-' + effectiveLang);
+            });
+            panes.forEach(pane => {
+                pane.classList.toggle('active', pane.id === panel + '-' + effectiveLang);
+            });
+        });
+    }
+
+    // ── Init ─────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        // Restore persisted state
+        try {
+            const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+            if (saved.theme) state.theme = saved.theme;
+            if (saved.lang)  state.lang  = saved.lang;
+        } catch (e) {}
+
+        render();
+
+        hljs.configure({ ignoreUnescapedHTML: true });
+        hljs.highlightAll();
+    });
+
+    // ── Public API ───────────────────────────────────────────
+    function switchTab(panel, lang) {
+        // panel arg is ignored — all panels always sync to the same lang
+        setState({ lang });
+    }
+
+    function toggleTheme() {
+        setState({ theme: state.theme === 'dark' ? 'light' : 'dark' });
+    }
+
+    // ── Copy button ──────────────────────────────────────────
+    function copyCode(btn) {
+        const code = btn.closest('.code-wrap').querySelector('pre code') ||
+                     btn.closest('.code-wrap').querySelector('pre');
+        navigator.clipboard.writeText(code.innerText).then(() => {
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> copied!';
+            btn.classList.add('copied');
+            setTimeout(() => { btn.innerHTML = '<i class="fa-regular fa-copy"></i> copy'; btn.classList.remove('copied'); }, 1800);
+        });
+    }
+</script>
 </body>
 </html>

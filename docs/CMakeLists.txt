@@ -105,10 +105,22 @@ endif()
 
 set(URLPARSER_INDEX_OUT ${URLPARSER_DOCS_OUT}/index.html)
 
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/index.html.in
-    ${URLPARSER_INDEX_OUT}
-    @ONLY
+add_custom_command(
+    OUTPUT ${URLPARSER_INDEX_OUT}
+    COMMAND ${CMAKE_COMMAND}
+        -DOUTPUT_DIR=${URLPARSER_DOCS_OUT}
+        -DINDEX_IN=${CMAKE_CURRENT_SOURCE_DIR}/index.html.in
+        -DCSS_FILE=${CMAKE_CURRENT_SOURCE_DIR}/urlparser-docs.css
+        -DPROJECT_VERSION=${PROJECT_VERSION}
+        -DLOGO_SQ=${PROJECT_SOURCE_DIR}/docs/images/logo/liburlparser-logo-2.svg
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/CreateDocs.cmake
+    DEPENDS
+        ${CMAKE_CURRENT_SOURCE_DIR}/CreateDocs.cmake
+        ${CMAKE_CURRENT_SOURCE_DIR}/index.html.in
+        ${CMAKE_CURRENT_SOURCE_DIR}/urlparser-docs.css
+        ${PROJECT_SOURCE_DIR}/docs/images/logo/liburlparser-logo-2.svg
+    COMMENT "Creating documentation route index"
+    VERBATIM
 )
 
 add_custom_target(urlparser_docs_index DEPENDS ${URLPARSER_INDEX_OUT})
@@ -135,11 +147,11 @@ urlparser_add_section(
         "cli/examples.md:Examples"
 )
 
-# The section pages reference "../urlparser-sq.svg" as their favicon
-# (see convert_page.py); copy the logo there so it resolves once served.
-file(MAKE_DIRECTORY ${URLPARSER_DOCS_OUT})
-file(COPY_FILE ${LOGO_SQ} ${URLPARSER_DOCS_OUT}/urlparser-sq.svg)
-file(COPY_FILE ${CMAKE_CURRENT_SOURCE_DIR}/urlparser-docs.css ${URLPARSER_DOCS_OUT}/urlparser-docs.css)
+# The section pages reference "../urlparser-sq.svg" and "../urlparser-docs.css"
+# as their favicon/stylesheet (see convert_page.py); urlparser_docs_index
+# (via CreateDocs.cmake) copies both into URLPARSER_DOCS_OUT, so make sure
+# it runs before the CLI section is considered built.
+add_dependencies(urlparser_docs_section_cli urlparser_docs_index)
 
 
 # ── Master target ─────────────────────────────────────────────
