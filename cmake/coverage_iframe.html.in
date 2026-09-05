@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<!--
+██╗   ██╗██████╗ ██╗
+██║   ██║██╔══██╗██║
+██║   ██║██████╔╝██║
+██║   ██║██╔══██╗██║
+╚██████╔╝██║  ██║███████╗
+ ╚═════╝ ╚═╝  ╚═╝╚══════╝
+
+  UrlParser — fast RFC 3986 URL parser
+  with native bindings for C++ and Python.
+
+  Author  : Mohammad Raziei
+  Email   : mohammadraziei1375@gmail.com
+  GitHub  : https://github.com/mohammadraziei/liburlparser
+  License : MIT
+
+  Generated automatically by the liburlparser build system.
+  Do not edit manually.
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" href="../../urlparser-sq.svg" type="image/svg+xml">
+    <title>@PROJECT_NAME@ — @SECTION_TITLE@ Coverage</title>
+    <style>
+        :root {
+            --bg-body:      #0f0f12;
+            --bg-sidebar:   #1a1a1f;
+            --text-main:    #e8e8f0;
+            --text-muted:   #9090a0;
+            --border-color: #2a2a35;
+            --accent-primary: #4dabf7;
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+
+        html, body {
+            height: 100%;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: var(--font-main);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Navbar --- */
+        .navbar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0 2rem;
+            height: 60px;
+            background-color: var(--bg-sidebar);
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .navbar-logo {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+
+        .navbar-logo > * {
+            width: 100%;
+            height: auto;
+        }
+
+        .navbar-logo svg path,
+        .navbar-logo svg polygon,
+        .navbar-logo svg rect,
+        .navbar-logo svg circle,
+        .navbar-logo svg g {
+            fill: var(--accent-primary) !important;
+            stroke: var(--accent-primary) !important;
+        }
+
+        .navbar-brand {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.01em;
+            text-decoration: none;
+        }
+
+        .navbar-brand:hover {
+            color: var(--accent-primary);
+        }
+
+        .navbar-breadcrumb {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-left: 0.5rem;
+            padding-left: 0.75rem;
+            border-left: 1px solid var(--border-color);
+        }
+
+        .navbar-breadcrumb a {
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        .navbar-breadcrumb a:hover {
+            color: var(--accent-primary);
+        }
+
+        .navbar-breadcrumb .sep {
+            margin: 0 0.35rem;
+            opacity: 0.5;
+        }
+
+        /* --- Iframe --- */
+        .iframe-wrap {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .iframe-wrap iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-logo">
+            @LOGO_CONTENT@
+        </div>
+        <a class="navbar-brand" href="../../index.html">@PROJECT_NAME@</a>
+        <span class="navbar-breadcrumb">
+            <a href="../index.html">Coverage Dashboard</a>
+            <span class="sep">&rsaquo;</span>
+            @SECTION_TITLE@
+        </span>
+    </nav>
+
+    <div class="iframe-wrap">
+        <iframe src="@IFRAME_SRC@" title="@SECTION_TITLE@ Coverage Report" loading="lazy"></iframe>
+    </div>
+</body>
+</html>

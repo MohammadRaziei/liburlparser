@@ -363,6 +363,10 @@ python -m liburlparser --doc</code></pre>
                 <a class="footer-link" href="cli/index.html">
                     <i class="fa-solid fa-terminal"></i> CLI reference
                 </a>
+                <a class="footer-link" href="coverage/index.html">
+                    <i class="fa-solid fa-chart-pie"></i> Coverage report
+                    <span class="footer-link-badge">dev</span>
+                </a>
             </div>
         </div>
     </div>

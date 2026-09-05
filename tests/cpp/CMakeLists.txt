@@ -81,6 +81,15 @@ if(LCOV_EXECUTABLE AND GENHTML_EXECUTABLE)
                 --list
                 ${URLPARSER_COVERAGE_CPP_BINARY_DIR}/coverage.lcov
 
+        # Wrap the raw genhtml report in a themed iframe page at cpp/index.html
+        COMMAND ${CMAKE_COMMAND}
+                -DIFRAME_SRC=html/index.html
+                -DSECTION_TITLE=C++%20Coverage
+                -DLOGO_SVG=${PROJECT_SOURCE_DIR}/docs/images/logo/liburlparser-logo-1.svg
+                -DPROJECT_NAME=liburlparser
+                -DOUTPUT_DIR=${URLPARSER_COVERAGE_CPP_BINARY_DIR}
+                -P ${PROJECT_SOURCE_DIR}/cmake/GenerateIframe.cmake
+
         WORKING_DIRECTORY ${URLPARSER_TEST_BINARY_DIR}
         USES_TERMINAL
     )

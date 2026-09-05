@@ -101,6 +101,15 @@ if(BUILD_PYTHON)
             COMMAND ${CMAKE_COMMAND} -E echo "-- Coverage summary:"
             COMMAND ${Python3_EXECUTABLE} -m coverage report
 
+            # Wrap the raw coverage.py report in a themed iframe page at python/index.html
+            COMMAND ${CMAKE_COMMAND}
+                    -DIFRAME_SRC=html/index.html
+                    -DSECTION_TITLE=Python%20Coverage
+                    -DLOGO_SVG=${PROJECT_SOURCE_DIR}/docs/images/logo/liburlparser-logo-1.svg
+                    -DPROJECT_NAME=liburlparser
+                    -DOUTPUT_DIR=${URLPARSER_COVERAGE_PYTHON_BINARY_DIR}
+                    -P ${PROJECT_SOURCE_DIR}/cmake/GenerateIframe.cmake
+
             WORKING_DIRECTORY ${URLPARSER_PYTHON_INSTALL_DIR}
             USES_TERMINAL
         )
