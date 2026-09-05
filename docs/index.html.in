@@ -21,7 +21,6 @@
 <header class="topbar">
     <a class="topbar-brand" href="#">
         <div class="topbar-logo">@LOGO_CONTENT@</div>
-        <span class="topbar-name">liburlparser</span>
         <span class="topbar-sep"></span>
         <span class="topbar-subtitle">Documentation</span>
     </a>
@@ -337,7 +336,6 @@ python -m liburlparser --doc</code></pre>
         <div>
             <div class="footer-brand">
                 <div class="footer-logo">@LOGO_CONTENT@</div>
-                <span class="footer-name">liburlparser</span>
             </div>
             <div class="footer-tagline">
                 A fast, RFC 3986-compliant URL parsing library,

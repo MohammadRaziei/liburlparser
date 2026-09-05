@@ -72,8 +72,8 @@ body {
     -webkit-backdrop-filter: blur(12px);
 }
 .topbar-brand { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; color: var(--fg); }
-.topbar-logo { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
-.topbar-logo svg { width: 100%; height: 100%; }
+.topbar-logo { height: 30px; display: flex; align-items: center; background: #fff; border-radius: 6px; padding: 3px 6px; }
+.topbar-logo svg { height: 100%; width: auto; display: block; }
 .topbar-name { font-weight: 700; font-size: 1rem; letter-spacing: -0.02em; }
 .topbar-sep { width: 1px; height: 18px; background: var(--border2); margin: 0 0.25rem; }
 .topbar-subtitle { font-size: 0.8rem; color: var(--fg2); font-weight: 400; }
@@ -329,8 +329,8 @@ pre code.hljs { display: block; overflow-x: auto; background: transparent !impor
     gap: 2rem; align-items: start;
 }
 .footer-brand { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; }
-.footer-logo { width: 28px; height: 28px; }
-.footer-logo svg { width: 100%; height: 100%; }
+.footer-logo { height: 24px; background: #fff; border-radius: 5px; padding: 2px 5px; }
+.footer-logo svg { height: 100%; width: auto; display: block; }
 .footer-name { font-weight: 700; font-size: 0.95rem; }
 .footer-tagline { font-size: 0.82rem; color: var(--fg2); line-height: 1.5; max-width: 340px; }
 .footer-copy { font-size: 0.75rem; color: var(--fg3); margin-top: 1rem; }

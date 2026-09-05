@@ -112,13 +112,13 @@ add_custom_command(
         -DINDEX_IN=${CMAKE_CURRENT_SOURCE_DIR}/index.html.in
         -DCSS_FILE=${CMAKE_CURRENT_SOURCE_DIR}/urlparser-docs.css
         -DPROJECT_VERSION=${PROJECT_VERSION}
-        -DLOGO_SQ=${PROJECT_SOURCE_DIR}/docs/images/logo/liburlparser-logo-2.svg
+        -DLOGO_SQ=${PROJECT_SOURCE_DIR}/docs/images/logo/liburlparser-logo-1.svg
         -P ${CMAKE_CURRENT_SOURCE_DIR}/CreateDocs.cmake
     DEPENDS
         ${CMAKE_CURRENT_SOURCE_DIR}/CreateDocs.cmake
         ${CMAKE_CURRENT_SOURCE_DIR}/index.html.in
         ${CMAKE_CURRENT_SOURCE_DIR}/urlparser-docs.css
-        ${PROJECT_SOURCE_DIR}/docs/images/logo/liburlparser-logo-2.svg
+        ${PROJECT_SOURCE_DIR}/docs/images/logo/liburlparser-logo-1.svg
     COMMENT "Creating documentation route index"
     VERBATIM
 )
@@ -133,7 +133,7 @@ add_custom_target(urlparser_docs_index DEPENDS ${URLPARSER_INDEX_OUT})
 # plain Markdown file.
 
 set(URLPARSER_DOCS_SRC ${CMAKE_CURRENT_SOURCE_DIR})
-set(LOGO_SQ ${PROJECT_SOURCE_DIR}/docs/images/logo/liburlparser-logo-2.svg)
+set(LOGO_SQ ${PROJECT_SOURCE_DIR}/docs/images/logo/liburlparser-logo-1.svg)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/UrlParserPages.cmake)
 
