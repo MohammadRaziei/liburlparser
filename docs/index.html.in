@@ -258,18 +258,23 @@ cmake --build build -j$(nproc)</code></pre>
 
 # Parse a URL
 url = Url("https://mail.google.com/about")
-print(url.domain)    # google
-print(url.suffix)    # com
-print(url.protocol)  # https
+print(url.protocol)             # https
 
-# Parse a bare host
+# The host is classified as a Hostname, IPv4, or IPv6
+hostname = url.host.get_hostname()
+print(hostname.domain)          # google
+print(hostname.suffix)          # com
+
+# Parse a bare host the same way
 host = Host("mail.google.com")
-print(host.subdomain)  # mail
-print(host.domain)     # google
-print(host.suffix)     # com
+hostname = host.get_hostname()
+print(hostname.subdomain)       # mail
+print(hostname.domain)          # google
+print(hostname.suffix)          # com
 
 # IPv4 / IPv6 hosts are classified automatically too
-ip_host = Host("192.168.1.1")</code></pre>
+ip_host = Host("192.168.1.1")
+print(ip_host.is_ipv4())        # True</code></pre>
             </div>
         </div>
 
@@ -287,20 +292,20 @@ int main() {
     urlparser::url url("https://www.example.com/path?param=value#section");
 
     std::cout &lt;&lt; "Protocol: " &lt;&lt; url.protocol()  &lt;&lt; "\n";
-    std::cout &lt;&lt; "Domain: "   &lt;&lt; url.domain()    &lt;&lt; "\n";
-    std::cout &lt;&lt; "Suffix: "   &lt;&lt; url.suffix()    &lt;&lt; "\n";
     std::cout &lt;&lt; "Path: "     &lt;&lt; url.abspath()   &lt;&lt; "\n";
     std::cout &lt;&lt; "Query: "    &lt;&lt; url.query()     &lt;&lt; "\n";
     std::cout &lt;&lt; "Fragment: " &lt;&lt; url.fragment()  &lt;&lt; "\n";
 
-    // Access query parameters
+    // Query parameters come back as raw "key=value" strings, split on '&'
     for (const auto&amp; param : url.params()) {
-        std::cout &lt;&lt; param.first &lt;&lt; " = " &lt;&lt; param.second &lt;&lt; "\n";
+        std::cout &lt;&lt; "Param: " &lt;&lt; param &lt;&lt; "\n";
     }
 
-    // Get the host object directly
-    urlparser::host host = url.host();
-    std::cout &lt;&lt; "Full domain: " &lt;&lt; host.full_domain() &lt;&lt; "\n";
+    // The host is classified as a hostname, ipv4, or ipv6
+    if (const auto* h = url.host().try_hostname()) {
+        std::cout &lt;&lt; "Domain: " &lt;&lt; h->domain() &lt;&lt; "\n";
+        std::cout &lt;&lt; "Suffix: " &lt;&lt; h->suffix() &lt;&lt; "\n";
+    }
 }</code></pre>
             </div>
         </div>
