@@ -28,6 +28,9 @@ classifiers = [
 [project.optional-dependencies]
 test = ["pytest-xdist"]
 
+[project.scripts]
+liburlparser = "liburlparser.__main__:cli"
+
 [project.urls]
 "Homepage" = "https://github.com/mohammadraziei/liburlparser"
 "Bug Tracker" = "https://github.com/mohammadraziei/liburlparser/issues"

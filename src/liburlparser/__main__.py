@@ -34,7 +34,7 @@ def main(args):
         sys.stdout.write(__doc__)
 
 
-if __name__ == '__main__':
+def cli():
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", type=str, default=None,
                         help="enter entire url (for example: \"https://google.com/about\")")
@@ -45,3 +45,7 @@ if __name__ == '__main__':
     parser.add_argument('--doc', action='store_true', help="showing version of module")
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
     main(args)
+
+
+if __name__ == '__main__':
+    cli()

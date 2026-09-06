@@ -129,7 +129,7 @@
                 </div>
                 <div class="doc-card-body">
                     <div class="doc-card-title">CLI Reference <span class="card-badge">v@PROJECT_VERSION@</span></div>
-                    <p class="doc-card-desc">Command-line tool for parsing a URL or a bare host straight from the terminal via <code>python -m liburlparser</code>. Covers <code>--url</code>, <code>--host</code>, field selection with <code>--parts</code>, and JSON output.</p>
+                    <p class="doc-card-desc">Command-line tool for parsing a URL or a bare host straight from the terminal via the <code>liburlparser</code> command. Covers <code>--url</code>, <code>--host</code>, field selection with <code>--parts</code>, and JSON output.</p>
                     <div class="doc-card-meta"><span class="doc-meta-item"><i class="fa-solid fa-file-lines"></i> Written in Markdown</span></div>
                     <a href="cli/index.html" class="doc-card-btn">Open CLI Reference <i class="fa-solid fa-arrow-right"></i></a>
                 </div>
@@ -205,7 +205,7 @@ target_link_libraries(my_app PRIVATE url::base)</code></pre>
                 <pre><code class="language-bash">pip install liburlparser</code></pre>
             </div>
             <div class="install-note" style="margin-bottom:1.5rem">
-                The Python package ships a pre-built native extension — no compiler or CMake needed. After install, the CLI is available as <code>python -m liburlparser</code>.
+                The Python package ships a pre-built native extension — no compiler or CMake needed. After install, the CLI is available as the <code>liburlparser</code> command.
             </div>
 
             <div class="section-label" style="margin-bottom:1rem">Option 2 — build with CMake</div>
@@ -317,17 +317,17 @@ int main() {
                     <button class="copy-btn" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i> copy</button>
                 </div>
                 <pre><code class="language-bash"># Parse a full URL, print it as JSON
-python -m liburlparser --url "https://www.example.com/about?x=1"
+liburlparser --url "https://www.example.com/about?x=1"
 
 # Classify a bare host (domain, IPv4, or IPv6 - picked automatically)
-python -m liburlparser --host "192.168.1.1"
+liburlparser --host "192.168.1.1"
 
 # Pull out just the parts you want
-python -m liburlparser --url "https://www.example.com/about" --parts domain suffix
+liburlparser --url "https://www.example.com/about" --parts domain suffix
 
 # Version / docstring
-python -m liburlparser --version
-python -m liburlparser --doc</code></pre>
+liburlparser --version
+liburlparser --doc</code></pre>
             </div>
         </div>
     </div>

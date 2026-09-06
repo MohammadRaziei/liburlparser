@@ -9,10 +9,10 @@ CMake needed.
 pip install liburlparser
 ```
 
-After install, the CLI is available as a Python module:
+After install, the CLI is available as the `liburlparser` command:
 
 ```bash
-python -m liburlparser --version
+liburlparser --version
 ```
 
 ## Option 2 — build with CMake

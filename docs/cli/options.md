@@ -20,7 +20,7 @@ With no `--parts`, output is the full parsed object as JSON
 printed, space-separated, on one line - handy for shell scripting:
 
 ```bash
-python -m liburlparser --url "https://www.example.com/about" --parts domain suffix
+liburlparser --url "https://www.example.com/about" --parts domain suffix
 ```
 
 If a requested part doesn't exist on the parsed object, the CLI exits
