@@ -1,0 +1,9 @@
+# Harness-only dependency. liburlparser and every competitor below are
+# installed directly from PyPI (or GitHub for liburlparser itself) by
+# CMakeLists.txt, not listed here — same treatment for every library
+# benchmarked, nothing local.
+tabulate>=0.9
+tldextract>=5.1
+PyDomainExtractor>=0.6
+tld>=0.13
+publicsuffix2>=2.20191221

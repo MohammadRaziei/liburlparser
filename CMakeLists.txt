@@ -195,11 +195,17 @@ install(TARGETS urlparser
 
 enable_testing()
 find_package(Threads REQUIRED)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
-
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/docs)
+# Only build tests/docs when liburlparser is the top-level project. When
+# it's pulled in as a dependency (e.g. FetchContent from benchmarks/ or a
+# consumer's own build), building its entire test suite and documentation
+# pipeline as a side effect is wasted work - and tests/docs assume they can
+# write into this source tree (public_suffix_list.dat, docs/out, coverage),
+# which isn't guaranteed when embedded read-only inside another build.
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/docs)
+endif()
 
 
 
