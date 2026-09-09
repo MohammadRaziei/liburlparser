@@ -26,6 +26,48 @@
 #include <sstream>
 #include <stdexcept>
 
+// ---------------------------------------------------------------------
+// SIMD scanning for find_first_of_3() below. Three tiers, each guarded
+// by what it actually needs to be safe to use:
+//
+//   AVX2   x86-64, NOT guaranteed present on every CPU (unlike the two
+//          below) - real chips still ship without it - so it needs an
+//          actual runtime check, done once and cached, before it's
+//          safe to call. That check itself, and how one function gets
+//          AVX2 code generation without forcing -mavx2 (and therefore
+//          an AVX2 requirement) on the rest of the binary, is done
+//          differently per compiler - see cpu_has_avx2() below.
+//   SSE2   x86-64's baseline ABI - literally every x86-64 CPU has it,
+//          no detection needed, just an architecture #if.
+//   NEON   aarch64's baseline ABI - same story as SSE2, just on ARM.
+//
+// Anything else (32-bit ARM without NEON, RISC-V, ...) falls back to
+// the plain scalar loop at the bottom of find_first_of_3().
+// ---------------------------------------------------------------------
+#if defined(__x86_64__) || defined(_M_X64)
+#define URLPARSER_HAS_SSE2 1
+#include <emmintrin.h>
+#if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+// GCC/Clang: __attribute__((target("avx2"))) below opts just that one
+// function into AVX2 code generation - MSVC has no equivalent
+// attribute, but MSVC also doesn't need one: it always compiles
+// <immintrin.h> AVX2 intrinsics available regardless of /arch:, it's
+// only GCC/Clang that refuse to without either -mavx2 or the target
+// attribute. So MSVC gets the exact same function, just compiled
+// straightforwardly.
+#define URLPARSER_HAS_AVX2_DISPATCH 1
+#include <immintrin.h>
+#endif
+#if defined(_MSC_VER)
+#include <intrin.h>  // __cpuid/__cpuidex/_xgetbv - MSVC's equivalent of
+                      // __builtin_cpu_supports(), see cpu_has_avx2().
+#endif
+#elif defined(__aarch64__) || defined(_M_ARM64) || defined(__ARM_NEON) || \
+    defined(__ARM_NEON__)
+#define URLPARSER_HAS_NEON 1
+#include <arm_neon.h>
+#endif
+
 #include "ankerl/unordered_dense.h"
 #include "public_suffix_list_dat.h"
 
@@ -36,6 +78,161 @@ namespace {
 // branchless ASCII-only version is both correct and several times faster.
 inline char ascii_tolower(char c) noexcept {
     return (c >= 'A' && c <= 'Z') ? static_cast<char>(c + ('a' - 'A')) : c;
+}
+
+#if defined(URLPARSER_HAS_SSE2) || defined(URLPARSER_HAS_AVX2_DISPATCH)
+// __builtin_ctz (count trailing zero bits, used to turn a SIMD
+// compare-mask into "which lane matched first") is a GCC/Clang builtin -
+// MSVC's equivalent is the _BitScanForward intrinsic. One place to
+// branch on compiler instead of repeating the #if at every call site.
+inline unsigned count_trailing_zeros(unsigned mask) noexcept {
+#if defined(__GNUC__) || defined(__clang__)
+    return static_cast<unsigned>(__builtin_ctz(mask));
+#elif defined(_MSC_VER)
+    unsigned long index;
+    _BitScanForward(&index, mask);
+    return index;
+#else
+    unsigned index = 0;
+    while ((mask & 1u) == 0) {
+        mask >>= 1;
+        ++index;
+    }
+    return index;
+#endif
+}
+#endif
+
+#if defined(URLPARSER_HAS_AVX2_DISPATCH)
+// Runtime AVX2 check, done once (function-local static, thread-safe
+// initialization per C++11) and cached - every call after the first is
+// just a bool read.
+//
+// GCC/Clang's __builtin_cpu_supports("avx2") already does this
+// correctly on its own: it doesn't just check that the CPU silicon has
+// AVX2, it also confirms (internally, via the same XGETBV mechanism
+// spelled out by hand below) that the operating system has enabled
+// AVX/YMM register state saving - a CPU can support AVX2 while an old
+// OS still leaves it disabled, and using AVX2 registers in that case
+// takes down the process. MSVC has no equivalent builtin, so the OSXSAVE
+// + XGETBV + CPUID-leaf-7 check is spelled out here by hand to get the
+// exact same guarantee.
+inline bool cpu_has_avx2() noexcept {
+    static const bool has = [] {
+#if defined(__GNUC__) || defined(__clang__)
+        return static_cast<bool>(__builtin_cpu_supports("avx2"));
+#elif defined(_MSC_VER)
+        int regs1[4] = {0, 0, 0, 0};
+        __cpuid(regs1, 1);
+        const bool osxsave = (regs1[2] & (1 << 27)) != 0;  // ECX bit 27
+        if (!osxsave) return false;
+        const unsigned long long xcr0 = _xgetbv(0);
+        const bool os_saves_ymm = (xcr0 & 0x6) == 0x6;  // XMM (bit1) + YMM (bit2)
+        if (!os_saves_ymm) return false;
+        int regs7[4] = {0, 0, 0, 0};
+        __cpuidex(regs7, 7, 0);
+        return (regs7[1] & (1 << 5)) != 0;  // EBX bit 5 = AVX2
+#else
+        return false;
+#endif
+    }();
+    return has;
+}
+
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((target("avx2")))
+#endif
+inline bool
+find_first_of_3_avx2(const char* data, size_t& i, size_t len, char c0, char c1,
+                      char c2) noexcept {
+    const __m256i v0 = _mm256_set1_epi8(c0);
+    const __m256i v1 = _mm256_set1_epi8(c1);
+    const __m256i v2 = _mm256_set1_epi8(c2);
+    for (; i + 32 <= len; i += 32) {
+        const __m256i chunk =
+            _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data + i));
+        __m256i eq = _mm256_cmpeq_epi8(chunk, v0);
+        eq = _mm256_or_si256(eq, _mm256_cmpeq_epi8(chunk, v1));
+        eq = _mm256_or_si256(eq, _mm256_cmpeq_epi8(chunk, v2));
+        const unsigned mask = static_cast<unsigned>(_mm256_movemask_epi8(eq));
+        if (mask != 0) {
+            i += count_trailing_zeros(mask);
+            return true;
+        }
+    }
+    return false;
+}
+#endif  // URLPARSER_HAS_AVX2_DISPATCH
+
+// Finds the first occurrence of any of up to 3 target chars in
+// [start, len). Pass the same char twice (or three times) to search for
+// fewer than 3 - duplicates cost nothing extra since they fold into the
+// same compare-and-OR chain. Returns `len` if none of them appear.
+//
+// Tries AVX2 (32 bytes/iteration) first when the running CPU actually
+// has it, then SSE2/NEON (16 bytes/iteration, always available on their
+// respective architectures) for whatever's left, then a plain
+// byte-at-a-time loop for the final under-one-vector tail.
+//
+// This is the same "vectorized scan for a small set of delimiter bytes"
+// idea ada-url uses for path/query/fragment scanning (see ada's
+// scan_path_run() and friends in src/parser.cpp) - just the simple
+// compare-and-mask version rather than their pshufb/tbl nibble-table
+// one. That fancier technique earns its keep when classifying dozens of
+// characters against multiple classes at once; here it's always exactly
+// 3 (or fewer) fixed bytes, so a plain SIMD compare is simpler to get
+// right and just as fast for this.
+inline size_t find_first_of_3(const char* data, size_t start, size_t len, char c0, char c1,
+                               char c2) noexcept {
+    size_t i = start;
+#if defined(URLPARSER_HAS_AVX2_DISPATCH)
+    if (cpu_has_avx2() && find_first_of_3_avx2(data, i, len, c0, c1, c2)) {
+        return i;
+    }
+#endif
+#if defined(URLPARSER_HAS_SSE2)
+    const __m128i v0 = _mm_set1_epi8(c0);
+    const __m128i v1 = _mm_set1_epi8(c1);
+    const __m128i v2 = _mm_set1_epi8(c2);
+    for (; i + 16 <= len; i += 16) {
+        const __m128i chunk =
+            _mm_loadu_si128(reinterpret_cast<const __m128i*>(data + i));
+        __m128i eq = _mm_cmpeq_epi8(chunk, v0);
+        eq = _mm_or_si128(eq, _mm_cmpeq_epi8(chunk, v1));
+        eq = _mm_or_si128(eq, _mm_cmpeq_epi8(chunk, v2));
+        const unsigned mask = static_cast<unsigned>(_mm_movemask_epi8(eq));
+        if (mask != 0) {
+            return i + count_trailing_zeros(mask);
+        }
+    }
+#elif defined(URLPARSER_HAS_NEON)
+    const uint8x16_t v0 = vdupq_n_u8(static_cast<uint8_t>(c0));
+    const uint8x16_t v1 = vdupq_n_u8(static_cast<uint8_t>(c1));
+    const uint8x16_t v2 = vdupq_n_u8(static_cast<uint8_t>(c2));
+    for (; i + 16 <= len; i += 16) {
+        const uint8x16_t chunk =
+            vld1q_u8(reinterpret_cast<const uint8_t*>(data + i));
+        uint8x16_t eq = vceqq_u8(chunk, v0);
+        eq = vorrq_u8(eq, vceqq_u8(chunk, v1));
+        eq = vorrq_u8(eq, vceqq_u8(chunk, v2));
+        // Narrow each lane's 0xFF/0x00 to one bit via a "pair max"
+        // reduction so we can test "was anything set" in one go, then
+        // fall back to a byte-by-byte scan of just this 16-byte chunk
+        // to find exactly which lane - NEON has no direct movemask
+        // equivalent, but this window is small (16 bytes) either way.
+        if (vmaxvq_u8(eq) != 0) {
+            for (size_t j = 0; j < 16; ++j) {
+                char c = data[i + j];
+                if (c == c0 || c == c1 || c == c2) return i + j;
+            }
+        }
+    }
+#endif
+    for (; i < len; ++i) {
+        char c = data[i];
+        if (c == c0 || c == c1 || c == c2) return i;
+    }
+    return len;
 }
 
 // scheme := ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )  (RFC 3986 §3.1)
@@ -232,27 +429,48 @@ urlparser::url::url(std::string_view url, const bool ignore_www)
         }
     }
 
-    // Single forward pass over the rest of the URL to locate the first '#'
-    // (fragment), the first '?' before it (query), and - only for schemes
-    // that use params - the first ';' before the query.
+    // Locate the first '#' (fragment), the first '?' before it (query),
+    // and - only for schemes that use params - the first ';' before the
+    // query. Same semantics as a single byte-by-byte forward pass would
+    // give: whichever of '#'/'?'/';' the scan reaches first determines
+    // what happens next, and each match narrows what we search for from
+    // there (a '?' means only '#' can still matter; ';' only counts
+    // before either '#' or '?' has been seen). We still do that in
+    // forward-only passes over shrinking suffixes of the string, just
+    // with each pass vectorized via find_first_of_3() instead of one
+    // std::string::npos-comparison per byte.
     const bool track_params = USES_PARAMS.find(field(scheme_)) != USES_PARAMS.end();
     size_t hash_pos = std::string::npos;
     size_t query_pos = std::string::npos;
     size_t params_pos = std::string::npos;
 
-    for (size_t i = position; i < url.length(); ++i) {
-        char c = url[i];
-        if (c == '#') {
-            hash_pos = i;
-            break;
-        }
-        if (query_pos == std::string::npos && c == '?') {
-            query_pos = i;
-        } else if (track_params && params_pos == std::string::npos &&
-                   query_pos == std::string::npos && c == ';') {
-            params_pos = i;
+    {
+        size_t i = position;
+        bool seen_query = false;
+        bool seen_params = false;
+        while (i < url.length()) {
+            const bool want_semicolon = track_params && !seen_query && !seen_params;
+            const size_t found = find_first_of_3(
+                url.data(), i, url.length(), '#', seen_query ? '#' : '?',
+                want_semicolon ? ';' : '#');
+            if (found == url.length()) break;
+
+            const char c = url[found];
+            if (c == '#') {
+                hash_pos = found;
+                break;
+            }
+            if (c == '?' && !seen_query) {
+                query_pos = found;
+                seen_query = true;
+            } else if (c == ';' && want_semicolon) {
+                params_pos = found;
+                seen_params = true;
+            }
+            i = found + 1;
         }
     }
+
 
     const size_t path_end = (query_pos != std::string::npos)  ? query_pos
                             : (hash_pos != std::string::npos) ? hash_pos
