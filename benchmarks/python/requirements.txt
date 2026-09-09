@@ -7,3 +7,4 @@ tldextract>=5.1
 PyDomainExtractor>=0.6
 tld>=0.13
 publicsuffix2>=2.20191221
+can_ada>=0.5

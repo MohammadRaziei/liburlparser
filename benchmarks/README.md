@@ -65,22 +65,23 @@ benchmarks/
                    adds each language below if its toolchain is present
   cpp/             bench.cpp   — liburlparser, ada
   python/          bench.py    — liburlparser, tldextract, PyDomainExtractor,
-                                  tld, publicsuffix2
+                                  tld, publicsuffix2, can_ada
 ```
 
 ## Methodology
 
-Both benchmarks follow the same two operations over the same corpus (a
-real domain list fetched once by the top-level `CMakeLists.txt`):
+Both benchmarks follow the same shape over the same corpus (a real
+domain list fetched once by the top-level `CMakeLists.txt`):
 
 1. **Load** the corpus into memory. Not timed.
 2. **Timed — `extract_from_host`**: repeatedly extract the
    domain/suffix from a bare host string (no scheme, no path) — the
    same comparison already published in the project README, `x20` over
    the whole corpus.
-3. **Timed — `extract_from_url`** (C++ calls this `parse_url`):
-   repeatedly parse a full URL (scheme + host + path + query +
-   fragment) and extract every component, `x20` over the whole corpus.
+3. **Timed — `extract_from_url`** (C++ calls this `parse_url`, and it's
+   the only operation `ada`/`can_ada` appear in — see below): repeatedly
+   parse a full URL (scheme + host + path + query + fragment) and
+   extract every component, `x20` over the whole corpus.
 4. **Report**: throughput in MB/s (of bytes actually read by
    *successful* extractions only) and operations/second, plus a
    success rate.
@@ -88,8 +89,9 @@ real domain list fetched once by the top-level `CMakeLists.txt`):
 Not every library supports both operations — that's reported honestly
 rather than papered over:
 
-- **ada** (C++) is a pure WHATWG URL parser with no Public Suffix List /
-  domain-extraction feature, so it only has a `parse_url` row.
+- **ada** (C++) and **can_ada** (Python, pybind11 bindings for that same
+  ada-url engine) are pure WHATWG URL parsers with no Public Suffix List
+  / domain-extraction feature, so they only have a `parse_url` row.
 - **publicsuffix2** (Python) has no URL-aware entry point, so it only
   has an `extract_from_host` row.
 
@@ -134,6 +136,8 @@ language here:
   (Rust-backed)
 - **[tld](https://github.com/barseghyanartur/tld)**
 - **[publicsuffix2](https://github.com/aboutcode-org/python-publicsuffix2)**
+- **[can_ada](https://github.com/TkTech/can_ada)** — pybind11 bindings
+  for the same `ada` C++ engine benchmarked on the C++ side.
 
 ## Toolchain detection
 

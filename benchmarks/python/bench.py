@@ -22,6 +22,9 @@ Implementations:
   - PyDomainExtractor  github.com/Intsights/PyDomainExtractor (Rust-backed)
   - tld               github.com/barseghyanartur/tld
   - publicsuffix2     github.com/aboutcode-org/python-publicsuffix2
+  - can_ada           github.com/TkTech/can_ada (pybind11 bindings for
+                       ada-url's C++ WHATWG URL parser) - "parse_url" only,
+                       see the note further down.
 """
 import argparse
 import sys
@@ -53,6 +56,11 @@ try:
     import publicsuffix2
 except ImportError:
     publicsuffix2 = None
+
+try:
+    import can_ada
+except ImportError:
+    can_ada = None
 
 REPEATS = 20
 
@@ -160,6 +168,38 @@ def main():
         # omission - same treatment ctoon gives a library that can't do
         # one of the two operations).
         add_rows("publicsuffix2", publicsuffix2.get_sld, None)
+
+    # A third operation, "parse_url": split a full URL into its
+    # protocol/host/path/query/fragment. can_ada (github.com/TkTech/
+    # can_ada, pybind11 bindings for the ada-url C++ engine) has no PSL /
+    # domain-extraction feature - same capability gap ada itself has in
+    # the C++ benchmark - so it only gets this operation, not
+    # extract_from_host/extract_from_url above.
+    def add_parse_url_row(name, fn):
+        t, ops, nbytes = bench(urls, fn)
+        rows.append([name, "parse_url",
+                     f"{nbytes / t / 1e6:.2f} MB/s" if ops else "n/a",
+                     f"{ops / t:.0f}", f"{100 * ops / (len(urls) * REPEATS):.0f}%",
+                     f"{t:.4f} s"])
+        results.append({
+            "library": name, "operation": "parse_url",
+            "throughput_mb_s": (nbytes / t / 1e6) if ops else 0.0,
+            "ops_per_sec": ops / t, "success_rate": ops / (len(urls) * REPEATS),
+            "total_time_s": t,
+        })
+
+    def liburlparser_parse_url(url):
+        u = liburlparser.Url(url)
+        return u.protocol, u.host_text, u.abspath, u.query, u.fragment
+
+    add_parse_url_row("liburlparser", liburlparser_parse_url)
+
+    if can_ada:
+        def can_ada_parse_url(url):
+            u = can_ada.parse(url)
+            return u.protocol, u.host, u.pathname, u.search, u.hash
+
+        add_parse_url_row("can_ada", can_ada_parse_url)
 
     headers = ["Library", "Operation", "Throughput", "Ops/sec", "Success", f"Total time (x{REPEATS} reps)"]
     if tabulate:
