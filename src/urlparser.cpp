@@ -5,9 +5,12 @@
 // urlparser_host.cpp, with a confusing detail::url class wrapped by another
 // url::Impl, and a PIMPL host::Impl wrapping a separately-loaded PSL.) url,
 // hostname, and psl are now flat value types declared directly in
-// include/urlparser.h - there is nothing to wrap here anymore, just the
-// method bodies. psl's std::unordered_map is a plain private member, same
-// as any other class's private state - no detail namespace, no PIMPL.
+// include/urlparser.h - no PIMPL, no detail namespace, for any of that
+// old structure. The one exception is psl::levels_ itself: it's a
+// std::unique_ptr<detail::suffix_table> (defined below) specifically so
+// urlparser.h doesn't have to include the vendored
+// src/ankerl/unordered_dense.h just to declare a private member -
+// see that class's definition below, and src/ankerl/README.md.
 //
 #include "urlparser.h"
 
@@ -19,11 +22,11 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <set>
 #include <sstream>
 #include <stdexcept>
-#include <unordered_map>
-#include <unordered_set>
 
+#include "ankerl/unordered_dense.h"
 #include "public_suffix_list_dat.h"
 
 namespace {
@@ -89,17 +92,28 @@ AuthorityBounds scan_authority(std::string_view url, size_t position) noexcept {
     return {host_start, host_end, at_pos, colon_pos, authority_end};
 }
 
-const std::unordered_set<std::string> USES_NETLOC = {
+// Membership tests below (is-known-protocol, uses-netloc, uses-params) run
+// on every url::url() parse. Measured before settling on this: a custom
+// flat-array set (avoiding unordered_set<string>'s per-lookup temporary
+// std::string) was tried here first, on the theory that a node-based
+// container would be cache-unfriendly for this. That theory didn't survive
+// contact with a real measurement - std::set<string, std::less<>> came out
+// at least as fast in a 2M-lookup micro-benchmark against the flat-array
+// version, so the extra machinery bought nothing. std::less<> (a
+// *transparent* comparator) is what actually matters: it lets find() take
+// the parsed scheme by std::string_view directly, so no temporary
+// std::string is constructed just to get a comparable key.
+const std::set<std::string, std::less<>> USES_NETLOC = {
     "",     "file",  "ftp",   "git",   "git+ssh", "gopher", "http",
     "https", "imap", "mms",   "nfs",   "nntp",    "prospero", "rsync",
     "rtsp", "rtspu", "sftp",  "shttp", "snews",   "svn",    "svn+ssh",
     "telnet", "wais"};
 
-const std::unordered_set<std::string> USES_PARAMS = {
+const std::set<std::string, std::less<>> USES_PARAMS = {
     "",   "ftp",  "hdl",   "http", "https", "imap", "mms",
     "prospero", "rtsp", "rtspu", "sftp", "shttp", "sip", "sips", "tel"};
 
-const std::unordered_set<std::string> KNOWN_PROTOCOLS = {
+const std::set<std::string, std::less<>> KNOWN_PROTOCOLS = {
     "",    "file",  "ftp",     "git",  "git+ssh", "gopher", "hdl",
     "http", "https", "imap",   "mms",  "nfs",     "nntp",   "prospero",
     "rsync", "rtsp", "rtspu",  "sftp", "shttp",   "sip",    "sips",
@@ -155,7 +169,7 @@ urlparser::url::url(std::string_view url, const bool ignore_www)
                 position = index + 1;
             } else {
                 scheme_ = appendLower(url.substr(0, index));
-                if (KNOWN_PROTOCOLS.find(std::string(field(scheme_))) != KNOWN_PROTOCOLS.end()) {
+                if (KNOWN_PROTOCOLS.find(field(scheme_)) != KNOWN_PROTOCOLS.end()) {
                     position = index + 1;
                 } else {
                     scheme_ = Span{};
@@ -221,7 +235,7 @@ urlparser::url::url(std::string_view url, const bool ignore_www)
     // Single forward pass over the rest of the URL to locate the first '#'
     // (fragment), the first '?' before it (query), and - only for schemes
     // that use params - the first ';' before the query.
-    const bool track_params = USES_PARAMS.find(std::string(field(scheme_))) != USES_PARAMS.end();
+    const bool track_params = USES_PARAMS.find(field(scheme_)) != USES_PARAMS.end();
     size_t hash_pos = std::string::npos;
     size_t query_pos = std::string::npos;
     size_t params_pos = std::string::npos;
@@ -277,7 +291,7 @@ std::string urlparser::url::str() const noexcept {
 
     if (!scheme.empty()) {
         result.append(scheme);
-        result.append(USES_NETLOC.find(std::string(scheme)) == USES_NETLOC.end() ? ":" : "://");
+        result.append(USES_NETLOC.find(scheme) != USES_NETLOC.end() ? "://" : ":");
     } else if (!host.empty()) {
         result.append("//");
     }
@@ -451,8 +465,23 @@ std::ostream& operator<<(std::ostream& os, const urlparser::url& dt) {
 // host: Public-Suffix-List matching (suffix/domain/subdomain split).
 // ---------------------------------------------------------------------------
 
-urlparser::psl::psl(std::istream& stream) {
-    levels_.reserve(10'000);
+// Defined here (not in urlparser.h) so the public header never needs to
+// include the vendored src/ankerl/unordered_dense.h - see
+// urlparser.h's forward declaration and src/ankerl/README.md.
+class urlparser::detail::suffix_table {
+   public:
+    ankerl::unordered_dense::map<std::string, size_t> data;
+};
+
+urlparser::psl::psl() noexcept : levels_(std::make_unique<detail::suffix_table>()) {}
+urlparser::psl::psl(psl&&) noexcept = default;
+urlparser::psl& urlparser::psl::operator=(psl&&) noexcept = default;
+urlparser::psl::~psl() = default;
+
+bool urlparser::psl::is_loaded() const noexcept { return !levels_->data.empty(); }
+
+urlparser::psl::psl(std::istream& stream) : levels_(std::make_unique<detail::suffix_table>()) {
+    levels_->data.reserve(10'000);
     std::string line;
     size_t line_no = 0;
     while (std::getline(stream, line)) {
@@ -521,15 +550,45 @@ bool urlparser::psl::is_suffix(std::string_view text) const noexcept {
     if (text.empty()) return false;
     std::string reversed(text.rbegin(), text.rend());
     std::transform(reversed.begin(), reversed.end(), reversed.begin(), ascii_tolower);
-    return levels_.find(reversed) != levels_.end();
+    return levels_->data.find(reversed) != levels_->data.end();
 }
 
 /**
  * Get just the public suffix of a hostname. Works for either punycoded or
  * unpunycoded hostnames (but not mixed).
+ *
+ * Single pass: PSL rules are indexed by reversed text (see add_rule), so
+ * matching walks a reversed+lowercased copy of hostname_text from its
+ * most-specific label down toward the registrable-suffix boundary,
+ * shrinking that same buffer in place (resize() to smaller never
+ * reallocates) rather than re-scanning hostname_text a second time to
+ * re-derive and re-copy the same substring, the way this used to be
+ * split across suffix_length() + last_segments().
  */
 std::string urlparser::psl::suffix_of(const std::string& hostname_text) const {
-    return last_segments(hostname_text, suffix_length(hostname_text));
+    std::string tld(hostname_text.rbegin(), hostname_text.rend());
+    std::transform(tld.begin(), tld.end(), tld.begin(), ascii_tolower);
+
+    while (!tld.empty()) {
+        if (auto it = levels_->data.find(tld); it != levels_->data.end()) {
+            // tld already *is* the matched suffix, reversed and
+            // lowercased - reverse it back in place and we're done.
+            std::reverse(tld.begin(), tld.end());
+            return tld;
+        }
+        size_t position = tld.rfind('.');
+        tld.resize((position == std::string::npos || position == 0) ? 0 : position);
+    }
+
+    // No rule matched at all, not even the bare top-level label (e.g. an
+    // unrecognized/malformed TLD) - same fallback the old
+    // suffix_length()==1 + last_segments(hostname_text, 1) combination
+    // produced: just the last label of the original hostname.
+    const size_t last_dot = hostname_text.rfind('.');
+    std::string result = (last_dot == std::string::npos) ? hostname_text
+                                                           : hostname_text.substr(last_dot + 1);
+    std::transform(result.begin(), result.end(), result.begin(), ascii_tolower);
+    return result;
 }
 
 size_t urlparser::psl::segment_count(const std::string& text) const {
@@ -542,43 +601,10 @@ size_t urlparser::psl::segment_count(const std::string& text) const {
     return count;
 }
 
-size_t urlparser::psl::suffix_length(const std::string& hostname_text) const {
-    std::string tld(hostname_text.rbegin(), hostname_text.rend());
-    std::transform(tld.begin(), tld.end(), tld.begin(), ascii_tolower);
-
-    while (!tld.empty()) {
-        if (auto it = levels_.find(tld); it != levels_.end()) {
-            return it->second;
-        }
-        size_t position = tld.rfind('.');
-        tld.resize((position == std::string::npos || position == 0) ? 0 : position);
-    }
-    return 1;
-}
-
-std::string urlparser::psl::last_segments(const std::string& hostname_text, size_t segments) const {
-    size_t position = hostname_text.size();
-    size_t remaining = segments;
-    while (remaining != 0 && position && position != std::string::npos) {
-        position = hostname_text.rfind('.', position - 1);
-        remaining -= 1;
-    }
-    if (remaining >= 1) return "";
-
-    const size_t start = (position == std::string::npos) ? 0 : position + 1;
-    std::string result(hostname_text, start);
-    std::transform(result.begin(), result.end(), result.begin(), ascii_tolower);
-
-    if (!result.empty() && result[0] == '.') {
-        throw std::invalid_argument("Empty segment in " + result);
-    }
-    return result;
-}
-
 void urlparser::psl::add_rule(std::string& rule, int level_adjust, size_t trim) {
     std::string copy(rule.rbegin(), rule.rend() - trim);
     size_t length = segment_count(copy) + level_adjust;
-    levels_[std::move(copy)] = length;
+    levels_->data[std::move(copy)] = length;
 }
 
 std::string_view urlparser::hostname::remove_www(const std::string_view& host) noexcept {

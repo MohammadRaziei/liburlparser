@@ -13,6 +13,7 @@ target_include_directories(test_liburlparser_cpp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${URLPARSER_TEST_SOURCE_DIR}/utest
     ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/src
     ${GENERATED_HEADERS_DIR}
 )
 

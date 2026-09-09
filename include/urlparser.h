@@ -70,10 +70,10 @@
 #include <array>
 #include <cstdint>
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <variant>
 #include <vector>
 
@@ -229,6 +229,16 @@ class hostname {
  * wants to check suffix membership directly, independent of any
  * particular hostname.
  */
+namespace detail {
+// Wraps ankerl::unordered_dense::map<std::string, size_t> (vendored in
+// src/ankerl/ - see src/ankerl/README.md). Forward-
+// declared here and defined only in urlparser.cpp so that including this
+// public header doesn't require the vendored third-party header too -
+// psl::levels_ is a private implementation detail, and callers of the
+// public API never need to know what's actually inside it.
+class suffix_table;
+}  // namespace detail
+
 class psl {
    public:
     /** @brief The one, lazily-built, shared PSL instance. */
@@ -241,7 +251,7 @@ class psl {
     std::string_view version() const noexcept { return version_; }
 
     /** @brief Whether a PSL is currently loaded (true even for the bundled default). */
-    bool is_loaded() const noexcept { return !levels_.empty(); }
+    bool is_loaded() const noexcept;
 
     /**
      * @brief Load the Public Suffix List from a file, replacing whatever
@@ -276,15 +286,32 @@ class psl {
     std::string suffix_of(const std::string& hostname_text) const;
 
    private:
-    psl() noexcept = default;
+    // levels_ is a std::unique_ptr<detail::suffix_table> (an incomplete
+    // type here), so the compiler-generated destructor/move members
+    // would need that type complete to know how to delete/move it -
+    // declared here, defined in urlparser.cpp where suffix_table is
+    // fully visible. Both the singleton instance (instance()'s static
+    // local) and the self-move-assignments in load_from_path()/
+    // load_from_string() are psl's own member functions, so these stay
+    // private along with the constructors - nothing outside the class
+    // should ever construct, move, or destroy a psl directly. Copy is
+    // deleted outright for the same reason (a unique_ptr member already
+    // makes an implicit copy ill-formed; an explicit delete fails at the
+    // call site with a clear reason instead of a unique_ptr error deep
+    // in a template instantiation).
+    ~psl();
+    psl(const psl&) = delete;
+    psl& operator=(const psl&) = delete;
+    psl(psl&&) noexcept;
+    psl& operator=(psl&&) noexcept;
+
+    psl() noexcept;
     explicit psl(std::istream& stream);
 
     size_t segment_count(const std::string& text) const;
-    size_t suffix_length(const std::string& hostname_text) const;
-    std::string last_segments(const std::string& hostname_text, size_t segments) const;
     void add_rule(std::string& rule, int level_adjust, size_t trim);
 
-    std::unordered_map<std::string, size_t> levels_;
+    std::unique_ptr<detail::suffix_table> levels_;
     std::string version_;
 };
 
