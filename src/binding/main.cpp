@@ -113,6 +113,29 @@ inline nb::dict url_to_dict(const urlparser::url& url) {
     return dict;
 }
 
+// Single-call, dict-returning constructor for Url.extract_dict() - see the
+// comment at its .def_static() call site for why this exists.
+//
+// parse_host=True: u.host() classifies IPv4/IPv6/hostname and, for a
+// hostname, runs the PSL lookup for subdomain/domain/suffix - the nested
+// dict from host_to_dict(). parse_host=False: host_text() is the raw
+// field, no classification or PSL lookup at all - a plain string. Skip
+// the host-parsing work entirely when the caller only wants
+// protocol/path/query/fragment.
+inline nb::dict url_extract_dict(std::string_view urlstr, bool ignore_www, bool parse_host) {
+    urlparser::url u(std::string(urlstr), ignore_www);
+    nb::dict dict;
+    dict["str"] = u.str();
+    dict["protocol"] = u.protocol();
+    dict["userinfo"] = u.userinfo();
+    dict["host"] = parse_host ? nb::object(host_to_dict(u.host()))
+                               : nb::object(nb::cast(std::string(u.host_text())));
+    dict["port"] = u.port();
+    dict["query"] = u.query();
+    dict["fragment"] = u.fragment();
+    return dict;
+}
+
 NB_MODULE(_urlparser_py, m) {
     m.attr("__version__") = URLPARSER_VERSION_STRING;
     m.doc() = R"pbdoc(
@@ -287,26 +310,7 @@ NB_MODULE(_urlparser_py, m) {
         })
         .def_static(
             "extract_dict",
-            [](std::string_view urlstr, bool ignore_www, bool parse_host) {
-                urlparser::url u(std::string(urlstr), ignore_www);
-                nb::dict dict;
-                dict["str"] = u.str();
-                dict["protocol"] = u.protocol();
-                dict["userinfo"] = u.userinfo();
-                // parse_host=True: u.host() classifies IPv4/IPv6/hostname
-                // and, for a hostname, runs the PSL lookup for
-                // subdomain/domain/suffix - the nested dict from
-                // host_to_dict(). parse_host=False: host_text() is the
-                // raw field, no classification or PSL lookup at all - a
-                // plain string. Skip the host-parsing work entirely when
-                // the caller only wants protocol/path/query/fragment.
-                dict["host"] = parse_host ? nb::object(host_to_dict(u.host()))
-                                           : nb::object(nb::cast(std::string(u.host_text())));
-                dict["port"] = u.port();
-                dict["query"] = u.query();
-                dict["fragment"] = u.fragment();
-                return dict;
-            },
+            url_extract_dict,
             nb::arg("urlstr"), nb::arg("ignore_www") = false, nb::arg("parse_host") = true,
             "Parse `urlstr` and return {str, protocol, userinfo, host, port, "
             "query, fragment} directly, without constructing a Url object - "
