@@ -231,7 +231,7 @@ UTEST(HostTest, LoadPslFromStringChangesFutureLookups) {
     EXPECT_STREQ(after.suffix().c_str(), "co.uk");
 
     // Restore the real PSL so later tests in this binary aren't affected.
-    urlparser::psl::instance().load_from_path(makeAbsolutePath("../public_suffix_list.dat"));
+    urlparser::psl::instance().load_from_path(makeAbsolutePath("../src/public_suffix_list.dat"));
     urlparser::hostname restored("example.co.uk");
     EXPECT_STREQ(restored.suffix().c_str(), suffix_before.c_str());
 }

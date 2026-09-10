@@ -63,16 +63,18 @@ elseif(BUILD_PYTHON)
 endif()
 
 
-# Fetch the Public Suffix List: tries a fresh download first (cached per
-# build directory - see cmake/PublicSuffixList.cmake for why), and only
-# falls back to the copy committed in the repo root with a WARNING if the
-# download fails. The URL itself lives in a single place:
-# URLPARSER_PUBLIC_SUFFIX_LIST_URL in include/urlparser.h.
+# Fetch the Public Suffix List: tries a fresh download first every
+# configure (cached per build directory via a marker file - see
+# cmake/PublicSuffixList.cmake for why), overwriting the one real,
+# tracked copy at src/public_suffix_list.dat in place. On a failed
+# download it just warns and keeps using that existing file. The URL
+# itself lives in a single place: URLPARSER_PUBLIC_SUFFIX_LIST_URL in
+# include/urlparser.h.
 include(${PROJECT_SOURCE_DIR}/cmake/PublicSuffixList.cmake)
 fetch_public_suffix_list(
     HEADER_FILE ${PROJECT_SOURCE_DIR}/include/urlparser.h
     VERSION_PREFIX URLPARSER_
-    REPO_FALLBACK_FILE ${PROJECT_SOURCE_DIR}/public_suffix_list.dat
+    TARGET_FILE ${PROJECT_SOURCE_DIR}/src/public_suffix_list.dat
     OUTPUT_VAR PUBLIC_SUFFIX_LIST_DAT
     URL_OUTPUT_VAR PUBLIC_SUFFIX_LIST_URL
 )

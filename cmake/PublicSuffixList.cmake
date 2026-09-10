@@ -10,18 +10,21 @@
 # the same way cmake/DynamicVersion.cmake reads the version out of that
 # same header - one file stays the single source of truth instead of two.
 #
-# Caching: the download lands in ${CMAKE_CURRENT_BINARY_DIR}/src/, i.e.
-# inside the build directory rather than the source tree. As long as the
-# build directory exists, re-running cmake reuses that cached copy and
-# never touches the network again. Deleting the build directory (the
-# usual `rm -rf build`) is the cache-invalidation mechanism - simple,
-# explicit, no extra state file to manage or go stale on its own.
+# Caching: this does *not* keep a separate cached copy of the .dat file.
+# The one real copy lives at TARGET_FILE (src/public_suffix_list.dat,
+# tracked in git) and every successful download overwrites it in place -
+# so it's always the file that gets embedded, and it doubles as the
+# offline fallback. What lives in the build directory is only a small
+# marker file recording "a download already succeeded here"; its
+# presence is what skips re-downloading on the next `cmake` configure.
+# Deleting the build directory removes that marker and forces a fresh
+# download - a simple, explicit cache with no other state to manage.
 #
 # On any download failure (offline, DNS, timeout, HTTP error), this warns
-# and falls back to whatever copy is committed in the repository root
-# instead of failing the build - a network hiccup shouldn't be fatal. Note
-# that fallback copy is only ever refreshed by a successful download, so
-# it can drift out of date; the WARNING says so every time it's used.
+# and keeps using the existing TARGET_FILE instead of failing the build -
+# a network hiccup shouldn't be fatal. No marker is written on failure,
+# so the very next configure retries the download rather than silently
+# treating the stale file as fresh.
 #
 # Public API:
 #   fetch_public_suffix_list(
@@ -29,9 +32,11 @@
 #       [VERSION_PREFIX <prefix>]       # "URLPARSER_" - matches the
 #                                        # #define's prefix, same
 #                                        # convention as DynamicVersion.cmake
-#       [REPO_FALLBACK_FILE <path>]     # committed public_suffix_list.dat,
-#                                        # used only if the download fails
+#       TARGET_FILE <path>              # the one real, tracked .dat file -
+#                                        # overwritten on every successful
+#                                        # download, used as-is on failure
 #       OUTPUT_VAR <var>                # -> path to the .dat file to embed
+#                                        # (always == TARGET_FILE)
 #       [URL_OUTPUT_VAR <var>]          # -> the URL read from the header
 #       [TIMEOUT <seconds>]             # default 10
 #   )
@@ -68,11 +73,14 @@ function(_psl_read_url header_file version_prefix out_var)
 endfunction()
 
 function(fetch_public_suffix_list)
-    set(oneValueArgs HEADER_FILE VERSION_PREFIX REPO_FALLBACK_FILE OUTPUT_VAR URL_OUTPUT_VAR TIMEOUT)
+    set(oneValueArgs HEADER_FILE VERSION_PREFIX TARGET_FILE OUTPUT_VAR URL_OUTPUT_VAR TIMEOUT)
     cmake_parse_arguments(ARG "" "${oneValueArgs}" "" ${ARGN})
 
     if(NOT ARG_HEADER_FILE)
         message(FATAL_ERROR "fetch_public_suffix_list: HEADER_FILE is required")
+    endif()
+    if(NOT ARG_TARGET_FILE)
+        message(FATAL_ERROR "fetch_public_suffix_list: TARGET_FILE is required")
     endif()
     if(NOT ARG_OUTPUT_VAR)
         message(FATAL_ERROR "fetch_public_suffix_list: OUTPUT_VAR is required")
@@ -87,53 +95,61 @@ function(fetch_public_suffix_list)
         set(${ARG_URL_OUTPUT_VAR} "${_psl_url}" PARENT_SCOPE)
     endif()
 
-    # The cache lives inside the build tree - src/ here means
-    # <build-dir>/src/, not the project's own src/. Removing the build
-    # directory is what forces a fresh download.
-    set(_cache_dir "${CMAKE_CURRENT_BINARY_DIR}/src")
-    set(_cache_file "${_cache_dir}/public_suffix_list.dat")
+    # ARG_TARGET_FILE (src/public_suffix_list.dat) is the one real, tracked
+    # copy - every successful download overwrites it in place, so it's
+    # always what gets embedded and it's also the offline fallback.
+    #
+    # This marker file is the only thing that lives in the build tree. Its
+    # presence just means "a download already succeeded for this build
+    # directory" - deleting the build directory is what forces a fresh
+    # download on the next configure. It holds no content of its own.
+    set(_cache_marker "${CMAKE_CURRENT_BINARY_DIR}/public_suffix_list.downloaded")
 
-    if(EXISTS "${_cache_file}")
-        message(STATUS "[PSL] Using cached download: ${_cache_file}")
-        set(${ARG_OUTPUT_VAR} "${_cache_file}" PARENT_SCOPE)
+    if(EXISTS "${_cache_marker}" AND EXISTS "${ARG_TARGET_FILE}")
+        message(STATUS "[PSL] Already downloaded for this build dir - using ${ARG_TARGET_FILE}")
+        set(${ARG_OUTPUT_VAR} "${ARG_TARGET_FILE}" PARENT_SCOPE)
         return()
     endif()
 
-    file(MAKE_DIRECTORY "${_cache_dir}")
     message(STATUS "[PSL] Downloading ${_psl_url}")
-    file(DOWNLOAD "${_psl_url}" "${_cache_file}"
+    set(_tmp_file "${CMAKE_CURRENT_BINARY_DIR}/public_suffix_list.dat.tmp")
+    file(DOWNLOAD "${_psl_url}" "${_tmp_file}"
          STATUS _dl_status
          TIMEOUT ${ARG_TIMEOUT}
          TLS_VERIFY ON)
     list(GET _dl_status 0 _dl_code)
 
-    if(_dl_code EQUAL 0 AND EXISTS "${_cache_file}")
-        file(SIZE "${_cache_file}" _dl_size)
+    if(_dl_code EQUAL 0 AND EXISTS "${_tmp_file}")
+        file(SIZE "${_tmp_file}" _dl_size)
         if(_dl_size GREATER 0)
-            message(STATUS "[PSL] Downloaded to ${_cache_file} (${_dl_size} bytes)")
-            set(${ARG_OUTPUT_VAR} "${_cache_file}" PARENT_SCOPE)
+            # Overwrite the real, tracked file in place - this is the
+            # "update src/public_suffix_list.dat every time" part.
+            file(RENAME "${_tmp_file}" "${ARG_TARGET_FILE}")
+            file(WRITE "${_cache_marker}" "")
+            message(STATUS "[PSL] Downloaded and updated ${ARG_TARGET_FILE} (${_dl_size} bytes)")
+            set(${ARG_OUTPUT_VAR} "${ARG_TARGET_FILE}" PARENT_SCOPE)
             return()
         endif()
     endif()
 
-    # Download failed - don't leave a truncated/empty file behind to be
-    # mistaken for a valid cache on the next configure.
+    # Download failed - don't leave a truncated/empty temp file behind,
+    # and don't write the cache marker, so the next configure retries.
     list(GET _dl_status 1 _dl_msg)
-    file(REMOVE "${_cache_file}")
+    file(REMOVE "${_tmp_file}")
 
-    if(ARG_REPO_FALLBACK_FILE AND EXISTS "${ARG_REPO_FALLBACK_FILE}")
+    if(EXISTS "${ARG_TARGET_FILE}")
         message(WARNING
             "[PSL] Failed to download the Public Suffix List from ${_psl_url} "
-            "(${_dl_msg}). Falling back to the copy committed in the repo: "
-            "${ARG_REPO_FALLBACK_FILE}. That copy is only refreshed by a "
-            "successful download, so it may be out of date."
+            "(${_dl_msg}). Using the existing ${ARG_TARGET_FILE} as-is - it "
+            "is only refreshed by a successful download, so it may be out "
+            "of date."
         )
-        set(${ARG_OUTPUT_VAR} "${ARG_REPO_FALLBACK_FILE}" PARENT_SCOPE)
+        set(${ARG_OUTPUT_VAR} "${ARG_TARGET_FILE}" PARENT_SCOPE)
     else()
         message(FATAL_ERROR
             "[PSL] Failed to download the Public Suffix List from ${_psl_url} "
-            "(${_dl_msg}), and no fallback file was found at "
-            "${ARG_REPO_FALLBACK_FILE}."
+            "(${_dl_msg}), and no existing file was found at "
+            "${ARG_TARGET_FILE}."
         )
     endif()
 endfunction()
