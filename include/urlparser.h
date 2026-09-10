@@ -67,6 +67,14 @@
 #define URLPARSER_VERSION_STRING \
     _URLPARSER_VERSION_STR(URLPARSER_VERSION_MAJOR,URLPARSER_VERSION_MINOR,URLPARSER_VERSION_PATCH)
 
+// Single source of truth for the Public Suffix List URL. Read by:
+//   - cmake/PublicSuffixList.cmake (downloads the .dat file this URL
+//     points to, to embed into the compiled extension at build time)
+//   - urlparser::psl::source_url() below (src/urlparser.cpp), so
+//     psl.url / psl.update() in Python point at the same place the
+//     build itself downloaded from - one URL, not two to keep in sync.
+#define URLPARSER_PUBLIC_SUFFIX_LIST_URL "https://publicsuffix.org/list/public_suffix_list.dat"
+
 #include <array>
 #include <cstdint>
 #include <iostream>

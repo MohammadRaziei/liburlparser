@@ -56,6 +56,12 @@ build.verbose = true
 # Minimum CMake version check
 cmake.version = ">=3.15"
 
+# The Python package no longer lives at the scikit-build-core default of
+# src/<name>/ - it moved to src/bindings/python/<name>/ alongside the
+# other language bindings (src/bindings/go, src/bindings/... as they're
+# added), so this has to be spelled out explicitly.
+wheel.packages = ["src/bindings/python/liburlparser"]
+
 # Ensure that the Python package installed is the optimized version, not the Debug version.
 cmake.args = [
     "-DCMAKE_BUILD_TYPE=Release"

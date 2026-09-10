@@ -63,37 +63,20 @@ elseif(BUILD_PYTHON)
 endif()
 
 
+# Fetch the Public Suffix List: tries a fresh download first (cached per
+# build directory - see cmake/PublicSuffixList.cmake for why), and only
+# falls back to the copy committed in the repo root with a WARNING if the
+# download fails. The URL itself lives in a single place:
+# URLPARSER_PUBLIC_SUFFIX_LIST_URL in include/urlparser.h.
+include(${PROJECT_SOURCE_DIR}/cmake/PublicSuffixList.cmake)
+fetch_public_suffix_list(
+    HEADER_FILE ${PROJECT_SOURCE_DIR}/include/urlparser.h
+    VERSION_PREFIX URLPARSER_
+    REPO_FALLBACK_FILE ${PROJECT_SOURCE_DIR}/public_suffix_list.dat
+    OUTPUT_VAR PUBLIC_SUFFIX_LIST_DAT
+    URL_OUTPUT_VAR PUBLIC_SUFFIX_LIST_URL
+)
 
-# Locate the public suffix list file: prefer the copy already committed in
-# the repo (source dir); only download into the build dir if it's missing.
-set(PUBLIC_SUFFIX_LIST_URL "https://publicsuffix.org/list/public_suffix_list.dat")
-# urlparser::psl::source_url() (src/urlparser.cpp) needs this. Several
-# targets compile urlparser.cpp directly (the static library, the Python
-# module, the test binary) rather than linking a shared build of it, so
-# this is set at directory scope here rather than repeated per-target.
-add_compile_definitions(PUBLIC_SUFFIX_LIST_URL="${PUBLIC_SUFFIX_LIST_URL}")
-set(PUBLIC_SUFFIX_LIST_DAT_NAME "public_suffix_list.dat")
-
-if(EXISTS "${PROJECT_SOURCE_DIR}/${PUBLIC_SUFFIX_LIST_DAT_NAME}")
-    set(PUBLIC_SUFFIX_LIST_DAT "${PROJECT_SOURCE_DIR}/${PUBLIC_SUFFIX_LIST_DAT_NAME}")
-elseif(DEFINED SKBUILD)
-    set(PUBLIC_SUFFIX_LIST_DAT "${PUBLIC_SUFFIX_LIST_DAT_NAME}")
-else()
-    set(PUBLIC_SUFFIX_LIST_DAT "${CMAKE_CURRENT_BINARY_DIR}/${PUBLIC_SUFFIX_LIST_DAT_NAME}")
-endif()
-
-# Download the public suffix list file from the internet if not already found
-if(EXISTS "${PUBLIC_SUFFIX_LIST_DAT}")
-    message(STATUS "[DATA] ${PUBLIC_SUFFIX_LIST_DAT} is found.")
-else()
-    message(WARNING "[DATA] ${PUBLIC_SUFFIX_LIST_DAT} is not found. Trying to download it.")
-    file(DOWNLOAD "${PUBLIC_SUFFIX_LIST_URL}" ${PUBLIC_SUFFIX_LIST_DAT})
-    if(EXISTS "${PUBLIC_SUFFIX_LIST_DAT}")
-        message(STATUS "[DATA] ${PUBLIC_SUFFIX_LIST_DAT} is downloaded.")
-    else()
-        message(FATAL_ERROR "[DATA] Failed to download ${PUBLIC_SUFFIX_LIST_DAT}.")
-    endif()
-endif()
 
 file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
@@ -147,7 +130,7 @@ if(DEFINED PYTHON_PROJECT_NAME)
             ${NB_ABI_ARGS}
 
             # Source code goes here
-            ${PROJECT_SOURCE_DIR}/src/binding/main.cpp ${SOURCES}
+            ${PROJECT_SOURCE_DIR}/src/bindings/python/binding_py.cpp ${SOURCES}
     )
 
     target_include_directories(${NB_MODULE} PRIVATE include src ${GENERATED_HEADERS_DIR})
@@ -158,7 +141,7 @@ if(DEFINED PYTHON_PROJECT_NAME)
                 LIBRARY DESTINATION
                 ${PYTHON_PROJECT_NAME})
     else()
-        file(COPY ${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME} DESTINATION ${PYTHON_PROJECT_NAME})
+        file(COPY ${PROJECT_SOURCE_DIR}/src/bindings/python/${PROJECT_NAME} DESTINATION ${PYTHON_PROJECT_NAME})
 
         set_target_properties(${NB_MODULE} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PYTHON_PROJECT_NAME}/${PROJECT_NAME})
     endif()

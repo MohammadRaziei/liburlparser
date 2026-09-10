@@ -148,7 +148,7 @@ def main():
             })
 
     # liburlparser: Hostname.extract_dict_from_host/_url() are single-FFI-
-    # call, dict-returning static methods (see src/binding/main.cpp) - the
+    # call, dict-returning static methods (see src/bindings/python/binding_py.cpp) - the
     # apples-to-apples match for PyDomainExtractor.extract()'s shape
     # below, rather than Hostname(host).suffix which does a separate
     # object-construction call and only returns one field.

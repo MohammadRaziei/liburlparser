@@ -749,7 +749,7 @@ urlparser::psl& urlparser::psl::instance() noexcept {
     return the_instance;
 }
 
-std::string_view urlparser::psl::source_url() const noexcept { return PUBLIC_SUFFIX_LIST_URL; }
+std::string_view urlparser::psl::source_url() const noexcept { return URLPARSER_PUBLIC_SUFFIX_LIST_URL; }
 
 void urlparser::psl::load_from_path(const std::string& filepath) {
     std::ifstream stream(filepath);
