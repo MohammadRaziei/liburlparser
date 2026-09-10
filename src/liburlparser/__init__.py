@@ -10,5 +10,5 @@ __all__ = [
     "Url",
     "__doc__",
     "__version__",
-    "psl"
+    "psl",
 ]

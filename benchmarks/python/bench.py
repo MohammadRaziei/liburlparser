@@ -147,13 +147,15 @@ def main():
                 "total_time_s": t,
             })
 
-    # liburlparser: Hostname(host) for a bare host, Hostname.from_url(url)
-    # for a full URL - both raise on a malformed input, same as every
-    # other library here.
+    # liburlparser: Hostname.extract_dict_from_host/_url() are single-FFI-
+    # call, dict-returning static methods (see src/binding/main.cpp) - the
+    # apples-to-apples match for PyDomainExtractor.extract()'s shape
+    # below, rather than Hostname(host).suffix which does a separate
+    # object-construction call and only returns one field.
     add_rows(
         "liburlparser",
-        lambda host: liburlparser.Hostname(host).suffix,
-        lambda url: liburlparser.Hostname.from_url(url).suffix,
+        liburlparser.Hostname.extract_dict_from_host,
+        liburlparser.Hostname.extract_dict_from_url,
     )
 
     if tldextract:
