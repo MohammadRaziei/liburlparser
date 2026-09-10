@@ -857,7 +857,14 @@ void urlparser::hostname::ensure_parsed() const noexcept {
 
     fulldomain_ = host_;
     suffix_ = urlparser::psl::instance().suffix_of(host_);
-    size_t suffix_pos = fulldomain_.rfind("." + suffix_);
+    // suffix_ is, by construction, always the tail of fulldomain_ (suffix_of()
+    // matches against a reversed copy of host_, so whatever it returns is
+    // exactly the trailing suffix.size() characters). So the position of the
+    // '.' right before it is a direct arithmetic offset - no need to
+    // allocate "." + suffix_ and rfind() it back out of fulldomain_.
+    size_t suffix_pos = (suffix_.size() < fulldomain_.size())
+                             ? fulldomain_.size() - suffix_.size() - 1
+                             : std::string::npos;
     size_t subdomain_pos = 0;
     if (suffix_pos == std::string::npos || suffix_pos < 1) return;
 
