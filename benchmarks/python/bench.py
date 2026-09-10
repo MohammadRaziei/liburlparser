@@ -63,6 +63,7 @@ except ImportError:
     can_ada = None
 
 REPEATS = 20
+WARMUP_REPS = 3
 
 
 def load_corpus(domains_path, urls_path):
@@ -74,6 +75,19 @@ def load_corpus(domains_path, urls_path):
 
 
 def bench(items, fn):
+    # Untimed warm-up: WARMUP_REPS full passes over the corpus with the
+    # exact same call, before the timer starts. Every library gets this,
+    # not just liburlparser - any of them can have first-call costs (lazy
+    # regex compilation, parsing a bundled suffix-list snapshot, building
+    # an internal trie, module-level caches) that would otherwise get
+    # counted inside the timed measurement below.
+    for _ in range(WARMUP_REPS):
+        for item in items:
+            try:
+                fn(item)
+            except Exception:
+                pass
+
     t0 = time.perf_counter()
     ops = 0
     bytes_done = 0

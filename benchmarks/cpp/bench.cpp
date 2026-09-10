@@ -36,6 +36,9 @@
 #ifndef URLPARSER_BENCH_REPEATS
 #define URLPARSER_BENCH_REPEATS 20
 #endif
+#ifndef URLPARSER_BENCH_WARMUP_REPS
+#define URLPARSER_BENCH_WARMUP_REPS 3
+#endif
 
 namespace {
 
@@ -121,18 +124,31 @@ int main() {
     std::printf("%-14s %-18s %12s %14s %9s %10s %12s\n",
                 "Library", "Operation", "Throughput", "Ops/sec", "Success", "", "Total time");
 
-    // Untimed warm-up: liburlparser's Public Suffix List is loaded lazily on
-    // first use (a function-local static, see psl::instance() in
-    // urlparser.cpp) - trigger that load here so it doesn't pollute the
-    // first timed measurement below.
-    { volatile bool warm = urlparser::url::is_psl_loaded(); (void)warm;
-      urlparser::hostname warmup(domains.front()); (void)warmup; }
+    // Untimed warm-up: every timed block below is preceded by
+    // URLPARSER_BENCH_WARMUP_REPS full, untimed passes over the same
+    // corpus with the exact same call. This isn't only about liburlparser's
+    // Public Suffix List (a function-local static, see psl::instance() in
+    // urlparser.cpp) - any library can have first-call costs (allocator
+    // warm-up, cache effects, internal lazy init). Applying the same
+    // warm-up to every library, not just liburlparser, keeps the
+    // comparison honest.
 
     // ── extract_from_host: liburlparser only ───────────────────────────
     // ada has no PSL / domain-extraction feature - there is no
     // "ada::extract_domain" to compare against, so this operation reports
     // a single row. That's a real capability difference, not an omission.
     {
+        for (int rep = 0; rep < URLPARSER_BENCH_WARMUP_REPS; rep++) {
+            for (const auto& d : domains) {
+                try {
+                    urlparser::hostname h(d);
+                    auto s = h.suffix();
+                    (void)s.size();
+                } catch (const std::exception&) {
+                }
+            }
+        }
+
         long ops = 0; double bytes = 0;
         double t0 = now_seconds();
         for (int rep = 0; rep < URLPARSER_BENCH_REPEATS; rep++) {
@@ -153,6 +169,22 @@ int main() {
 
     // ── parse_url: liburlparser vs ada ──────────────────────────────────
     {
+        for (int rep = 0; rep < URLPARSER_BENCH_WARMUP_REPS; rep++) {
+            for (const auto& u : urls) {
+                try {
+                    urlparser::url parsed(u);
+                    auto p = parsed.protocol();
+                    auto h = parsed.host_text();
+                    auto path = parsed.abspath();
+                    auto q = parsed.query();
+                    auto frag = parsed.fragment();
+                    (void)p.size(); (void)h.size(); (void)path.size();
+                    (void)q.size(); (void)frag.size();
+                } catch (const std::exception&) {
+                }
+            }
+        }
+
         long ops = 0; double bytes = 0;
         double t0 = now_seconds();
         for (int rep = 0; rep < URLPARSER_BENCH_REPEATS; rep++) {
@@ -176,6 +208,20 @@ int main() {
                static_cast<long>(urls.size()) * URLPARSER_BENCH_REPEATS);
     }
     {
+        for (int rep = 0; rep < URLPARSER_BENCH_WARMUP_REPS; rep++) {
+            for (const auto& u : urls) {
+                auto result = ada::parse<ada::url_aggregator>(u);
+                if (!result) continue;
+                auto p = result->get_protocol();
+                auto h = result->get_host();
+                auto path = result->get_pathname();
+                auto q = result->get_search();
+                auto frag = result->get_hash();
+                (void)p.size(); (void)h.size(); (void)path.size();
+                (void)q.size(); (void)frag.size();
+            }
+        }
+
         long ops = 0; double bytes = 0;
         double t0 = now_seconds();
         for (int rep = 0; rep < URLPARSER_BENCH_REPEATS; rep++) {
