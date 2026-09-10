@@ -11,6 +11,12 @@ liburlparser.git` (Python). **liburlparser is never a special case
 here** — it's one more row in the same results table as `ada` or
 `tldextract`.
 
+**[OPTIMIZATION_NOTES.md](OPTIMIZATION_NOTES.md)** has the story behind
+the current numbers: what was tried, what actually worked, what was
+measured and rejected (including why a Trie for the PSL table turned
+out to be a bad idea despite a competitor's docs recommending one), and
+what gaps are still open.
+
 ## Running
 
 `benchmarks/` is a self-contained world of its own — nothing here reads
