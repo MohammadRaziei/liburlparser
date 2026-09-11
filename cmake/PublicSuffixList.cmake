@@ -10,21 +10,23 @@
 # the same way cmake/DynamicVersion.cmake reads the version out of that
 # same header - one file stays the single source of truth instead of two.
 #
-# Caching: this does *not* keep a separate cached copy of the .dat file.
-# The one real copy lives at TARGET_FILE (src/public_suffix_list.dat,
-# tracked in git) and every successful download overwrites it in place -
-# so it's always the file that gets embedded, and it doubles as the
-# offline fallback. What lives in the build directory is only a small
-# marker file recording "a download already succeeded here"; its
-# presence is what skips re-downloading on the next `cmake` configure.
-# Deleting the build directory removes that marker and forces a fresh
-# download - a simple, explicit cache with no other state to manage.
+# Caching: this does *not* keep a separate marker file. The download
+# lands directly in the build tree at
+# ${CMAKE_CURRENT_BINARY_DIR}/public_suffix_list.dat, and that file's own
+# existence *is* the cache - if it's there, a download already succeeded
+# for this build directory and it's copied over TARGET_FILE again (in
+# case TARGET_FILE was hand-reverted) without hitting the network.
+# Deleting the build directory removes that cached copy and forces a
+# fresh download on the next configure - no other state to manage.
+#
+# TARGET_FILE (src/public_suffix_list.dat, tracked in git) is the one
+# real copy used for embedding and doubles as the offline fallback.
 #
 # On any download failure (offline, DNS, timeout, HTTP error), this warns
 # and keeps using the existing TARGET_FILE instead of failing the build -
-# a network hiccup shouldn't be fatal. No marker is written on failure,
-# so the very next configure retries the download rather than silently
-# treating the stale file as fresh.
+# a network hiccup shouldn't be fatal. No cache file is left behind on
+# failure, so the very next configure retries the download rather than
+# silently treating the stale file as fresh.
 #
 # Public API:
 #   fetch_public_suffix_list(
@@ -99,43 +101,56 @@ function(fetch_public_suffix_list)
     # copy - every successful download overwrites it in place, so it's
     # always what gets embedded and it's also the offline fallback.
     #
-    # This marker file is the only thing that lives in the build tree. Its
-    # presence just means "a download already succeeded for this build
-    # directory" - deleting the build directory is what forces a fresh
-    # download on the next configure. It holds no content of its own.
-    set(_cache_marker "${CMAKE_CURRENT_BINARY_DIR}/public_suffix_list.downloaded")
+    # The cache is just the downloaded file itself, sitting in the build
+    # tree at _cache_file below - no separate marker needed. Its
+    # existence *is* the "a download already succeeded for this build
+    # directory" signal: deleting the build directory removes it and
+    # forces a fresh download on the next configure.
+    set(_cache_file "${CMAKE_CURRENT_BINARY_DIR}/public_suffix_list.dat")
 
-    if(EXISTS "${_cache_marker}" AND EXISTS "${ARG_TARGET_FILE}")
-        message(STATUS "[PSL] Already downloaded for this build dir - using ${ARG_TARGET_FILE}")
+    if(EXISTS "${_cache_file}")
+        message(STATUS "[PSL] Already downloaded for this build dir - using ${_cache_file}")
+        # Re-copy in case TARGET_FILE was hand-edited/reverted since the
+        # last configure - the build-dir cache stays the source of truth
+        # for what was actually downloaded, not whatever TARGET_FILE
+        # currently holds.
+        configure_file("${_cache_file}" "${ARG_TARGET_FILE}" COPYONLY)
         set(${ARG_OUTPUT_VAR} "${ARG_TARGET_FILE}" PARENT_SCOPE)
         return()
     endif()
 
     message(STATUS "[PSL] Downloading ${_psl_url}")
-    set(_tmp_file "${CMAKE_CURRENT_BINARY_DIR}/public_suffix_list.dat.tmp")
-    file(DOWNLOAD "${_psl_url}" "${_tmp_file}"
+    file(DOWNLOAD "${_psl_url}" "${_cache_file}"
          STATUS _dl_status
          TIMEOUT ${ARG_TIMEOUT}
          TLS_VERIFY ON)
     list(GET _dl_status 0 _dl_code)
 
-    if(_dl_code EQUAL 0 AND EXISTS "${_tmp_file}")
-        file(SIZE "${_tmp_file}" _dl_size)
+    if(_dl_code EQUAL 0 AND EXISTS "${_cache_file}")
+        file(SIZE "${_cache_file}" _dl_size)
         if(_dl_size GREATER 0)
             # Overwrite the real, tracked file in place - this is the
             # "update src/public_suffix_list.dat every time" part.
-            file(RENAME "${_tmp_file}" "${ARG_TARGET_FILE}")
-            file(WRITE "${_cache_marker}" "")
+            # configure_file(... COPYONLY) is used rather than
+            # file(RENAME) because RENAME is a plain filesystem move and
+            # fails with "cannot move to a different disk drive" when the
+            # build dir and the source tree sit on different drives (seen
+            # on Windows CI, where cibuildwheel builds under a C: temp
+            # dir while the checkout is on D:). COPYONLY copies actual
+            # content, so it works across drives/filesystems, and has
+            # worked since ancient CMake versions.
+            configure_file("${_cache_file}" "${ARG_TARGET_FILE}" COPYONLY)
             message(STATUS "[PSL] Downloaded and updated ${ARG_TARGET_FILE} (${_dl_size} bytes)")
             set(${ARG_OUTPUT_VAR} "${ARG_TARGET_FILE}" PARENT_SCOPE)
             return()
         endif()
     endif()
 
-    # Download failed - don't leave a truncated/empty temp file behind,
-    # and don't write the cache marker, so the next configure retries.
+    # Download failed - don't leave a truncated/empty file behind in the
+    # build dir, or it'd be mistaken for a valid cache on the next
+    # configure and silently skip retrying.
     list(GET _dl_status 1 _dl_msg)
-    file(REMOVE "${_tmp_file}")
+    file(REMOVE "${_cache_file}")
 
     if(EXISTS "${ARG_TARGET_FILE}")
         message(WARNING
