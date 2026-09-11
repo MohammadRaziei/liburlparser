@@ -10,14 +10,13 @@
 # the same way cmake/DynamicVersion.cmake reads the version out of that
 # same header - one file stays the single source of truth instead of two.
 #
-# Caching: this does *not* keep a separate marker file. The download
-# lands directly in the build tree at
+# Caching: the download lands directly in the build tree at
 # ${CMAKE_CURRENT_BINARY_DIR}/public_suffix_list.dat, and that file's own
 # existence *is* the cache - if it's there, a download already succeeded
-# for this build directory and it's copied over TARGET_FILE again (in
-# case TARGET_FILE was hand-reverted) without hitting the network.
-# Deleting the build directory removes that cached copy and forces a
-# fresh download on the next configure - no other state to manage.
+# for this build directory and TARGET_FILE was already written back then,
+# so we skip the network and do nothing further. Deleting the build
+# directory removes that cached copy and forces a fresh download (and a
+# fresh copy into TARGET_FILE) on the next configure.
 #
 # TARGET_FILE (src/public_suffix_list.dat, tracked in git) is the one
 # real copy used for embedding and doubles as the offline fallback.
@@ -98,37 +97,32 @@ function(fetch_public_suffix_list)
     endif()
 
     # ARG_TARGET_FILE (src/public_suffix_list.dat) is the one real, tracked
-    # copy - every successful download overwrites it in place, so it's
-    # always what gets embedded and it's also the offline fallback.
+    # copy, used for embedding whether we downloaded this run or not - so
+    # OUTPUT_VAR is always just ARG_TARGET_FILE, set once at the end.
     #
-    # The cache is just the downloaded file itself, sitting in the build
-    # tree at _cache_file below - no separate marker needed. Its
-    # existence *is* the "a download already succeeded for this build
-    # directory" signal: deleting the build directory removes it and
-    # forces a fresh download on the next configure.
+    # The cache is the downloaded file itself, sitting in the build tree
+    # at _cache_file. Its existence *is* the "already downloaded for this
+    # build directory" signal, so if it's there we skip the network
+    # entirely - no re-copy, TARGET_FILE was already written the run this
+    # file first appeared. Deleting the build directory removes the cache
+    # and forces a fresh download on the next configure.
     set(_cache_file "${CMAKE_CURRENT_BINARY_DIR}/public_suffix_list.dat")
 
-    if(EXISTS "${_cache_file}")
-        message(STATUS "[PSL] Already downloaded for this build dir - using ${_cache_file}")
-        # Re-copy in case TARGET_FILE was hand-edited/reverted since the
-        # last configure - the build-dir cache stays the source of truth
-        # for what was actually downloaded, not whatever TARGET_FILE
-        # currently holds.
-        configure_file("${_cache_file}" "${ARG_TARGET_FILE}" COPYONLY)
-        set(${ARG_OUTPUT_VAR} "${ARG_TARGET_FILE}" PARENT_SCOPE)
-        return()
-    endif()
+    if(NOT EXISTS "${_cache_file}")
+        message(STATUS "[PSL] Downloading ${_psl_url}")
+        file(DOWNLOAD "${_psl_url}" "${_cache_file}"
+             STATUS _dl_status
+             TIMEOUT ${ARG_TIMEOUT}
+             TLS_VERIFY ON)
+        list(GET _dl_status 0 _dl_code)
+        list(GET _dl_status 1 _dl_msg)
 
-    message(STATUS "[PSL] Downloading ${_psl_url}")
-    file(DOWNLOAD "${_psl_url}" "${_cache_file}"
-         STATUS _dl_status
-         TIMEOUT ${ARG_TIMEOUT}
-         TLS_VERIFY ON)
-    list(GET _dl_status 0 _dl_code)
+        set(_dl_size 0)
+        if(_dl_code EQUAL 0 AND EXISTS "${_cache_file}")
+            file(SIZE "${_cache_file}" _dl_size)
+        endif()
 
-    if(_dl_code EQUAL 0 AND EXISTS "${_cache_file}")
-        file(SIZE "${_cache_file}" _dl_size)
-        if(_dl_size GREATER 0)
+        if(_dl_code EQUAL 0 AND _dl_size GREATER 0)
             # Overwrite the real, tracked file in place - this is the
             # "update src/public_suffix_list.dat every time" part.
             # configure_file(... COPYONLY) is used rather than
@@ -141,30 +135,30 @@ function(fetch_public_suffix_list)
             # worked since ancient CMake versions.
             configure_file("${_cache_file}" "${ARG_TARGET_FILE}" COPYONLY)
             message(STATUS "[PSL] Downloaded and updated ${ARG_TARGET_FILE} (${_dl_size} bytes)")
-            set(${ARG_OUTPUT_VAR} "${ARG_TARGET_FILE}" PARENT_SCOPE)
-            return()
+        else()
+            # Download failed - don't leave a truncated/empty file behind
+            # in the build dir, or it'd be mistaken for a valid cache on
+            # the next configure and silently skip retrying.
+            file(REMOVE "${_cache_file}")
+
+            if(EXISTS "${ARG_TARGET_FILE}")
+                message(WARNING
+                    "[PSL] Failed to download the Public Suffix List from ${_psl_url} "
+                    "(${_dl_msg}). Using the existing ${ARG_TARGET_FILE} as-is - it "
+                    "is only refreshed by a successful download, so it may be out "
+                    "of date."
+                )
+            else()
+                message(FATAL_ERROR
+                    "[PSL] Failed to download the Public Suffix List from ${_psl_url} "
+                    "(${_dl_msg}), and no existing file was found at "
+                    "${ARG_TARGET_FILE}."
+                )
+            endif()
         endif()
-    endif()
-
-    # Download failed - don't leave a truncated/empty file behind in the
-    # build dir, or it'd be mistaken for a valid cache on the next
-    # configure and silently skip retrying.
-    list(GET _dl_status 1 _dl_msg)
-    file(REMOVE "${_cache_file}")
-
-    if(EXISTS "${ARG_TARGET_FILE}")
-        message(WARNING
-            "[PSL] Failed to download the Public Suffix List from ${_psl_url} "
-            "(${_dl_msg}). Using the existing ${ARG_TARGET_FILE} as-is - it "
-            "is only refreshed by a successful download, so it may be out "
-            "of date."
-        )
-        set(${ARG_OUTPUT_VAR} "${ARG_TARGET_FILE}" PARENT_SCOPE)
     else()
-        message(FATAL_ERROR
-            "[PSL] Failed to download the Public Suffix List from ${_psl_url} "
-            "(${_dl_msg}), and no existing file was found at "
-            "${ARG_TARGET_FILE}."
-        )
+        message(STATUS "[PSL] Already downloaded for this build dir - using ${ARG_TARGET_FILE}")
     endif()
+
+    set(${ARG_OUTPUT_VAR} "${ARG_TARGET_FILE}" PARENT_SCOPE)
 endfunction()
