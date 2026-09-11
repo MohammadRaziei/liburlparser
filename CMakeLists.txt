@@ -40,7 +40,15 @@ endif()
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
-if(DEFINED SKBUILD)
+# --- httpp local patch --------------------------------------------------
+# Only treat this as "liburlparser is the scikit-build-core package being
+# installed" when SKBUILD_PROJECT_NAME actually IS liburlparser. Without
+# this guard, vendoring liburlparser as a subdirectory of another
+# scikit-build-core project (e.g. httpp) makes it wrongly think it's the
+# top-level package and try to build its own nanobind bindings, which
+# fails when nanobind isn't installed (it isn't a dependency of the
+# parent project at all). See src/third_party/README.md for details.
+if(DEFINED SKBUILD AND SKBUILD_PROJECT_NAME STREQUAL PROJECT_NAME)
     set(PYTHON_PROJECT_NAME "${SKBUILD_PROJECT_NAME}")
 elseif(BUILD_PYTHON)
     set(PYTHON_PROJECT_NAME "${CMAKE_BINARY_DIR}")
@@ -149,7 +157,10 @@ if(DEFINED PYTHON_PROJECT_NAME)
     endif()
 endif()
 
-if(DEFINED SKBUILD)
+if(DEFINED SKBUILD AND SKBUILD_PROJECT_NAME STREQUAL PROJECT_NAME)
+    # (see the httpp local-patch comment above) only early-return here when
+    # liburlparser itself is the package scikit-build-core is installing —
+    # not when it's vendored as a subdirectory of another project.
     RETURN()
 endif()
 
