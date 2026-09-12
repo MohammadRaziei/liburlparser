@@ -235,6 +235,118 @@ inline size_t find_first_of_3(const char* data, size_t start, size_t len, char c
     return len;
 }
 
+#if defined(URLPARSER_HAS_AVX2_DISPATCH)
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((target("avx2")))
+#endif
+inline bool find_first_of_authority_avx2(const char* data, size_t& i, size_t len) noexcept {
+    const __m256i vSlash = _mm256_set1_epi8('/');
+    const __m256i vQuest = _mm256_set1_epi8('?');
+    const __m256i vHash = _mm256_set1_epi8('#');
+    const __m256i vLBrk = _mm256_set1_epi8('[');
+    const __m256i vRBrk = _mm256_set1_epi8(']');
+    const __m256i vAt = _mm256_set1_epi8('@');
+    const __m256i vColon = _mm256_set1_epi8(':');
+    for (; i + 32 <= len; i += 32) {
+        const __m256i chunk =
+            _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data + i));
+        __m256i eq = _mm256_cmpeq_epi8(chunk, vSlash);
+        eq = _mm256_or_si256(eq, _mm256_cmpeq_epi8(chunk, vQuest));
+        eq = _mm256_or_si256(eq, _mm256_cmpeq_epi8(chunk, vHash));
+        eq = _mm256_or_si256(eq, _mm256_cmpeq_epi8(chunk, vLBrk));
+        eq = _mm256_or_si256(eq, _mm256_cmpeq_epi8(chunk, vRBrk));
+        eq = _mm256_or_si256(eq, _mm256_cmpeq_epi8(chunk, vAt));
+        eq = _mm256_or_si256(eq, _mm256_cmpeq_epi8(chunk, vColon));
+        const unsigned mask = static_cast<unsigned>(_mm256_movemask_epi8(eq));
+        if (mask != 0) {
+            i += count_trailing_zeros(mask);
+            return true;
+        }
+    }
+    return false;
+}
+#endif  // URLPARSER_HAS_AVX2_DISPATCH
+
+// Finds the first occurrence, from `start`, of any of the 7 bytes
+// scan_authority() below cares about: '/' '?' '#' '[' ']' '@' ':'.
+// Returns `len` if none appear.
+//
+// Same three-tier SIMD strategy as find_first_of_3() above, just widened
+// to 7 fixed bytes instead of a caller-supplied 3 - the authority section
+// (userinfo@host:port) can be long (it's the whole hostname), and on a
+// typical URL none of these 7 bytes appear until the very end of it, so
+// vectorizing the "nothing interesting here" case - by far the common
+// one - lets scan_authority() skip 16-32 plain hostname bytes per
+// instruction instead of branching on every single one.
+inline size_t find_first_of_authority(const char* data, size_t start, size_t len) noexcept {
+    size_t i = start;
+#if defined(URLPARSER_HAS_AVX2_DISPATCH)
+    if (cpu_has_avx2() && find_first_of_authority_avx2(data, i, len)) {
+        return i;
+    }
+#endif
+#if defined(URLPARSER_HAS_SSE2)
+    const __m128i vSlash = _mm_set1_epi8('/');
+    const __m128i vQuest = _mm_set1_epi8('?');
+    const __m128i vHash = _mm_set1_epi8('#');
+    const __m128i vLBrk = _mm_set1_epi8('[');
+    const __m128i vRBrk = _mm_set1_epi8(']');
+    const __m128i vAt = _mm_set1_epi8('@');
+    const __m128i vColon = _mm_set1_epi8(':');
+    for (; i + 16 <= len; i += 16) {
+        const __m128i chunk =
+            _mm_loadu_si128(reinterpret_cast<const __m128i*>(data + i));
+        __m128i eq = _mm_cmpeq_epi8(chunk, vSlash);
+        eq = _mm_or_si128(eq, _mm_cmpeq_epi8(chunk, vQuest));
+        eq = _mm_or_si128(eq, _mm_cmpeq_epi8(chunk, vHash));
+        eq = _mm_or_si128(eq, _mm_cmpeq_epi8(chunk, vLBrk));
+        eq = _mm_or_si128(eq, _mm_cmpeq_epi8(chunk, vRBrk));
+        eq = _mm_or_si128(eq, _mm_cmpeq_epi8(chunk, vAt));
+        eq = _mm_or_si128(eq, _mm_cmpeq_epi8(chunk, vColon));
+        const unsigned mask = static_cast<unsigned>(_mm_movemask_epi8(eq));
+        if (mask != 0) {
+            return i + count_trailing_zeros(mask);
+        }
+    }
+#elif defined(URLPARSER_HAS_NEON)
+    const uint8x16_t vSlash = vdupq_n_u8('/');
+    const uint8x16_t vQuest = vdupq_n_u8('?');
+    const uint8x16_t vHash = vdupq_n_u8('#');
+    const uint8x16_t vLBrk = vdupq_n_u8('[');
+    const uint8x16_t vRBrk = vdupq_n_u8(']');
+    const uint8x16_t vAt = vdupq_n_u8('@');
+    const uint8x16_t vColon = vdupq_n_u8(':');
+    for (; i + 16 <= len; i += 16) {
+        const uint8x16_t chunk =
+            vld1q_u8(reinterpret_cast<const uint8_t*>(data + i));
+        uint8x16_t eq = vceqq_u8(chunk, vSlash);
+        eq = vorrq_u8(eq, vceqq_u8(chunk, vQuest));
+        eq = vorrq_u8(eq, vceqq_u8(chunk, vHash));
+        eq = vorrq_u8(eq, vceqq_u8(chunk, vLBrk));
+        eq = vorrq_u8(eq, vceqq_u8(chunk, vRBrk));
+        eq = vorrq_u8(eq, vceqq_u8(chunk, vAt));
+        eq = vorrq_u8(eq, vceqq_u8(chunk, vColon));
+        if (vmaxvq_u8(eq) != 0) {
+            for (size_t j = 0; j < 16; ++j) {
+                char c = data[i + j];
+                if (c == '/' || c == '?' || c == '#' || c == '[' || c == ']' ||
+                    c == '@' || c == ':') {
+                    return i + j;
+                }
+            }
+        }
+    }
+#endif
+    for (; i < len; ++i) {
+        char c = data[i];
+        if (c == '/' || c == '?' || c == '#' || c == '[' || c == ']' ||
+            c == '@' || c == ':') {
+            return i;
+        }
+    }
+    return len;
+}
+
 // scheme := ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )  (RFC 3986 §3.1)
 constexpr bool is_scheme_char(char c) noexcept {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
@@ -267,7 +379,16 @@ AuthorityBounds scan_authority(std::string_view url, size_t position) noexcept {
     size_t at_pos = std::string::npos;
     size_t colon_pos = std::string::npos;
     bool in_ip_literal = false;
-    for (size_t i = position; i < url.length(); ++i) {
+    // Jump straight to each candidate byte via find_first_of_authority()
+    // instead of branching on every single character - on a typical URL
+    // the authority section (the whole hostname, plus optional
+    // userinfo/port) is mostly plain characters none of the 7 bytes below,
+    // so this turns "check every byte" into "check every match", with the
+    // gaps between matches skipped 16-32 bytes at a time via SIMD.
+    size_t i = position;
+    while (i < url.length()) {
+        i = find_first_of_authority(url.data(), i, url.length());
+        if (i == url.length()) break;
         char c = url[i];
         if (c == '/' || c == '?' || c == '#') {
             authority_end = i;
@@ -283,6 +404,7 @@ AuthorityBounds scan_authority(std::string_view url, size_t position) noexcept {
         } else if (c == ':' && !in_ip_literal && colon_pos == std::string::npos) {
             colon_pos = i;
         }
+        ++i;
     }
     const size_t host_start = (at_pos != std::string::npos) ? at_pos + 1 : position;
     const size_t host_end = (colon_pos != std::string::npos) ? colon_pos : authority_end;
