@@ -811,6 +811,14 @@ std::ostream& operator<<(std::ostream& os, const urlparser::url& dt) {
 class urlparser::detail::suffix_table {
    public:
     ankerl::unordered_dense::map<std::string, size_t> data;
+    // The most labels any single loaded rule has (after wildcard/
+    // exception level_adjust - see add_rule()). suffix_of() uses this to
+    // skip straight past subdomain labels that can't possibly be part
+    // of a match: a hostname can carry arbitrarily many subdomain
+    // levels, but no PSL rule in practice goes past a handful, so
+    // there's no point even checking (let alone hashing) a candidate
+    // suffix longer than the deepest rule that exists.
+    size_t max_depth = 0;
 };
 
 urlparser::psl::psl() noexcept : levels_(std::make_unique<detail::suffix_table>()) {}
@@ -904,10 +912,33 @@ bool urlparser::psl::is_suffix(std::string_view text) const noexcept {
  * reallocates) rather than re-scanning hostname_text a second time to
  * re-derive and re-copy the same substring, the way this used to be
  * split across suffix_length() + last_segments().
+ *
+ * Before that walk starts, tld is truncated up front to at most
+ * max_depth labels (see suffix_table::max_depth) - a hostname can carry
+ * arbitrarily many subdomain levels ("a.b.c.d.example.com"), but no PSL
+ * rule is ever deeper than a handful of labels, so any labels beyond
+ * that can never be part of a match. Without this, a deeply-nested
+ * hostname would start the shrinking walk by hashing the *entire*
+ * string - guaranteed to miss - before ever narrowing down to a length
+ * any rule could actually match at. This has no effect on a hostname
+ * that's already <= max_depth labels (true for most real hostnames,
+ * including this benchmark's corpus, which is mostly bare registrable
+ * domains with no subdomains at all), only on ones with more subdomain
+ * levels than that.
  */
 std::string urlparser::psl::suffix_of(const std::string& hostname_text) const {
     std::string tld(hostname_text.rbegin(), hostname_text.rend());
     std::transform(tld.begin(), tld.end(), tld.begin(), ascii_tolower);
+
+    if (levels_->max_depth > 0) {
+        size_t dot_count = 0;
+        for (size_t i = 0; i < tld.size(); ++i) {
+            if (tld[i] == '.' && ++dot_count == levels_->max_depth) {
+                tld.resize(i);
+                break;
+            }
+        }
+    }
 
     while (!tld.empty()) {
         if (auto it = levels_->data.find(tld); it != levels_->data.end()) {
@@ -944,6 +975,7 @@ size_t urlparser::psl::segment_count(const std::string& text) const {
 void urlparser::psl::add_rule(std::string& rule, int level_adjust, size_t trim) {
     std::string copy(rule.rbegin(), rule.rend() - trim);
     size_t length = segment_count(copy) + level_adjust;
+    if (length > levels_->max_depth) levels_->max_depth = length;
     levels_->data[std::move(copy)] = length;
 }
 
