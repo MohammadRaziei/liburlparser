@@ -811,14 +811,14 @@ std::ostream& operator<<(std::ostream& os, const urlparser::url& dt) {
 class urlparser::detail::suffix_table {
    public:
     ankerl::unordered_dense::map<std::string, size_t> data;
-    // The most labels any single loaded rule has (after wildcard/
-    // exception level_adjust - see add_rule()). suffix_of() uses this to
-    // skip straight past subdomain labels that can't possibly be part
-    // of a match: a hostname can carry arbitrarily many subdomain
-    // levels, but no PSL rule in practice goes past a handful, so
-    // there's no point even checking (let alone hashing) a candidate
-    // suffix longer than the deepest rule that exists.
-    size_t max_depth = 0;
+    // The longest single loaded rule, in characters (reversed form, so
+    // this is directly comparable to a candidate tld's size() - see
+    // add_rule()). suffix_of() checks a candidate's length against this
+    // - an O(1) comparison - before ever hashing it: no key in `data`
+    // is longer than this, so a longer candidate is a guaranteed miss,
+    // and skipping the hash lookup for it costs nothing beyond a single
+    // integer compare already on hand.
+    size_t max_length = 0;
 };
 
 urlparser::psl::psl() noexcept : levels_(std::make_unique<detail::suffix_table>()) {}
@@ -913,58 +913,59 @@ bool urlparser::psl::is_suffix(std::string_view text) const noexcept {
  * re-derive and re-copy the same substring, the way this used to be
  * split across suffix_length() + last_segments().
  *
- * Before that walk starts, tld is truncated up front to at most
- * max_depth labels (see suffix_table::max_depth) - a hostname can carry
- * arbitrarily many subdomain levels ("a.b.c.d.example.com"), but no PSL
- * rule is ever deeper than a handful of labels, so any labels beyond
- * that can never be part of a match. Without this, a deeply-nested
- * hostname would start the shrinking walk by hashing the *entire*
- * string - guaranteed to miss - before ever narrowing down to a length
- * any rule could actually match at.
+ * Each candidate's length is checked against suffix_table::max_length
+ * (the longest single loaded rule, in characters - see add_rule()) before
+ * hashing it: no key in `data` is longer than that, so a longer candidate
+ * is a guaranteed miss, and an O(1) length compare is cheaper than
+ * computing a hash that was never going to find anything. This matters
+ * most for a hostname with many labels ("a.b.c.d.example.com") or just a
+ * long first label - either way the first candidate or two tried can
+ * easily be longer than any real rule, and this skips hashing those
+ * without needing to know anything about labels or depth, just length.
  *
- * That truncation is gated behind a cheap O(1) length check
- * (tld.size() >= 2*max_depth+1 - the shortest a hostname could possibly
- * be and still have more than max_depth labels) before the O(n) dot-
- * counting scan that does the actual truncating. An earlier version
- * scanned unconditionally on every call, including short hostnames that
- * were never going to be truncated - measured as a real throughput
- * regression on short-domain-heavy corpora (an unconditional extra
- * full-string pass adds up even though it changes nothing for them),
- * not just noise on a quieter machine than this was first benchmarked
- * on. The guard makes the common case (hostnames well under 2*max_depth
- * characters) skip the scan entirely.
+ * An earlier version *also* truncated tld up front by label count
+ * (max_depth) as a separate step before this loop, specifically to
+ * handle the many-labels case. It was gated behind its own length check
+ * to stay cheap for short hostnames, but that check only bounded the
+ * *total* length, not how many actual labels were packed into it - so a
+ * hostname with few labels that each happened to be long (AWS/CDN-style
+ * endpoints with long hashed subdomain labels are a real example) still
+ * passed the length gate, then paid for a full scan that found nothing
+ * to truncate. Measured as a real regression on exactly that shape of
+ * hostname. The max_length check above, alone, covers the same
+ * many-labels case just as well - each too-long candidate still skips
+ * its hash lookup - without that separate scan's risk on this other,
+ * equally real shape of hostname.
  */
 std::string urlparser::psl::suffix_of(const std::string& hostname_text) const {
     std::string tld(hostname_text.rbegin(), hostname_text.rend());
     std::transform(tld.begin(), tld.end(), tld.begin(), ascii_tolower);
 
-    // Cheap O(1) guard before the O(n) scan below: having more than
-    // max_depth labels needs at least max_depth+1 labels and max_depth
-    // dots between them, and every label is at least 1 character - so
-    // anything shorter than 2*max_depth+1 characters *cannot* have more
-    // than max_depth labels, full stop, no need to scan it to find
-    // that out. Without this, the scan below ran unconditionally on
-    // every call - including the short, common case it was never
-    // meant to change anything for - which is exactly the extra full
-    // pass that showed up as a regression on short-domain-heavy
-    // corpora once measured on a quieter machine than this was first
-    // benchmarked on.
-    if (levels_->max_depth > 0 && tld.size() >= 2 * levels_->max_depth + 1) {
-        size_t dot_count = 0;
-        for (size_t i = 0; i < tld.size(); ++i) {
-            if (tld[i] == '.' && ++dot_count == levels_->max_depth) {
-                tld.resize(i);
-                break;
-            }
-        }
-    }
+    // NOTE: an earlier version also truncated tld up front by label
+    // count (max_depth), separately from the max_length check below.
+    // That caught the "hostname has many more labels than any PSL rule"
+    // case, but needed an O(n) scan to count dots - and for a hostname
+    // with *few* labels that happen to be *long* (e.g. AWS/CDN-style
+    // endpoints with long hashed subdomain labels), that scan ran across
+    // the whole string and found nothing to truncate, paying for the
+    // scan with no benefit. Measured as a real regression on exactly
+    // that shape of hostname. The max_length check alone, inside the
+    // loop below, already covers the same "many labels" case just as
+    // well without that risk: each early (too-long) candidate skips its
+    // hash lookup via the same O(1) comparison either way, so the
+    // shrink-and-check loop naturally costs about the same as jumping
+    // straight to a shorter starting point would have - just without a
+    // separate scan that can lose on this other, equally real shape of
+    // hostname.
 
     while (!tld.empty()) {
-        if (auto it = levels_->data.find(tld); it != levels_->data.end()) {
-            // tld already *is* the matched suffix, reversed and
-            // lowercased - reverse it back in place and we're done.
-            std::reverse(tld.begin(), tld.end());
-            return tld;
+        if (tld.size() <= levels_->max_length) {
+            if (auto it = levels_->data.find(tld); it != levels_->data.end()) {
+                // tld already *is* the matched suffix, reversed and
+                // lowercased - reverse it back in place and we're done.
+                std::reverse(tld.begin(), tld.end());
+                return tld;
+            }
         }
         size_t position = tld.rfind('.');
         tld.resize((position == std::string::npos || position == 0) ? 0 : position);
@@ -994,7 +995,7 @@ size_t urlparser::psl::segment_count(const std::string& text) const {
 void urlparser::psl::add_rule(std::string& rule, int level_adjust, size_t trim) {
     std::string copy(rule.rbegin(), rule.rend() - trim);
     size_t length = segment_count(copy) + level_adjust;
-    if (length > levels_->max_depth) levels_->max_depth = length;
+    if (copy.size() > levels_->max_length) levels_->max_length = copy.size();
     levels_->data[std::move(copy)] = length;
 }
 
