@@ -920,17 +920,36 @@ bool urlparser::psl::is_suffix(std::string_view text) const noexcept {
  * that can never be part of a match. Without this, a deeply-nested
  * hostname would start the shrinking walk by hashing the *entire*
  * string - guaranteed to miss - before ever narrowing down to a length
- * any rule could actually match at. This has no effect on a hostname
- * that's already <= max_depth labels (true for most real hostnames,
- * including this benchmark's corpus, which is mostly bare registrable
- * domains with no subdomains at all), only on ones with more subdomain
- * levels than that.
+ * any rule could actually match at.
+ *
+ * That truncation is gated behind a cheap O(1) length check
+ * (tld.size() >= 2*max_depth+1 - the shortest a hostname could possibly
+ * be and still have more than max_depth labels) before the O(n) dot-
+ * counting scan that does the actual truncating. An earlier version
+ * scanned unconditionally on every call, including short hostnames that
+ * were never going to be truncated - measured as a real throughput
+ * regression on short-domain-heavy corpora (an unconditional extra
+ * full-string pass adds up even though it changes nothing for them),
+ * not just noise on a quieter machine than this was first benchmarked
+ * on. The guard makes the common case (hostnames well under 2*max_depth
+ * characters) skip the scan entirely.
  */
 std::string urlparser::psl::suffix_of(const std::string& hostname_text) const {
     std::string tld(hostname_text.rbegin(), hostname_text.rend());
     std::transform(tld.begin(), tld.end(), tld.begin(), ascii_tolower);
 
-    if (levels_->max_depth > 0) {
+    // Cheap O(1) guard before the O(n) scan below: having more than
+    // max_depth labels needs at least max_depth+1 labels and max_depth
+    // dots between them, and every label is at least 1 character - so
+    // anything shorter than 2*max_depth+1 characters *cannot* have more
+    // than max_depth labels, full stop, no need to scan it to find
+    // that out. Without this, the scan below ran unconditionally on
+    // every call - including the short, common case it was never
+    // meant to change anything for - which is exactly the extra full
+    // pass that showed up as a regression on short-domain-heavy
+    // corpora once measured on a quieter machine than this was first
+    // benchmarked on.
+    if (levels_->max_depth > 0 && tld.size() >= 2 * levels_->max_depth + 1) {
         size_t dot_count = 0;
         for (size_t i = 0; i < tld.size(); ++i) {
             if (tld[i] == '.' && ++dot_count == levels_->max_depth) {
