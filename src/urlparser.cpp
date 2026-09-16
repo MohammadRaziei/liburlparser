@@ -819,6 +819,16 @@ class urlparser::detail::suffix_table {
     // and skipping the hash lookup for it costs nothing beyond a single
     // integer compare already on hand.
     size_t max_length = 0;
+    // The most labels any single loaded rule has (after wildcard/
+    // exception level_adjust - see add_rule()). Used together with
+    // max_length above (see suffix_of()) to bound the initial
+    // truncation scan by *whichever* limit is reached first - some
+    // hostnames hit the depth limit long before the length limit (many
+    // short subdomain labels), others hit the length limit long before
+    // the depth limit (few long labels) - so checking both in the same
+    // scan, stopping at the first one hit, bounds the scan tightly for
+    // either shape instead of only one of them.
+    size_t max_depth = 0;
 };
 
 urlparser::psl::psl() noexcept : levels_(std::make_unique<detail::suffix_table>()) {}
@@ -941,22 +951,53 @@ std::string urlparser::psl::suffix_of(const std::string& hostname_text) const {
     std::string tld(hostname_text.rbegin(), hostname_text.rend());
     std::transform(tld.begin(), tld.end(), tld.begin(), ascii_tolower);
 
-    // NOTE: an earlier version also truncated tld up front by label
-    // count (max_depth), separately from the max_length check below.
-    // That caught the "hostname has many more labels than any PSL rule"
-    // case, but needed an O(n) scan to count dots - and for a hostname
-    // with *few* labels that happen to be *long* (e.g. AWS/CDN-style
-    // endpoints with long hashed subdomain labels), that scan ran across
-    // the whole string and found nothing to truncate, paying for the
-    // scan with no benefit. Measured as a real regression on exactly
-    // that shape of hostname. The max_length check alone, inside the
-    // loop below, already covers the same "many labels" case just as
-    // well without that risk: each early (too-long) candidate skips its
-    // hash lookup via the same O(1) comparison either way, so the
-    // shrink-and-check loop naturally costs about the same as jumping
-    // straight to a shorter starting point would have - just without a
-    // separate scan that can lose on this other, equally real shape of
-    // hostname.
+    // Bound the very first candidate up front by *whichever* of
+    // max_depth (label count) or max_length (character count) is hit
+    // first while scanning left to right - see suffix_table for why
+    // both, not just one: a hostname with many short subdomain labels
+    // hits the depth limit long before the length limit, while one with
+    // few long labels hits the length limit long before the depth limit
+    // (an earlier version bounded by length alone still had to scan all
+    // the way to that length limit for the second shape, even though
+    // depth alone would have stopped much sooner - checking both in one
+    // pass, stopping at the first hit, is never worse than either limit
+    // alone and is often tighter than both).
+    //
+    // The scan itself never looks past max_length characters regardless
+    // of which limit ends up triggering, or how long the actual
+    // hostname is - unlike counting dots with no length bound at all
+    // (an even earlier version), which scanned the *whole* hostname for
+    // a hostname with few, long labels and found nothing to truncate: a
+    // real measured regression on exactly that shape of hostname.
+    //
+    // Landing exactly on the length limit can land mid-label (partway
+    // through a label that continues past that cut) rather than exactly
+    // on a label boundary; last_dot (the rightmost '.' found during the
+    // scan) is what "no rule this long" and "stopped mid-label" both
+    // fall back to, so neither case hands the loop below a partial,
+    // meaningless fragment of a label.
+    if (levels_->max_length > 0 && tld.size() > levels_->max_length) {
+        const size_t scan_limit = std::min(tld.size(), levels_->max_length);
+        size_t dot_count = 0;
+        size_t last_dot = std::string::npos;
+        size_t cut = std::string::npos;
+
+        for (size_t i = 0; i < scan_limit; ++i) {
+            if (tld[i] == '.') {
+                last_dot = i;
+                if (levels_->max_depth > 0 && ++dot_count == levels_->max_depth) {
+                    cut = i;
+                    break;
+                }
+            }
+        }
+
+        if (cut == std::string::npos) {
+            cut = (tld[levels_->max_length] == '.') ? levels_->max_length : last_dot;
+        }
+
+        tld.resize((cut == std::string::npos || cut == 0) ? 0 : cut);
+    }
 
     while (!tld.empty()) {
         if (tld.size() <= levels_->max_length) {
@@ -996,6 +1037,7 @@ void urlparser::psl::add_rule(std::string& rule, int level_adjust, size_t trim) 
     std::string copy(rule.rbegin(), rule.rend() - trim);
     size_t length = segment_count(copy) + level_adjust;
     if (copy.size() > levels_->max_length) levels_->max_length = copy.size();
+    if (length > levels_->max_depth) levels_->max_depth = length;
     levels_->data[std::move(copy)] = length;
 }
 
