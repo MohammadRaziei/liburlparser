@@ -679,10 +679,46 @@ std::string urlparser::url::str() const noexcept {
     return result;
 }
 
-std::string urlparser::url::abspath() const noexcept {
+namespace {
+// True if `path` needs no dot-segment resolution or double-slash collapsing
+// at all - i.e. running it through the full segment-by-segment resolver
+// below would reproduce it byte-for-byte. Checking this cheaply up front
+// lets the overwhelmingly common case (an already-clean path, which is
+// most real-world paths) skip that resolver entirely: no std::vector, no
+// per-segment loop, just a straight copy. Mirrors the "trivial path" fast
+// check ada's parse_prepared_path() does before its own path parser.
+bool path_is_already_normalized(std::string_view path) noexcept {
+    if (path.find("//") != std::string_view::npos) return false;  // collapses to '/'
+    const size_t dot = path.find('.');
+    if (dot == std::string_view::npos) return true;  // no dots at all - nothing to resolve
+    if (!path.empty() && path[0] == '.') return false;  // leading "." or ".." segment
+    // A dot only matters if it starts a real '.'/'..' segment - i.e. it
+    // directly follows a '/' AND is itself followed by end-of-string,
+    // another '.', or '/'. Anything else ("v1.2/api", "file.txt", ...) is
+    // just an ordinary character inside a segment and can be left alone.
+    size_t slashdot = path.find("/.");
+    while (slashdot != std::string_view::npos) {
+        const size_t after = slashdot + 2;
+        if (after == path.size() || path[after] == '.' || path[after] == '/') return false;
+        slashdot = path.find("/.", after);
+    }
+    return true;
+}
+}  // namespace
+
+const std::string& urlparser::url::abspath() const noexcept {
+    if (abspath_cache_.has_value()) return *abspath_cache_;
+
     // Resolves '.'/'..' path segments, the way a filesystem path resolver
-    // would - a pure computation (no mutation of any internal state).
+    // would - a pure computation (no mutation of any *other* internal
+    // state) - computed once and cached in abspath_cache_ from here on.
     const std::string_view path = field(path_);
+
+    if (path_is_already_normalized(path)) {
+        abspath_cache_ = std::string(path);
+        return *abspath_cache_;
+    }
+
     std::string result;
     std::vector<size_t> segment_starts;
 
@@ -714,7 +750,8 @@ std::string urlparser::url::abspath() const noexcept {
     }
     emit_segment(previous, path.size());
 
-    return result;
+    abspath_cache_ = std::move(result);
+    return *abspath_cache_;
 }
 
 urlparser::QueryParams urlparser::url::params() const noexcept {

@@ -720,7 +720,7 @@ class url {
     /** @brief The userinfo of the URL (e.g., "username:password"). */
     std::string_view userinfo() const noexcept { return field(userinfo_); }
     /** @brief The path, with '.'/'..' segments resolved. */
-    std::string abspath() const noexcept;
+    const std::string& abspath() const noexcept;
     /** @brief The raw host text (e.g., "example.com", "192.0.2.1", or "[::1]"), before hostname/ip classification. */
     std::string_view host_text() const noexcept { return field(host_); }
     /** @brief The port number of the URL, or 0 if not specified. */
@@ -755,6 +755,7 @@ class url {
     bool has_query_ = false;
     bool ignore_www_ = false;
     mutable std::optional<urlparser::host> host_cache_;
+    mutable std::optional<std::string> abspath_cache_;
 };
 }  // namespace urlparser
 
