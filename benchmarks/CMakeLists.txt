@@ -46,68 +46,82 @@ set(URLPARSER_GITHUB_URL "https://github.com/mohammadraziei/liburlparser.git")
 set(URLPARSER_BENCH_RESULTS_DIR ${URLPARSER_BENCH_BINARY_DIR}/results)
 file(MAKE_DIRECTORY ${URLPARSER_BENCH_RESULTS_DIR})
 
-# ── Corpus: fetch a real-world domain list to benchmark against ───────────
+# ── Toolchain detection ─────────────────────────────────────────────────
+# A language is skipped (with a warning) only when its toolchain itself
+# isn't found. Everything else (venvs, pip installs, FetchContent) happens
+# inside that language's own CMakeLists.txt once we know the toolchain
+# exists. Needed here too, now, since corpus generation below runs Python.
+find_package(Python3 COMPONENTS Interpreter)
+
+# ── Corpus: fetch a real-world domain list, derive a URL list from it ─────
 # 10,000 real, currently-registered domains (Majestic Million-derived),
 # covering a wide range of TLDs/ccTLDs and subdomain shapes — not synthetic
 # data generated just for this benchmark.
-set(URLPARSER_BENCH_DOMAINS_FILE ${URLPARSER_BENCH_BINARY_DIR}/domains.txt)
-if(NOT EXISTS ${URLPARSER_BENCH_DOMAINS_FILE})
-    file(DOWNLOAD
-        "https://raw.githubusercontent.com/felmoltor/robotstxt/master/top.10000.majestic.domains.txt"
-        ${URLPARSER_BENCH_DOMAINS_FILE}
-        STATUS _download_status
-        TLS_VERIFY ON
-    )
-    list(GET _download_status 0 _download_code)
-    if(NOT _download_code EQUAL 0)
-        message(FATAL_ERROR "Failed to download domain corpus: ${_download_status}")
+#
+# Shared, single location for the downloaded/derived corpus - NOT per
+# build directory (${URLPARSER_BENCH_BINARY_DIR} changes for every fresh
+# `cmake -B <dir>`, which used to mean a fresh multi-hundred-KB download
+# every time). Every build reuses this one copy; .gitignore'd, never
+# committed. Standalone (non-CMake) tools under benchmarks/ read from here
+# too - this is the single source of truth for the corpus, nothing
+# downloads or derives it a second way anywhere else.
+#
+# The actual download + derivation logic lives in corpus/generate_corpus.py,
+# not here: string/URL construction is a poor fit for CMake's DSL, and the
+# derived urls.txt is round-tripped through ada_url's WHATWG-spec parser
+# there (the same URL library this project's own benchmarks compare
+# against) rather than trusted as hand-built strings.
+set(URLPARSER_BENCH_CORPUS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/corpus)
+set(URLPARSER_BENCH_DOMAINS_FILE ${URLPARSER_BENCH_CORPUS_DIR}/domains.txt)
+set(URLPARSER_BENCH_URLS_FILE ${URLPARSER_BENCH_CORPUS_DIR}/urls.txt)
+
+if(Python3_Interpreter_FOUND AND (NOT EXISTS ${URLPARSER_BENCH_DOMAINS_FILE} OR NOT EXISTS ${URLPARSER_BENCH_URLS_FILE}))
+    # A small, dedicated venv just for ada-url (a ~2MB prebuilt wheel, no
+    # compilation) - kept separate from the full benchmark venv in
+    # python/CMakeLists.txt, which isn't set up yet at this point in the
+    # configure and pulls in far more (nanobind, scikit-build-core, ...)
+    # than this one script needs.
+    set(_corpus_venv ${URLPARSER_BENCH_CORPUS_DIR}/.venv)
+    if(NOT EXISTS ${_corpus_venv})
+        execute_process(COMMAND ${Python3_EXECUTABLE} -m venv ${_corpus_venv} RESULT_VARIABLE _venv_rc)
+        if(NOT _venv_rc EQUAL 0)
+            message(FATAL_ERROR "Failed to create corpus-generation venv")
+        endif()
+        if(WIN32)
+            set(_corpus_python ${_corpus_venv}/Scripts/python.exe)
+        else()
+            set(_corpus_python ${_corpus_venv}/bin/python)
+        endif()
+        execute_process(COMMAND ${_corpus_python} -m pip install -q ada-url RESULT_VARIABLE _pip_rc)
+        if(NOT _pip_rc EQUAL 0)
+            message(FATAL_ERROR "Failed to install ada-url into the corpus-generation venv")
+        endif()
     endif()
+    if(WIN32)
+        set(_corpus_python ${_corpus_venv}/Scripts/python.exe)
+    else()
+        set(_corpus_python ${_corpus_venv}/bin/python)
+    endif()
+
+    execute_process(
+        COMMAND ${_corpus_python} ${URLPARSER_BENCH_CORPUS_DIR}/generate_corpus.py
+        RESULT_VARIABLE _corpus_rc
+    )
+    if(NOT _corpus_rc EQUAL 0)
+        message(FATAL_ERROR "Failed to generate benchmark corpus")
+    endif()
+elseif(NOT Python3_Interpreter_FOUND AND (NOT EXISTS ${URLPARSER_BENCH_DOMAINS_FILE} OR NOT EXISTS ${URLPARSER_BENCH_URLS_FILE}))
+    message(FATAL_ERROR "Python3 is required to generate the benchmark corpus (benchmarks/corpus/generate_corpus.py)")
 endif()
 
 file(STRINGS ${URLPARSER_BENCH_DOMAINS_FILE} URLPARSER_BENCH_DOMAINS)
 list(LENGTH URLPARSER_BENCH_DOMAINS URLPARSER_BENCH_DOMAIN_COUNT)
 message(STATUS "liburlparser benchmarks: domain corpus has ${URLPARSER_BENCH_DOMAIN_COUNT} domains")
 
-# Derive a full-URL corpus from the same real domains — varied paths,
-# query strings, and a "www." subdomain on every third entry, so the URL
-# parse benchmark isn't just "scheme + bare host" for every row.
-set(URLPARSER_BENCH_URLS_FILE ${URLPARSER_BENCH_BINARY_DIR}/urls.txt)
-if(NOT EXISTS ${URLPARSER_BENCH_URLS_FILE})
-    set(_urls_content "")
-    set(_i 0)
-    foreach(_domain ${URLPARSER_BENCH_DOMAINS})
-        math(EXPR _mod3 "${_i} % 3")
-        math(EXPR _mod4 "${_i} % 4")
-        if(_mod3 EQUAL 0)
-            set(_host "www.${_domain}")
-        else()
-            set(_host "${_domain}")
-        endif()
-        if(_mod4 EQUAL 0)
-            set(_url "https://${_host}/")
-        elseif(_mod4 EQUAL 1)
-            set(_url "https://${_host}/index.html?ref=bench&id=${_i}")
-        elseif(_mod4 EQUAL 2)
-            set(_url "http://${_host}/articles/${_i}/view")
-        else()
-            set(_url "https://${_host}/search?q=test+${_i}#results")
-        endif()
-        string(APPEND _urls_content "${_url}\n")
-        math(EXPR _i "${_i} + 1")
-    endforeach()
-    file(WRITE ${URLPARSER_BENCH_URLS_FILE} "${_urls_content}")
-endif()
-
-# ── Toolchain detection ─────────────────────────────────────────────────
-# A language is skipped (with a warning) only when its toolchain itself
-# isn't found. Everything else (venvs, pip installs, FetchContent) happens
-# inside that language's own CMakeLists.txt once we know the toolchain
-# exists.
-find_package(Python3 COMPONENTS Interpreter)
-
 add_custom_target(urlparser_benchmarks
     COMMENT "Running all available liburlparser language benchmarks"
 )
+
 
 # C++ always runs: this project itself requires a CXX compiler to configure
 # at all, so there's nothing to conditionally detect.

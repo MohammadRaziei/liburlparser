@@ -15,8 +15,10 @@ thermal throttling) is distributed roughly evenly across all three instead
 of biasing whichever ran last - an earlier two-separate-process comparison
 was invalidated by exactly this kind of noise.
 
-`abspath_fix.diff` is the actual patch applied to `include/urlparser.h` and
-`src/urlparser.cpp` to produce the "new" behavior.
+The actual fix lives directly in `include/urlparser.h` and
+`src/urlparser.cpp` (the `path_is_already_normalized()` fast path and the
+`abspath_cache_` member) - no separate patch file, it's just part of the
+normal source.
 
 ## Results (this machine, 3 runs)
 

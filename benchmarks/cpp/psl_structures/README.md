@@ -3,8 +3,10 @@
 `psl_structure_comparison.cpp` is a standalone, self-contained head-to-head
 benchmark of six candidate designs for `psl::suffix_of()`'s lookup table,
 built against the project's *actual* `public_suffix_list.dat` (~9,766
-rules) and a bundled sample of 10,000 real-world domains
-(`domains.txt`). It exists because an earlier version of
+rules) and the same 10,000-real-domain corpus the main CMake benchmark
+suite uses (`../../corpus/domains.txt` - not committed; a plain CMake
+configure of `benchmarks/` populates it, see Build & run below). It
+exists because an earlier version of
 `../../OPTIMIZATION_NOTES.md` asserted specific benchmark numbers for a
 Trie and a sorted-array/binary-search design with **no corresponding code
 anywhere in the repo's history** to reproduce them. Those numbers may or
@@ -77,9 +79,12 @@ optimization, so there was no per-rule heap allocation left to remove.
 ## Build & run
 
 From the repo root (paths default to the repo layout; pass your own if
-running from elsewhere):
+running from elsewhere). The domain corpus isn't committed - a plain
+CMake configure of `benchmarks/` populates `benchmarks/corpus/` (the same
+step the main benchmark suite already does; no separate download script):
 
 ```sh
+cmake -S benchmarks -B benchmarks/build   # configure only is enough
 g++ -O3 -std=c++17 benchmarks/cpp/psl_structures/psl_structure_comparison.cpp \
     -o /tmp/psl_structure_comparison
 /tmp/psl_structure_comparison

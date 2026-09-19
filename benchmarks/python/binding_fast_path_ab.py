@@ -2,7 +2,10 @@ import time
 import liburlparser
 import pydomainextractor
 
-with open("domains.txt") as f:
+import os
+
+CORPUS_DIR = os.path.join(os.path.dirname(__file__), "..", "corpus")
+with open(os.path.join(CORPUS_DIR, "domains.txt")) as f:
     domains = [line.strip() for line in f if line.strip()]
 
 pde = pydomainextractor.DomainExtractor()

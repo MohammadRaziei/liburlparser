@@ -556,7 +556,7 @@ int main(int argc, char** argv) {
     // explicit paths if you're running it from elsewhere:
     //   ./psl_structure_comparison <public_suffix_list.dat> <domains.txt>
     std::string psl_path = argc > 1 ? argv[1] : "src/public_suffix_list.dat";
-    std::string domains_path = argc > 2 ? argv[2] : "benchmarks/cpp/psl_structures/domains.txt";
+    std::string domains_path = argc > 2 ? argv[2] : "benchmarks/corpus/domains.txt";
 
     // ---- Load real PSL (~9,766 rules) ----
     std::ifstream psl_file(psl_path);
