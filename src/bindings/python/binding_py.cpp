@@ -11,6 +11,103 @@
 namespace nb = nanobind;
 using namespace nb::literals;
 
+// Interned dict keys, built once (first use) and reused for the process's
+// lifetime, instead of a fresh PyUnicode object per key on every call -
+// mirrors the technique PyDomainExtractor's pyo3 binding uses
+// (`pyo3::intern!`) for its hot, dict-returning extract().
+namespace interned {
+inline PyObject* type_() { static PyObject* k = PyUnicode_InternFromString("type"); return k; }
+inline PyObject* str_() { static PyObject* k = PyUnicode_InternFromString("str"); return k; }
+inline PyObject* subdomain_() { static PyObject* k = PyUnicode_InternFromString("subdomain"); return k; }
+inline PyObject* domain_() { static PyObject* k = PyUnicode_InternFromString("domain"); return k; }
+inline PyObject* domain_name_() { static PyObject* k = PyUnicode_InternFromString("domain_name"); return k; }
+inline PyObject* suffix_() { static PyObject* k = PyUnicode_InternFromString("suffix"); return k; }
+inline PyObject* hostname_literal() { static PyObject* v = PyUnicode_InternFromString("hostname"); return v; }
+}  // namespace interned
+
+// Production dict-builder for Hostname.extract_dict_from_host/_url: raw
+// CPython C-API + interned keys (mirrors PyDomainExtractor's pyo3
+// `intern!` technique) + direct std::string_view slices of the
+// already-owned host buffer, computed by mirroring
+// urlparser::hostname::ensure_parsed()'s logic (including its ignore_www
+// edge cases) instead of going through hostname's own mutable-field
+// caching, which would materialize each of domain_/subdomain_/fulldomain_
+// as a separately-*owned* std::string first (one substr() allocation
+// each) only for this function to allocate a *second* time
+// (PyUnicode_FromStringAndSize) to copy them into Python objects.
+// domain_name still needs one concatenation (domain + "." + suffix) -
+// there's no getting around that allocation if the field is to exist at
+// all. See benchmarks/python/binding_fast_path_ab.py for how this was
+// arrived at and measured (~2x over the original nb::dict-based version).
+inline nb::object hostname_to_dict_6field_direct(const std::string& host_owned, bool ignore_www) {
+    std::string suffix = urlparser::psl::instance().suffix_of(host_owned);
+    const size_t suffix_pos =
+        (suffix.size() < host_owned.size()) ? host_owned.size() - suffix.size() - 1 : std::string::npos;
+
+    std::string_view full = host_owned;
+    std::string_view domain_view, subdomain_view;
+
+    if (suffix_pos != std::string::npos && suffix_pos >= 1) {
+        std::string_view domain_part(host_owned.data(), suffix_pos);
+        const size_t domain_pos = domain_part.find_last_of('.');
+        if (domain_pos != std::string_view::npos) {
+            size_t subdomain_start = 0;
+            bool bail = false;
+            if (ignore_www) {
+                const size_t www_pos = domain_part.find("www.");
+                if (www_pos != 0) {
+                    if (www_pos != std::string_view::npos) bail = true;  // matches ensure_parsed()'s early return
+                } else {
+                    subdomain_start = 4;
+                    full = full.substr(4);  // fulldomain_ drops the "www." prefix too
+                }
+            }
+            if (!bail) {
+                if (subdomain_start < domain_pos) subdomain_view = domain_part.substr(subdomain_start, domain_pos - subdomain_start);
+                domain_view = domain_part.substr(domain_pos + 1);
+            } else {
+                domain_view = domain_part;  // unsplit, exactly like the early return in ensure_parsed()
+            }
+        } else {
+            domain_view = domain_part;
+        }
+    }
+
+    std::string domain_name = std::string(domain_view) + "." + suffix;  // one unavoidable allocation
+
+    PyObject* dict = PyDict_New();
+    auto set = [&](PyObject* key, std::string_view value) {
+        PyObject* v = PyUnicode_FromStringAndSize(value.data(), static_cast<Py_ssize_t>(value.size()));
+        PyDict_SetItem(dict, key, v);
+        Py_DECREF(v);
+    };
+    PyDict_SetItem(dict, interned::type_(), interned::hostname_literal());
+    set(interned::str_(), full);
+    set(interned::subdomain_(), subdomain_view);
+    set(interned::domain_(), domain_view);
+    set(interned::domain_name_(), domain_name);
+    set(interned::suffix_(), suffix);
+    return nb::steal(dict);
+}
+
+// Isolation probes (temporary, benchmarking only) - narrow down exactly
+// where the remaining cost sits between "just copy the string" (already
+// measured, ~14.8M ops/s) and "full 3-field dict" (~3.2-3.4M ops/s).
+namespace probe {
+// Just the singleton access itself, called repeatedly - checks whether
+// Meyer's-singleton's thread-safe-init guard (an atomic load on every call
+// after the first) is contributing measurably at these throughput levels.
+inline size_t singleton_only() { return urlparser::psl::instance().suffix_of("x").size(); }
+
+// std::string copy + psl::instance().suffix_of() ONLY - no domain/subdomain
+// slicing, no dict, no Python object at all. Isolates pure PSL-lookup cost
+// (as actually exercised through this call path) from ensure_parsed()'s
+// extra domain_/subdomain_ allocations and from dict-building.
+inline size_t suffix_only(const std::string& host_owned) {
+    return urlparser::psl::instance().suffix_of(host_owned).size();
+}
+}  // namespace probe
+
 inline nb::dict hostname_to_dict(const urlparser::hostname& host) {
     nb::dict dict;
     dict["type"] = "hostname";
@@ -357,7 +454,7 @@ NB_MODULE(_urlparser_py, m) {
         .def_static(
             "extract_dict_from_host",
             [](std::string_view host, bool ignore_www) {
-                return hostname_to_dict(urlparser::hostname(std::string(host), ignore_www));
+                return hostname_to_dict_6field_direct(std::string(host), ignore_www);
             },
             nb::arg("host"), nb::arg("ignore_www") = false,
             "Parse `host` as a hostname and return {str, subdomain, domain, "
@@ -367,13 +464,28 @@ NB_MODULE(_urlparser_py, m) {
         .def_static(
             "extract_dict_from_url",
             [](std::string_view url, bool ignore_www) {
-                return hostname_to_dict(urlparser::hostname::from_url(url, ignore_www));
+                return hostname_to_dict_6field_direct(urlparser::url::extract_host(url), ignore_www);
             },
             nb::arg("url"), nb::arg("ignore_www") = false,
             "Extract the host from `url`, parse it as a hostname, and "
             "return {str, subdomain, domain, domain_name, suffix} "
             "directly - the single-call equivalent of "
-            "Hostname.from_url(url).to_dict().");
+            "Hostname.from_url(url).to_dict().")
+        .def_static("probe_singleton_only", []() { return probe::singleton_only(); })
+        .def_static("probe_suffix_only", [](std::string_view host) { return probe::suffix_only(std::string(host)); })
+        .def_static("probe_bare_call", [](std::string_view host) { return host.size(); })
+        .def_static(
+            "probe_construct_only",
+            [](std::string_view host) {
+                urlparser::hostname h(std::string(host), false);
+                return h.str().empty();
+            })
+        .def_static(
+            "probe_parsed_only",
+            [](std::string_view host) {
+                urlparser::hostname h(std::string(host), false);
+                return h.suffix().size();
+            });
 
     ipv4_cls
         .def_static(
