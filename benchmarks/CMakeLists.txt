@@ -76,35 +76,34 @@ set(URLPARSER_BENCH_DOMAINS_FILE ${URLPARSER_BENCH_CORPUS_DIR}/domains.txt)
 set(URLPARSER_BENCH_URLS_FILE ${URLPARSER_BENCH_CORPUS_DIR}/urls.txt)
 
 if(Python3_Interpreter_FOUND AND (NOT EXISTS ${URLPARSER_BENCH_DOMAINS_FILE} OR NOT EXISTS ${URLPARSER_BENCH_URLS_FILE}))
-    # A small, dedicated venv just for ada-url (a ~2MB prebuilt wheel, no
-    # compilation) - kept separate from the full benchmark venv in
-    # python/CMakeLists.txt, which isn't set up yet at this point in the
-    # configure and pulls in far more (nanobind, scikit-build-core, ...)
-    # than this one script needs.
-    set(_corpus_venv ${URLPARSER_BENCH_CORPUS_DIR}/.venv)
-    if(NOT EXISTS ${_corpus_venv})
-        execute_process(COMMAND ${Python3_EXECUTABLE} -m venv ${_corpus_venv} RESULT_VARIABLE _venv_rc)
-        if(NOT _venv_rc EQUAL 0)
-            message(FATAL_ERROR "Failed to create corpus-generation venv")
-        endif()
-        if(WIN32)
-            set(_corpus_python ${_corpus_venv}/Scripts/python.exe)
-        else()
-            set(_corpus_python ${_corpus_venv}/bin/python)
-        endif()
-        execute_process(COMMAND ${_corpus_python} -m pip install -q ada-url RESULT_VARIABLE _pip_rc)
+    # ada-url is a ~2MB prebuilt wheel with zero dependencies of its own -
+    # installed straight into the system/found Python3, no dedicated venv
+    # for it. (The separate, heavier venv in python/CMakeLists.txt -
+    # nanobind, scikit-build-core, tldextract, ... - is for actually
+    # *running* the Python benchmark later; unrelated to this one-off
+    # corpus-generation step and not worth sharing across the two.)
+    execute_process(COMMAND ${Python3_EXECUTABLE} -c "import ada_url" RESULT_VARIABLE _ada_url_present)
+    if(NOT _ada_url_present EQUAL 0)
+        execute_process(COMMAND ${Python3_EXECUTABLE} -m pip install -q --disable-pip-version-check --user ada-url
+                         RESULT_VARIABLE _pip_rc)
         if(NOT _pip_rc EQUAL 0)
-            message(FATAL_ERROR "Failed to install ada-url into the corpus-generation venv")
+            # PEP 668 ("externally-managed-environment") refuses a plain
+            # --user install on modern Debian/Ubuntu system Pythons -
+            # --break-system-packages is the documented escape hatch for
+            # exactly this: one small, dependency-free utility package,
+            # not a project dependency going into the system environment.
+            execute_process(
+                COMMAND ${Python3_EXECUTABLE} -m pip install -q --disable-pip-version-check --user
+                        --break-system-packages ada-url
+                RESULT_VARIABLE _pip_rc)
         endif()
-    endif()
-    if(WIN32)
-        set(_corpus_python ${_corpus_venv}/Scripts/python.exe)
-    else()
-        set(_corpus_python ${_corpus_venv}/bin/python)
+        if(NOT _pip_rc EQUAL 0)
+            message(FATAL_ERROR "Failed to install ada-url (needed by benchmarks/corpus/generate_corpus.py)")
+        endif()
     endif()
 
     execute_process(
-        COMMAND ${_corpus_python} ${URLPARSER_BENCH_CORPUS_DIR}/generate_corpus.py
+        COMMAND ${Python3_EXECUTABLE} ${URLPARSER_BENCH_CORPUS_DIR}/generate_corpus.py
         RESULT_VARIABLE _corpus_rc
     )
     if(NOT _corpus_rc EQUAL 0)
