@@ -12,16 +12,16 @@ point is as much "why" as "what."
 |---|---|---|---|
 | C++ `extract_from_host` | 66.20 MB/s | 112.46 MB/s | **+70%** |
 | C++ `parse_url` | 233.70 MB/s | 253.57 MB/s | **+8.5%** |
-| C++ `parse_url` gap vs `ada` | 22.7% | 17.9% | narrowed |
-| Python `extract_from_host` | 27.29 MB/s | 32.22 MB/s | **+18%** |
-| Python `extract_from_url` | 68.49 MB/s | 77.43 MB/s | **+13%** |
+| C++ `parse_url` vs `ada` | 22.7% behind | ~1.24-1.29x **ahead** | gap closed, reversed |
+| Python `extract_from_host` | 27.29 MB/s | 32.22 MB/s | +18% (PSL only) |
+| Python `extract_dict_from_host` vs `PyDomainExtractor` | 0.42x | ~0.80-0.89x | binding rewrite, ~2x |
 
-Two real, verified wins landed (PSL hash map, SIMD delimiter scanning).
-One idea (a Trie) was researched and deliberately *not* built, with
-evidence for why. One idea (sorted-array binary search) was actually
-built and measured, and lost decisively to what we already had. Python
-still trails `PyDomainExtractor` and `can_ada` by a wider margin than
-the raw C++ engine does — see [Remaining gaps](#remaining-gaps).
+Three real, verified wins landed (PSL hash map, SIMD delimiter
+scanning, `abspath()` fast-path+cache) and one real, verified Python
+binding rewrite (interned keys + direct slicing) closed most of the
+`PyDomainExtractor` gap. Two ideas were researched and deliberately
+*not* built (a Trie; a Cython rewrite), both with real, reproducible
+code and numbers behind the rejection, not just intuition.
 
 ## What actually worked
 
@@ -55,14 +55,37 @@ We didn't build one.
 **What we tried next and also rejected:** since Ladybird's real choice
 was sorted-array + binary search (not a hash table), we built that too
 and measured it head-to-head against a hash map, on the *actual* PSL
-(9,766 rules) and 10,000 real domains — not a toy dataset:
+(9,766 rules) and 10,000 real domains — not a toy dataset. (An earlier
+version of this section quoted specific numbers for this comparison
+with no corresponding code anywhere in the repo's history to reproduce
+them — caught during a later review, and worth naming here as a
+warning: don't trust a number in this document, or any document, that
+you can't re-run. The comparison *has* now actually been built,
+verified, and committed — see `benchmarks/cpp/psl_structures/`:)
 
 ```
-ankerl hash_map:          18.8M ops/s
-sorted_vec+binary_search:  3.6M ops/s
+$ cmake -S benchmarks -B benchmarks/build   # populates benchmarks/corpus/
+$ g++ -O3 -std=c++17 benchmarks/cpp/psl_structures/psl_structure_comparison.cpp -o /tmp/psl_cmp
+$ /tmp/psl_cmp
+
+ankerl hash_map (shipped):             ~16-19M ops/s
+trie, vector<pair> children:            ~4M ops/s
+trie, ankerl dense_map children:        ~8M ops/s
+bucketed map<tld,{set,depth,len}>:     ~10-11M ops/s
+bucketed, owned + string_view keys:    ~13-14M ops/s
+bucketed, string_view storage:         ~13-14M ops/s
+FLAT (shipped design) + sv storage:    ~17-19M ops/s  (statistical tie with shipped)
 ```
 
-The hash map won by **~5x**. Why the opposite of Ladybird's result?
+0 mismatches across all six designs on the full 10,000-domain corpus,
+verified before any timing runs. The hash map (as shipped) wins outright
+against both real trie variants (arena-allocated nodes, not per-node
+heap maps like `PyDomainExtractor`'s Rust implementation) by 2-5x, and
+against four separate attempts at a bucketed/two-level structure by
+15-80%. Every one of those alternatives was fully implemented and
+correctness-checked, not assumed.
+
+Why does binary search lose here, opposite of Ladybird's result?
 `suffix_of()`'s matching algorithm does a *shrinking* search — for
 `www.example.com` it tries `www.example.com`, then `example.com`, then
 `com`, stopping at the first match. Each attempt against a sorted array
@@ -75,7 +98,12 @@ difference. A hash lookup costs one hash computation (`O(k)`, same
 evidently structured differently (a single lookup rather than a
 shrinking retry loop), which is presumably why binary search works for
 them and not for us. Point is: we measured *our own* access pattern
-instead of assuming a result would transfer from a different one.
+instead of assuming a result would transfer from a different one. Full
+writeup, including *why* a two-level bucketed structure can't win
+either for this specific rule distribution (`.com` alone carries 1,115
+deeper private-suffix rules, so 97.4% of real domains pay for two
+lookups either way, same as the flat map's worst case):
+`benchmarks/cpp/psl_structures/README.md`.
 
 **What we actually shipped:**
 [`ankerl::unordered_dense::map`](https://github.com/martinus/unordered_dense)
@@ -178,47 +206,129 @@ so nobody re-litigates it later without the numbers in hand.
 
 ## Remaining gaps
 
-### C++ `parse_url` vs `ada`: ~18%
+### C++ `parse_url` vs `ada`: closed — was `abspath()`, not the parser
 
-Down from ~23%, but not closed. The rest is very likely `ada`'s
-`pshufb`/nibble-table SIMD technique (built for classifying dozens of
-character classes at once, not just finding 3 fixed bytes) plus years
-of the kind of micro-tuning a dedicated team applies to a
-widely-embedded (Node.js, Cloudflare Workers, ClickHouse) parser.
-Closing the rest would mean matching that technique, not another
-targeted fix like the ones above.
+The ~18% gap above turned out to have nothing to do with URL syntax
+parsing, `suffix_of()`, or SIMD scanning — all already-optimized code
+that the `parse_url` benchmark barely touches, once you check what it
+actually calls. `abspath()` was the one field in that call chain that
+wasn't a cheap accessor: unlike `protocol()`/`host_text()`/`query()`/
+`fragment()` (`string_view`, `noexcept`, one field read), `abspath()`
+re-ran a full `.`/`..` dot-segment resolver — allocating a
+`std::string` *and* a `std::vector<size_t>` — on every single call,
+even though the overwhelming majority of real-world paths need no
+resolution at all.
 
-### Python: ~3x tax between raw C++ and what Python actually sees
-
-Measured directly: `urlparser::hostname` in pure C++ does ~8.47M
-ops/s; the *exact same code* through the Python binding manages ~2.7M
-— a `~3.1x` overhead ratio that has nothing to do with the PSL/parsing
-algorithm (already fast) and everything to do with the Python/C++
-boundary itself (constructing a wrapped object, marshaling
-`std::string` ↔ `str`, normal CPython attribute-access overhead).
-
-This is why Python's relative gains from the `ankerl` switch (+17-18%)
-are smaller than C++'s (+67-70%) — the win is real, but it's a smaller
-slice of a total that's now mostly binding overhead, not lookup time.
-
-This also shows up in the freshest data point we have,
-`liburlparser` vs `can_ada` on `parse_url` **in Python**:
+Fixed with a cheap up-front check (`path_is_already_normalized()`) that
+detects the common case and returns the path unchanged, skipping the
+resolver entirely, plus caching the result the way `host()` already
+was (`abspath_cache_`, same pattern). Verified in a single process,
+interleaved, against `ada` and the pre-fix build side by side (not two
+separate runs — see the note in the Python section below about why
+that distinction matters):
 
 ```
-liburlparser   parse_url    42.25 MB/s   1,062,177 ops/s
-can_ada        parse_url    64.73 MB/s   1,627,442 ops/s
+$ ./benchmarks/cpp/abspath_fix_verification/  # see its README.md
+liburlparser OLD (unfixed abspath):   ~5.4-5.5M ops/s
+liburlparser NEW (fixed abspath):     ~7.4-7.8M ops/s   (~1.4x)
+ada:                                  ~6.0-6.1M ops/s
 ```
 
-A **35% gap** — wider than the 18% gap the same two engines show in
-C++, consistent with `can_ada`'s own binding (pybind11, wrapping the
-same fast `ada` core) simply carrying less relative overhead per call,
-or liburlparser's specific binding pattern (constructing a wrapped
-`Hostname`/`Url` object, then reading a property, vs a single call
-returning already-marshaled data) costing more than it needs to.
+`liburlparser` now beats `ada` on this benchmark (it was ~10% behind
+before the fix — consistent with the ~18% figure this section used to
+quote, once you account for a different corpus/compiler). All 75 C++
+unit tests pass unchanged, including the `abspath`-specific ones.
 
-Not yet investigated. `to_dict()` was tried once, on the
-`extract_from_host` side, as a "return everything in one call" test —
-it was *slower* than construct-then-read-one-property, not faster, so
-the fix (if there is one that doesn't just move the cost around) isn't
-obvious and needs its own real profiling pass rather than another
-guess.
+### Python: was ~3x tax, now real, measured, evidence-based progress
+
+The old version of this section flagged the Python/`can_ada` gap as
+"not yet investigated." It has been, in depth, empirically, with a
+real Cython prototype built to test the obvious alternative — not
+guessed at. Summary of what was actually found and fixed for
+`Hostname.extract_dict_from_host`/`_url` (the hot, dict-returning path
+`extract_from_host`/`_url` in the benchmark use):
+
+1. **Interned dict keys + raw CPython C-API**, instead of `nb::dict`'s
+   convenience layer — the same technique `PyDomainExtractor`'s pyo3
+   binding uses (`pyo3::intern!`). `nb::dict`'s `operator[]` builds a
+   fresh `PyUnicode` key object on every call; interning it once and
+   reusing that object removes that cost. **+20%** in isolation.
+2. **Direct `std::string_view` slicing** of the already-owned host
+   buffer, instead of going through `hostname::ensure_parsed()`'s own
+   mutable-field caching — which allocates `domain_`/`subdomain_`/
+   `suffix_`/`fulldomain_` as *separately-owned* `std::string` members
+   (one `substr()` allocation each) only for the dict-builder to
+   allocate a *second* time (`PyUnicode_FromStringAndSize`) to copy
+   each of those into a Python object. Computing the same offsets
+   directly against the owned buffer and going straight to
+   `PyUnicode_FromStringAndSize` removes that duplicate allocation.
+   **+28-30%** more on top of (1).
+3. **Applying the same technique to `IPv4`/`IPv6` extraction**
+   (`ipv4_to_dict_fast`/`ipv6_to_dict_fast`) — no slicing opportunity
+   there (nothing to slice a substring out of; `as_int`/`high64`/
+   `low64` are each computed from raw bytes, not a buffer offset), so
+   this is the interned-keys win only, but applied consistently.
+
+Combined, measured on the same 10,000-domain corpus, single process,
+interleaved against `PyDomainExtractor`:
+
+```
+$ ./benchmarks/python/binding_fast_path_ab.py   # see comments for exact methodology
+extract_dict_from_host, original (nb::dict, 3-field-equivalent):  ~1.8M ops/s   (0.42x of PDE)
++ interned keys + raw C-API:                                       ~2.6M ops/s   (0.60x of PDE)
++ direct string_view slicing:                                      ~3.2-3.4M ops/s (0.80-0.89x of PDE)
+```
+
+On an apples-to-apples field count (`liburlparser`'s 3 comparable
+fields vs `PyDomainExtractor`'s 3), the gap closed from **0.42x to
+~0.85x** — nearly 2x faster than where this investigation started, and
+close enough to `PyDomainExtractor` that the remaining ~15% is likely
+just `pyo3`'s own per-call dispatch being marginally leaner, not a
+further architectural fix waiting to be found.
+
+**Cython, tried and rejected.** The obvious next idea — replace the
+hand-written `nanobind` C-API calls with a Cython extension, built the
+same way `pygixml` (this author's other project) builds its bindings:
+`pyproject.toml` + `scikit-build-core` + `cython_transpile` +
+`python_add_library`, not a quick `setup.py` — was built, in full,
+correctness-checked, and benchmarked head-to-head against the
+hand-written `nanobind` version and `PyDomainExtractor`, all three in
+the same process:
+
+```
+Cython   (3-field, direct-slice, same algorithm): ~4.2-4.5M ops/s
+nanobind (3-field, direct-slice, same algorithm): ~5.2-5.5M ops/s
+PyDomainExtractor .extract():                     ~4.6-5.0M ops/s
+
+Cython vs nanobind: 0.80-0.81x  (Cython is slower)
+```
+
+Cython lost by a consistent ~19-20%, even after fixing an initial
+inefficiency in the prototype (`.encode("utf-8")` allocating an
+intermediate `bytes` object where `nanobind`'s `string_view` caster
+reads the Python string's UTF-8 buffer directly) — the ratio barely
+moved after that fix, meaning it's a real property of Cython's
+generated code (its own refcounting/typecheck scaffolding, even with
+`boundscheck=False`/`wraparound=False`) for this specific workload, not
+a bug in the prototype. **Verdict: keep the hand-written `nanobind`
+binding.**
+
+**Why `Hostname` construction itself still costs more than the raw C++
+engine.** Isolated with a waterfall of probes (each adding exactly one
+more step, all in the same process):
+
+```
+just crossing into Python, nothing else:        ~40-50M ops/s
++ the mandatory std::string copy + ctor:         ~15-17M ops/s
++ ensure_parsed() (PSL lookup + string slicing): ~4-5M ops/s
+```
+
+The `std::string` copy is unavoidable — `hostname` needs to own its
+data, and a Python `str`'s buffer isn't something C++ can hold a
+reference to past the call. The rest is the same kind of allocation
+duplication (1) and (2) above already address for the *dict-building*
+path; `ensure_parsed()` itself still computes all four fields even when
+a caller only reads one (`.suffix()` alone still allocates
+`domain_`/`subdomain_`) — a real, identified, not-yet-fixed
+inefficiency for call sites that go through `hostname`'s public
+accessors rather than the direct-slice fast path above.

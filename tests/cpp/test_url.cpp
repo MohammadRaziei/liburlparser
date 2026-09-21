@@ -159,6 +159,27 @@ UTEST(UrlTest, AbspathIsPureNotMutating) {
     EXPECT_STREQ(url.str().c_str(), before.c_str());
 }
 
+UTEST(UrlTest, AbspathDropsTrailingSlashOnNonRootPath) {
+    // Regression test: path_is_already_normalized()'s fast path originally
+    // only checked for '//' and '.'/'..' segments, missing that a bare
+    // trailing '/' on a path with NEITHER of those also gets dropped by
+    // the segment-by-segment resolver (the empty final segment after the
+    // last '/' is skipped) - so a path like "/a/" was wrongly treated as
+    // "already normalized" and returned unchanged instead of as "/a".
+    // Found by tests/cpp/fuzz_abspath.cpp against an independent
+    // reference implementation, not by manual inspection - kept here as
+    // the specific case rather than only in the fuzzer, so a plain
+    // `ctest` run catches it without a separate fuzz invocation.
+    urlparser::url url("https://example.com/a/");
+    EXPECT_STREQ(url.abspath().c_str(), "/a");
+}
+
+UTEST(UrlTest, AbspathKeepsBareRootSlash) {
+    // The trailing-slash trim above must not eat the root itself.
+    urlparser::url url("https://example.com/");
+    EXPECT_STREQ(url.abspath().c_str(), "/");
+}
+
 // --- params(): '&'-separated query splitting ----------------------------
 
 UTEST(UrlTest, ParamsSplitsOnAmpersand) {

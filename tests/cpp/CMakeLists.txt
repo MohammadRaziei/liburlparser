@@ -21,6 +21,35 @@ target_link_libraries(test_liburlparser_cpp PRIVATE Threads::Threads)
 
 add_test(NAME test_liburlparser_cpp COMMAND $<TARGET_FILE:test_liburlparser_cpp>)
 
+# Performance regression guard - a tripwire, not a benchmark (see the file's
+# own header comment for what it does and doesn't catch). Always built at
+# -O3 regardless of the parent build's CMAKE_BUILD_TYPE or coverage flags -
+# unlike test_liburlparser_cpp above, which sometimes builds at -O0 for
+# coverage instrumentation, where a timing assertion would be meaningless.
+# Links directly against this source tree's src/urlparser.cpp - unlike
+# benchmarks/cpp/, which FetchContent's a fresh copy from GitHub to compare
+# against competitors, this needs to test the code actually being changed.
+add_executable(perf_regression_guard perf_regression_guard.cpp ${PROJECT_SOURCE_DIR}/src/urlparser.cpp)
+target_include_directories(perf_regression_guard PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/src
+    ${GENERATED_HEADERS_DIR}
+)
+target_compile_options(perf_regression_guard PRIVATE -O3)
+add_test(NAME perf_regression_guard COMMAND $<TARGET_FILE:perf_regression_guard>)
+
+# Randomized property test for url::abspath() against an independent
+# reference implementation (see the file's header comment) - cheap enough
+# (~0.2s for 200k iterations) to run on every ctest invocation with a fixed
+# seed for reproducibility, not just as an opt-in fuzzing target.
+add_executable(fuzz_abspath fuzz_abspath.cpp ${PROJECT_SOURCE_DIR}/src/urlparser.cpp)
+target_include_directories(fuzz_abspath PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/src
+    ${GENERATED_HEADERS_DIR}
+)
+add_test(NAME fuzz_abspath COMMAND $<TARGET_FILE:fuzz_abspath> 42 300000)
+
 add_custom_target(urlparser_test_cpp
     COMMAND ${CMAKE_COMMAND} -E echo "-- Running C++ tests..."
     COMMAND $<TARGET_FILE:test_liburlparser_cpp>

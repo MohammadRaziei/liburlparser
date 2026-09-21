@@ -689,6 +689,12 @@ namespace {
 // check ada's parse_prepared_path() does before its own path parser.
 bool path_is_already_normalized(std::string_view path) noexcept {
     if (path.find("//") != std::string_view::npos) return false;  // collapses to '/'
+    // A trailing '/' on anything longer than the bare root ("/a/" -> "/a")
+    // is dropped by the segment-by-segment resolver below (the final,
+    // empty segment after the last '/' is skipped) - a path with no dots
+    // at all can still need this trim, so it has to be checked separately
+    // from the dot-segment logic that follows.
+    if (path.size() > 1 && path.back() == '/') return false;
     const size_t dot = path.find('.');
     if (dot == std::string_view::npos) return true;  // no dots at all - nothing to resolve
     if (!path.empty() && path[0] == '.') return false;  // leading "." or ".." segment

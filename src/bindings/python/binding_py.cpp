@@ -136,6 +136,54 @@ inline nb::dict ipv6_to_dict(const urlparser::ipv6& v) {
     return d;
 }
 
+// Same fields as ipv4_to_dict/ipv6_to_dict, built with interned keys + raw
+// CPython C-API instead of nb::dict - same technique proven out for
+// Hostname.extract_dict_from_host/_url (see hostname_to_dict_6field_direct
+// above). No "direct slice" opportunity here (there's no owned buffer to
+// slice into - str()/to_uint32()/high64()/low64() each compute their own
+// value from the raw bytes), so this is purely the interned-keys +
+// raw-C-API win, not the two-allocations-per-field fix that mattered for
+// Hostname.
+inline nb::object ipv4_to_dict_fast(const urlparser::ipv4& v) {
+    static PyObject* k_type = PyUnicode_InternFromString("type");
+    static PyObject* k_str = PyUnicode_InternFromString("str");
+    static PyObject* k_as_int = PyUnicode_InternFromString("as_int");
+    static PyObject* v_ipv4_literal = PyUnicode_InternFromString("ipv4");
+
+    const std::string s = v.str();
+    PyObject* dict = PyDict_New();
+    PyObject* pystr = PyUnicode_FromStringAndSize(s.data(), static_cast<Py_ssize_t>(s.size()));
+    PyObject* pyint = PyLong_FromUnsignedLong(v.to_uint32());
+    PyDict_SetItem(dict, k_type, v_ipv4_literal);
+    PyDict_SetItem(dict, k_str, pystr);
+    PyDict_SetItem(dict, k_as_int, pyint);
+    Py_DECREF(pystr);
+    Py_DECREF(pyint);
+    return nb::steal(dict);
+}
+
+inline nb::object ipv6_to_dict_fast(const urlparser::ipv6& v) {
+    static PyObject* k_type = PyUnicode_InternFromString("type");
+    static PyObject* k_str = PyUnicode_InternFromString("str");
+    static PyObject* k_high64 = PyUnicode_InternFromString("high64");
+    static PyObject* k_low64 = PyUnicode_InternFromString("low64");
+    static PyObject* v_ipv6_literal = PyUnicode_InternFromString("ipv6");
+
+    const std::string s = v.str();
+    PyObject* dict = PyDict_New();
+    PyObject* pystr = PyUnicode_FromStringAndSize(s.data(), static_cast<Py_ssize_t>(s.size()));
+    PyObject* pyhi = PyLong_FromUnsignedLongLong(v.high64());
+    PyObject* pylo = PyLong_FromUnsignedLongLong(v.low64());
+    PyDict_SetItem(dict, k_type, v_ipv6_literal);
+    PyDict_SetItem(dict, k_str, pystr);
+    PyDict_SetItem(dict, k_high64, pyhi);
+    PyDict_SetItem(dict, k_low64, pylo);
+    Py_DECREF(pystr);
+    Py_DECREF(pyhi);
+    Py_DECREF(pylo);
+    return nb::steal(dict);
+}
+
 // Handles whichever of hostname/ipv4/ipv6 a url's host actually is, giving
 // each its own natural set of dict keys rather than forcing IP addresses
 // through domain-shaped fields (subdomain/suffix/etc.) that don't apply.
@@ -490,13 +538,13 @@ NB_MODULE(_urlparser_py, m) {
     ipv4_cls
         .def_static(
             "extract_dict_from_host",
-            [](std::string_view text) { return ipv4_to_dict(urlparser::ipv4(text)); },
+            [](std::string_view text) { return ipv4_to_dict_fast(urlparser::ipv4(text)); },
             nb::arg("host"),
             "Parse `host` as an IPv4 address and return {str, as_int} "
             "directly, without constructing an IPv4 object.")
         .def_static(
             "extract_dict_from_url",
-            [](std::string_view url) { return ipv4_to_dict(urlparser::ipv4::from_url(url)); },
+            [](std::string_view url) { return ipv4_to_dict_fast(urlparser::ipv4::from_url(url)); },
             nb::arg("url"),
             "Extract the host from `url`, parse it as an IPv4 address, "
             "and return {str, as_int} directly.");
@@ -504,13 +552,13 @@ NB_MODULE(_urlparser_py, m) {
     ipv6_cls
         .def_static(
             "extract_dict_from_host",
-            [](std::string_view text) { return ipv6_to_dict(urlparser::ipv6(text)); },
+            [](std::string_view text) { return ipv6_to_dict_fast(urlparser::ipv6(text)); },
             nb::arg("host"),
             "Parse `host` as an IPv6 address and return {str, high64, "
             "low64} directly, without constructing an IPv6 object.")
         .def_static(
             "extract_dict_from_url",
-            [](std::string_view url) { return ipv6_to_dict(urlparser::ipv6::from_url(url)); },
+            [](std::string_view url) { return ipv6_to_dict_fast(urlparser::ipv6::from_url(url)); },
             nb::arg("url"),
             "Extract the host from `url`, parse it as an IPv6 address, "
             "and return {str, high64, low64} directly.");
