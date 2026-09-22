@@ -13,6 +13,7 @@
 // see that class's definition below, and src/ankerl/README.md.
 //
 #include "urlparser.h"
+#include "idna.h"
 
 #include <algorithm>
 #include <array>
@@ -1172,6 +1173,10 @@ const std::string& urlparser::hostname::full_domain() const noexcept {
 }
 
 const std::string& urlparser::hostname::str() const noexcept { return full_domain(); }
+
+std::string urlparser::hostname::normalized_ascii() const {
+    return urlparser::idna::to_ascii(str());
+}
 
 std::string urlparser::hostname::domain_name() const noexcept {
     ensure_parsed();

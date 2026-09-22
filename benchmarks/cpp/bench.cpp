@@ -9,13 +9,24 @@
  * ada has no Public Suffix List / domain-extraction feature (it's a pure
  * WHATWG URL parser), so "extract_from_host" only has one row - that's not
  * a contradiction, it's a real capability gap between the two libraries,
- * reported honestly rather than papered over. "parse_url" is the
- * apples-to-apples operation: both libraries just split a URL into its
- * components.
+ * reported honestly rather than papered over. "parse_url" and
+ * "idna_normalize" are apples-to-apples: both libraries just split a URL
+ * into its components / normalize a hostname to ASCII, respectively.
+ *
+ * "percent_decode"/"percent_encode" report liburlparser only: ada does have
+ * an internal percent-encode/decode (ada::unicode::percent_decode/encode),
+ * but it's marked @private in ada's own header and needs an
+ * already-computed character-set table and a "first_percent" index to call
+ * - it's an implementation detail, not a stable public entry point, so
+ * benchmarking against it wouldn't be the fair apples-to-apples comparison
+ * the rest of this file aims for.
  */
 
 #include "urlparser.h"
+#include "idna.h"
+#include "percent_codec.h"
 #include <ada.h>
+#include <ada/ada_idna.h>
 
 #include <cstdio>
 #include <ctime>
@@ -48,6 +59,10 @@ struct Result {
 };
 
 std::vector<Result> g_results;
+
+// Prevents the optimizer from eliminating a timed call whose return value
+// is otherwise unused - every timed loop below must feed its result here.
+volatile size_t g_sink = 0;
 
 double now_seconds() {
     return static_cast<double>(std::clock()) / static_cast<double>(CLOCKS_PER_SEC);
@@ -243,6 +258,92 @@ int main() {
                static_cast<long>(urls.size()) * URLPARSER_BENCH_REPEATS);
     }
 
+    // ── idna_normalize: liburlparser vs ada ─────────────────────────────
+    {
+        std::vector<std::string> idna_hosts = {
+            "caf\xc3\xa9.com", "m\xc3\xbcnchen.de", "espa\xc3\xb1""a.es",
+            "portugu\xc3\xaas.pt",
+            "\xe4\xb8\xad\xe5\x9b\xbd.icom.museum",
+            "\xe6\x97\xa5\xe6\x9c\xac.jp",
+            "\xd1\x80\xd0\xbe\xd1\x81\xd1\x81\xd0\xb8\xd1\x8f.\xd1\x80\xd1\x84",
+            "\xce\xb5\xce\xbb\xce\xbb\xce\xac\xce\xb4\xce\xb1.gr",
+            "example.com", "xn--caf-dma.com",
+        };
+
+        for (int rep = 0; rep < URLPARSER_BENCH_WARMUP_REPS; rep++)
+            for (const auto& h : idna_hosts) { auto r = urlparser::idna::to_ascii(h); (void)r.size(); }
+        long ops = 0; double bytes = 0;
+        double t0 = now_seconds();
+        for (int rep = 0; rep < URLPARSER_BENCH_REPEATS; rep++) {
+            for (const auto& h : idna_hosts) {
+                auto r = urlparser::idna::to_ascii(h);
+                g_sink += r.size();
+                ops++; bytes += static_cast<double>(h.size());
+            }
+        }
+        record("liburlparser", "idna_normalize", bytes, ops, now_seconds() - t0,
+               static_cast<long>(idna_hosts.size()) * URLPARSER_BENCH_REPEATS);
+
+        for (int rep = 0; rep < URLPARSER_BENCH_WARMUP_REPS; rep++)
+            for (const auto& h : idna_hosts) { auto r = ada::idna::to_ascii(h); (void)r.size(); }
+        ops = 0; bytes = 0;
+        t0 = now_seconds();
+        for (int rep = 0; rep < URLPARSER_BENCH_REPEATS; rep++) {
+            for (const auto& h : idna_hosts) {
+                auto r = ada::idna::to_ascii(h);
+                g_sink += r.size();
+                ops++; bytes += static_cast<double>(h.size());
+            }
+        }
+        record("ada", "idna_normalize", bytes, ops, now_seconds() - t0,
+               static_cast<long>(idna_hosts.size()) * URLPARSER_BENCH_REPEATS);
+    }
+
+    // ── percent_decode / percent_encode: liburlparser only ──────────────
+    // (see file header: ada's equivalent is @private, not a fair public
+    // comparison)
+    {
+        std::vector<std::string> encoded = {
+            "hello%20world", "caf%C3%A9%20%26%20friends",
+            "q%3Dhello%20world%26more%3Dstuff", "100%25%20done",
+            "a%2Fb%2Fc%2Fd", "%E6%97%A5%E6%9C%AC%E8%AA%9E",
+        };
+        std::vector<std::string> raw = {
+            "hello world", "caf\xc3\xa9 & friends", "q=hello world&more=stuff",
+            "100% done", "a/b/c/d", "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e",
+        };
+
+        for (int rep = 0; rep < URLPARSER_BENCH_WARMUP_REPS; rep++)
+            for (const auto& s : encoded) { auto r = urlparser::percent_codec::decode(s); (void)r.size(); }
+        long ops = 0; double bytes = 0;
+        double t0 = now_seconds();
+        for (int rep = 0; rep < URLPARSER_BENCH_REPEATS; rep++) {
+            for (const auto& s : encoded) {
+                auto r = urlparser::percent_codec::decode(s);
+                g_sink += r.size();
+                ops++; bytes += static_cast<double>(s.size());
+            }
+        }
+        record("liburlparser", "percent_decode", bytes, ops, now_seconds() - t0,
+               static_cast<long>(encoded.size()) * URLPARSER_BENCH_REPEATS);
+
+        for (int rep = 0; rep < URLPARSER_BENCH_WARMUP_REPS; rep++)
+            for (const auto& s : raw) { auto r = urlparser::percent_codec::encode(s); (void)r.size(); }
+        ops = 0; bytes = 0;
+        t0 = now_seconds();
+        for (int rep = 0; rep < URLPARSER_BENCH_REPEATS; rep++) {
+            for (const auto& s : raw) {
+                auto r = urlparser::percent_codec::encode(s);
+                g_sink += r.size();
+                ops++; bytes += static_cast<double>(s.size());
+            }
+        }
+        record("liburlparser", "percent_encode", bytes, ops, now_seconds() - t0,
+               static_cast<long>(raw.size()) * URLPARSER_BENCH_REPEATS);
+    }
+
     write_results_json(domains.size(), urls.size());
+    std::printf("(sanity sink: %zu - ignore, just proves every result above was actually used)\n",
+                 static_cast<size_t>(g_sink));
     return 0;
 }

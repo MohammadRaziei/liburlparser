@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import warnings
 
-from ._urlparser_py import Host, Hostname, IPv4, IPv6, Psl, Url, __doc__, __version__
+from ._urlparser_py import Host, Hostname, IPv4, IPv6, Psl, Url, __doc__, __version__, quote, unquote
 
 psl = Psl.instance()  # psl - already loaded from the data embedded into the compiled extension
 

@@ -7,6 +7,7 @@
 #include <string>
 #include <variant>
 #include "urlparser.h"
+#include "percent_codec.h"
 
 namespace nb = nanobind;
 using namespace nb::literals;
@@ -282,6 +283,16 @@ inline nb::dict url_extract_dict(std::string_view urlstr, bool ignore_www, bool 
 }
 
 NB_MODULE(_urlparser_py, m) {
+    m.def("unquote", [](std::string_view s) {
+        return urlparser::percent_codec::decode(s);
+    }, "s"_a, "Percent-decode a string (e.g. \"caf%C3%A9\" -> \"café\").");
+    m.def("quote", [](std::string_view s, bool keep_slash) {
+        return urlparser::percent_codec::encode(
+            s, keep_slash ? urlparser::percent_codec::path_safe_set()
+                          : urlparser::percent_codec::unreserved_set());
+    }, "s"_a, "keep_slash"_a = false,
+       "Percent-encode a string. keep_slash=True leaves '/' unescaped "
+       "(handy for a whole path component).");
     m.attr("__version__") = URLPARSER_VERSION_STRING;
     m.doc() = R"pbdoc(
         liburlparser
@@ -318,6 +329,7 @@ NB_MODULE(_urlparser_py, m) {
         .def_prop_ro("domain_name", &urlparser::hostname::domain_name)
         .def_prop_ro("full_domain", &urlparser::hostname::full_domain)
         .def_prop_ro("suffix", &urlparser::hostname::suffix)
+        .def_prop_ro("normalized_ascii", &urlparser::hostname::normalized_ascii)
         .def("__eq__", [](const urlparser::hostname& self, const urlparser::hostname& other) {
             return self == other;
         })

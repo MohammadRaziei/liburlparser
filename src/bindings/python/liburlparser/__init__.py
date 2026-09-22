@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .core import Host, Hostname, IPv4, IPv6, Url, __doc__, __version__, psl
+from .core import Host, Hostname, IPv4, IPv6, Url, __doc__, __version__, psl, quote, unquote
 
 __all__ = [
     "Host",
@@ -11,4 +11,6 @@ __all__ = [
     "__doc__",
     "__version__",
     "psl",
+    "quote",
+    "unquote",
 ]

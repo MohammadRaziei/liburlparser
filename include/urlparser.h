@@ -212,6 +212,15 @@ class hostname {
     const std::string& full_domain() const noexcept;
     /** @brief The complete host string (same as full_domain()). */
     const std::string& str() const noexcept;
+    /**
+     * @brief The IDNA/Punycode-normalized, all-ASCII form of str(). Unlike
+     * str(), which keeps whatever the input looked like (Unicode included),
+     * this always returns the canonical ASCII form - so two hostnames that
+     * denote the same domain (e.g. "café.com" and "xn--caf-dma.com")
+     * normalize to the same string here even though str() differs. See
+     * urlparser::idna::to_ascii() in idna.h.
+     */
+    std::string normalized_ascii() const;
 
    private:
     // Runs the PSL lookup + domain/subdomain/suffix split exactly once, the

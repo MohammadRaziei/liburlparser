@@ -13,7 +13,15 @@ Methodology (mirrors the same shape used by ctoon's own benchmarks):
      published in this project's own README.
   3. Timed "extract_from_url": repeatedly extract domain/suffix from a
      full URL (scheme + host + path + query + fragment).
-  4. Report throughput (MB/s of bytes actually read by successful
+  4. Timed "parse_url": split a full URL into protocol/host/path/query/
+     fragment.
+  5. Timed "idna_normalize": normalize a Unicode hostname to its
+     canonical ASCII/Punycode form (liburlparser.Hostname.normalized_ascii,
+     new - see include/idna.h).
+  6. Timed "percent_decode"/"percent_encode": liburlparser.unquote/quote
+     (new, from-scratch, no dependency - see include/percent_codec.h)
+     against Python's own urllib.parse.unquote/quote.
+  7. Report throughput (MB/s of bytes actually read by successful
      extractions only) and extractions/sec.
 
 Implementations:
@@ -23,8 +31,11 @@ Implementations:
   - tld               github.com/barseghyanartur/tld
   - publicsuffix2     github.com/aboutcode-org/python-publicsuffix2
   - can_ada           github.com/TkTech/can_ada (pybind11 bindings for
-                       ada-url's C++ WHATWG URL parser) - "parse_url" only,
-                       see the note further down.
+                       ada-url's C++ WHATWG URL parser) - "parse_url" and
+                       "idna_normalize" only, see the notes further down.
+  - urllib.parse      Python stdlib - "percent_decode"/"percent_encode"
+                       only (it has no URL-parsing or IDNA entry point
+                       comparable to the others here).
 """
 import argparse
 import sys
@@ -61,6 +72,8 @@ try:
     import can_ada
 except ImportError:
     can_ada = None
+
+import urllib.parse as urllib_parse
 
 REPEATS = 20
 WARMUP_REPS = 3
@@ -216,6 +229,77 @@ def main():
             return u.protocol, u.host, u.pathname, u.search, u.hash
 
         add_parse_url_row("can_ada", can_ada_parse_url)
+
+    # A fourth operation, "idna_normalize": normalize a Unicode hostname to
+    # its canonical ASCII/Punycode form. liburlparser's
+    # Hostname.normalized_ascii is new (see include/idna.h) - it closed a
+    # real gap where liburlparser accepted Unicode hosts without error but
+    # never normalized them, so "café.com" and "xn--caf-dma.com" used to
+    # compare as different hostnames. can_ada.idna_encode is the peer here
+    # for the same reason it is can_ada's peer above: pybind11 bindings
+    # over the same ada-url C++ engine, not the cffi-based ada_url package.
+    IDNA_HOSTS = [
+        "café.com", "münchen.de", "españa.es", "português.pt",
+        "中国.icom.museum", "日本.jp", "россия.рф", "ελλάδα.gr",
+        "www.7\u2011Eleven.com", "دامنه.ایران",
+        "example.com", "xn--caf-dma.com",  # ASCII / already-punycoded controls
+    ]
+
+    def add_idna_row(name, fn):
+        t, ops, nbytes = bench(IDNA_HOSTS, fn)
+        rows.append([name, "idna_normalize",
+                     f"{nbytes / t / 1e6:.2f} MB/s" if ops else "n/a",
+                     f"{ops / t:.0f}", f"{100 * ops / (len(IDNA_HOSTS) * REPEATS):.0f}%",
+                     f"{t:.4f} s"])
+        results.append({
+            "library": name, "operation": "idna_normalize",
+            "throughput_mb_s": (nbytes / t / 1e6) if ops else 0.0,
+            "ops_per_sec": ops / t, "success_rate": ops / (len(IDNA_HOSTS) * REPEATS),
+            "total_time_s": t,
+        })
+
+    add_idna_row(
+        "liburlparser",
+        lambda h: liburlparser.Hostname(h).normalized_ascii,
+    )
+    if can_ada:
+        add_idna_row("can_ada", can_ada.idna_encode)
+
+    # A fifth/sixth operation, "percent_decode"/"percent_encode":
+    # liburlparser.unquote/quote are new (see include/percent_codec.h) -
+    # a from-scratch, dependency-free implementation (explicitly *not*
+    # linked against ada, unlike idna_normalize above). The only
+    # comparable peer here is Python's own urllib.parse, since that is
+    # what people reach for today in liburlparser's absence; can_ada and
+    # ada-url's C++ core don't expose a standalone percent-encode/decode
+    # entry point the way they do parse_url/idna.
+    PERCENT_ENCODED = [
+        "hello%20world", "caf%C3%A9%20%26%20friends",
+        "q%3Dhello%20world%26more%3Dstuff", "100%25%20done",
+        "a%2Fb%2Fc%2Fd", "%E6%97%A5%E6%9C%AC%E8%AA%9E",
+    ]
+    PERCENT_RAW = [
+        "hello world", "café & friends", "q=hello world&more=stuff",
+        "100% done", "a/b/c/d", "日本語",
+    ]
+
+    def add_percent_row(name, op, corpus, fn):
+        t, ops, nbytes = bench(corpus, fn)
+        rows.append([name, op,
+                     f"{nbytes / t / 1e6:.2f} MB/s" if ops else "n/a",
+                     f"{ops / t:.0f}", f"{100 * ops / (len(corpus) * REPEATS):.0f}%",
+                     f"{t:.4f} s"])
+        results.append({
+            "library": name, "operation": op,
+            "throughput_mb_s": (nbytes / t / 1e6) if ops else 0.0,
+            "ops_per_sec": ops / t, "success_rate": ops / (len(corpus) * REPEATS),
+            "total_time_s": t,
+        })
+
+    add_percent_row("liburlparser", "percent_decode", PERCENT_ENCODED, liburlparser.unquote)
+    add_percent_row("urllib.parse", "percent_decode", PERCENT_ENCODED, urllib_parse.unquote)
+    add_percent_row("liburlparser", "percent_encode", PERCENT_RAW, liburlparser.quote)
+    add_percent_row("urllib.parse", "percent_encode", PERCENT_RAW, urllib_parse.quote)
 
     headers = ["Library", "Operation", "Throughput", "Ops/sec", "Success", f"Total time (x{REPEATS} reps)"]
     if tabulate:
