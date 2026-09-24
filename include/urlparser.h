@@ -106,10 +106,10 @@ class version {
 };
 
 /**
- * @typedef QueryParams
+ * @typedef query_params
  * @brief A vector of strings representing query parameters in a URL.
  */
-using QueryParams = std::vector<std::string>;
+using query_params = std::vector<std::string>;
 
 /**
  * @brief A domain name used as a URL's host, e.g. "www.example.com".
@@ -728,6 +728,8 @@ class url {
     std::string_view fragment() const noexcept { return field(fragment_); }
     /** @brief The userinfo of the URL (e.g., "username:password"). */
     std::string_view userinfo() const noexcept { return field(userinfo_); }
+    /** @brief The raw path of the URL, exactly as it appears in the source (no dot-segment resolution - see abspath() for that). */
+    std::string_view path() const noexcept { return field(path_); }
     /** @brief The path, with '.'/'..' segments resolved. */
     const std::string& abspath() const noexcept;
     /** @brief The raw host text (e.g., "example.com", "192.0.2.1", or "[::1]"), before hostname/ip classification. */
@@ -735,7 +737,7 @@ class url {
     /** @brief The port number of the URL, or 0 if not specified. */
     int port() const noexcept { return port_; }
     /** @brief The '&'-separated query parameters, split into a vector. */
-    QueryParams params() const noexcept;
+    query_params params() const noexcept;
     /**
      * @brief The host part of the URL, classified as a hostname, ipv4, or ipv6.
      * Use std::get_if<hostname>/<ipv4>/<ipv6>(&url.host()) or std::visit to
@@ -766,12 +768,80 @@ class url {
     mutable std::optional<urlparser::host> host_cache_;
     mutable std::optional<std::string> abspath_cache_;
 };
+
+/**
+ * @brief Parses an SSH "scp-like" address - `user@host:path` (what `scp`,
+ * `rsync`, `sshfs`, and `git` all accept, e.g.
+ * "git@github.com:user/repo.git") - by normalizing it to a standard
+ * `ssh://user@host/path` URI and handing that to url. Not URI syntax per
+ * RFC 3986 (that colon is a path separator, not a port), so plain url()
+ * either misparses it or throws.
+ *
+ * Composition (holds a url), not inheritance: url has no virtual
+ * destructor and isn't marked final, so publicly deriving from it is the
+ * same "delete through a base pointer -> UB" footgun the `host` class's
+ * own doc comment above already calls out for a different class - and
+ * since url's data members are private (not protected), inheriting
+ * wouldn't even grant any access beyond what url's own public API (used
+ * here via composition) already gives.
+ */
+class scp_url {
+   public:
+    /**
+     * @brief True iff `input` matches the scp-like address shape:
+     * `[user@]host:path`. Per git's own rule for this syntax (see
+     * `git help clone`, "GIT URLS"): recognized only when there's no
+     * "://" and no '/' before the first ':' - e.g. "host:22/repo" is
+     * scp-like too (path "22/repo"), since there's no slash before that
+     * colon; only an actual "scheme://" prevents the match.
+     */
+    static bool is_scp_like(std::string_view input) noexcept;
+
+    /**
+     * @brief Rewrite an scp-like address to an equivalent "ssh://" URI.
+     * Input that doesn't match is_scp_like() is returned unchanged.
+     */
+    static std::string normalize(std::string_view input);
+
+    /**
+     * @brief Parse `input` - scp-like or already a normal URI - as a URL.
+     * scp-like input is normalize()d to "ssh://" first; anything else is
+     * parsed as-is (so this also accepts "https://...", "ssh://...", etc.
+     * unchanged).
+     * @throws std::invalid_argument If the (possibly normalized) result
+     * isn't a parseable URL.
+     */
+    explicit scp_url(std::string_view input);
+
+    /** @brief The parsed result, as a normal url. */
+    const url& as_url() const noexcept { return url_; }
+    /** @brief Implicit conversion, so an scp_url can be passed anywhere a `const url&` is expected. */
+    operator const url&() const noexcept { return url_; }
+
+    /** @brief Whether `input` (as given to the constructor) was scp-like, as opposed to already a normal URI. */
+    bool was_scp_like() const noexcept { return was_scp_like_; }
+
+   private:
+    url url_;
+    bool was_scp_like_;
+};
+
+/**
+ * @brief Alias for scp_url. Most callers reaching for this class are
+ * parsing a git remote specifically (its most common real-world use, e.g.
+ * "git@github.com:user/repo.git") - scp_url itself is named for the
+ * underlying address *syntax* (shared with scp/rsync/sshfs too), not tied
+ * to git, so this alias exists purely so the name at a git-focused call
+ * site can say what it's for.
+ */
+using git_url = scp_url;
+
 }  // namespace urlparser
 
 /**
- * @brief Output stream operator for QueryParams.
+ * @brief Output stream operator for query_params.
  */
-std::ostream& operator<<(std::ostream& os, const urlparser::QueryParams& dt);
+std::ostream& operator<<(std::ostream& os, const urlparser::query_params& dt);
 
 /**
  * @brief Output stream operator for url.
@@ -797,4 +867,138 @@ std::ostream& operator<<(std::ostream& os, const urlparser::ipv6& dt);
  * @brief Output stream operator for the host variant (hostname/ipv4/ipv6).
  */
 std::ostream& operator<<(std::ostream& os, const urlparser::host& dt);
+
+// ============================================================================
+// IDNA (Internationalized Domain Names): Unicode <-> ASCII/Punycode.
+// ============================================================================
+namespace urlparser {
+
+/**
+ * @brief IDNA (Internationalized Domain Names in Applications) support.
+ *
+ * liburlparser's own host parsing is ASCII-only per RFC 3986: a Unicode
+ * hostname like "café.com" is accepted (it will not throw), but it is kept
+ * verbatim rather than normalized, so it will not compare equal to its
+ * canonical ASCII/Punycode form "xn--caf-dma.com" even though they are the
+ * same domain. This namespace closes that gap with a standalone, dependency-
+ * free implementation of per-label Punycode encoding (RFC 3492) - the same
+ * public algorithm ada-url/ada and every other IDNA implementation use, but
+ * implemented here from scratch rather than linked against ada. See the
+ * "IDNA" section of urlparser.cpp for the scope/limits of this
+ * implementation (it covers well-formed, already-composed UTF-8 input - the
+ * common case - but does not implement the full UTS-46 case-folding/
+ * normalization pipeline).
+ */
+namespace idna {
+
+/**
+ * @brief Convert a UTF-8 domain (possibly containing international
+ * characters) to its canonical all-ASCII form (using Punycode for any
+ * non-ASCII labels). ASCII-only input, including an already-punycoded
+ * domain, is returned unchanged (aside from ASCII lowercasing, which IDNA's
+ * case-normalization step always applies).
+ * @param utf8_domain The UTF-8-encoded domain/hostname to normalize.
+ * @return The ASCII/Punycode form.
+ */
+std::string to_ascii(std::string_view utf8_domain);
+
+}  // namespace idna
+}  // namespace urlparser
+
+// ============================================================================
+// Percent-encoding ("quote") / percent-decoding ("unquote").
+// ============================================================================
+namespace urlparser {
+
+/**
+ * @brief Percent-encoding (RFC 3986 "quote") / percent-decoding ("unquote").
+ *
+ * liburlparser exposes path()/query()/params() as the *raw* (still
+ * percent-encoded) substrings of the URL - same as the WHATWG URL standard
+ * and every URL library that follows it (including ada). None of them
+ * decode automatically, on purpose: it can be lossy/ambiguous to do so
+ * implicitly. But unlike Python's urllib.parse (quote/unquote) or ada's
+ * internal (and @private) ada::unicode::percent_encode/percent_decode,
+ * liburlparser did not expose *any* public helper to do this decoding
+ * explicitly - so callers had to reach for a second library just to read
+ * "café" out of "caf%C3%A9". This closes that gap, implemented from scratch
+ * (no external dependency): a 256-bit membership bitmap gives O(1) "does
+ * this byte need encoding" checks, and both functions do a single
+ * allocation sized to a conservative upper bound.
+ */
+namespace percent_codec {
+
+/// A 256-bit set of bytes, used to mark which bytes are left untouched by
+/// encode(). Bit `i` set means "byte value `i` is safe, do not encode it".
+using character_set = std::array<uint64_t, 4>;
+
+constexpr bool contains(const character_set& set, unsigned char c) noexcept {
+    return (set[c >> 6] >> (c & 63)) & 1ULL;
+}
+
+/// RFC 3986 "unreserved" characters: A-Z a-z 0-9 - _ . ~
+/// (the default safe set for encode()).
+character_set unreserved_set();
+
+/// unreserved_set() plus '/' - the common default when encoding a full path
+/// component (mirrors Python's urllib.parse.quote(..., safe="/")).
+character_set path_safe_set();
+
+/**
+ * @brief Percent-decode ("unquote") a string: every %XX triplet (two hex
+ * digits) becomes the corresponding byte; anything that isn't a valid %XX
+ * triplet (e.g. a trailing "%", or "%" followed by non-hex digits) is left
+ * untouched, byte-for-byte, matching Python's urllib.parse.unquote()
+ * behaviour for malformed input rather than throwing.
+ */
+std::string decode(std::string_view input);
+
+/**
+ * @brief Percent-encode ("quote") a string: every byte not in `safe` is
+ * replaced by %XX (uppercase hex). Defaults to unreserved_set() (RFC 3986
+ * unreserved characters only) when no character_set is given.
+ */
+std::string encode(std::string_view input,
+                    const character_set& safe = unreserved_set());
+
+}  // namespace percent_codec
+}  // namespace urlparser
+
+// ============================================================================
+// URL reference resolution ("join"): RFC 3986 §5.
+// ============================================================================
+namespace urlparser {
+
+/**
+ * @brief Resolve a URL reference (possibly relative) against a base URL,
+ * per RFC 3986 §5 ("Reference Resolution"): the same algorithm behind
+ * `new URL(ref, base)` in JavaScript / `ada_url.join_url(base, ref)` /
+ * `urllib.parse.urljoin(base, ref)`.
+ *
+ * liburlparser had no equivalent at all before this: url::abspath() only
+ * resolves '.'/'..' segments *within* a single already-parsed URL's own
+ * path - it has no notion of a second, separate reference to merge in.
+ * Concretely, before this a caller who had "https://example.com/a/b/c" and
+ * wanted to follow a link to "../d" found in that page had nothing in
+ * liburlparser to reach for.
+ *
+ * @param base An absolute URL (must have a scheme and, for the schemes
+ * this covers, an authority - e.g. "https://example.com/a/b/c").
+ * @param ref A URL reference, absolute or relative (e.g. "../d",
+ * "/x", "?q=1", "#frag", or another absolute URL).
+ * @return The resolved, absolute URL, or an empty string if `base` isn't
+ * itself a parseable absolute URL.
+ *
+ * Verified against ada_url.join_url() (WHATWG-compliant) across a broad
+ * randomized case set; one known, narrow divergence remains: when `base`
+ * has *no* path at all (e.g. "https://example.com", not even a bare "/"),
+ * this returns that path as empty, where WHATWG defaults it to "/" - a
+ * liburlparser-wide URL-parsing characteristic (url::path() itself already
+ * returns "" for such input), not something specific to resolve() itself,
+ * so it's left as-is here rather than special-cased.
+ */
+std::string resolve(std::string_view base, std::string_view ref);
+
+}  // namespace urlparser
+
 #endif  // URLPARSER_H

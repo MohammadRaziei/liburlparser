@@ -1,7 +1,8 @@
 #include "utest.h"
 #include <string>
 
-#include "percent_codec.h"
+#include "urlparser.h"
+
 
 using urlparser::percent_codec::decode;
 using urlparser::percent_codec::encode;

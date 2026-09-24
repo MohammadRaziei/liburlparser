@@ -75,6 +75,16 @@ except ImportError:
 
 import urllib.parse as urllib_parse
 
+try:
+    import ada_url
+except ImportError:
+    ada_url = None
+
+try:
+    import giturlparse
+except ImportError:
+    giturlparse = None
+
 REPEATS = 20
 WARMUP_REPS = 3
 
@@ -300,6 +310,96 @@ def main():
     add_percent_row("urllib.parse", "percent_decode", PERCENT_ENCODED, urllib_parse.unquote)
     add_percent_row("liburlparser", "percent_encode", PERCENT_RAW, liburlparser.quote)
     add_percent_row("urllib.parse", "percent_encode", PERCENT_RAW, urllib_parse.quote)
+
+    # An eighth operation, "resolve": join a (possibly relative) URL
+    # reference against a base URL (RFC 3986 §5 / WHATWG "new URL(ref,
+    # base)"). liburlparser.resolve is new (see the "URL reference
+    # resolution" section of src/urlparser.cpp) - before it, liburlparser
+    # had no equivalent of ada_url.join_url()/urllib.parse.urljoin() at all.
+    RESOLVE_CASES = [
+        ("https://example.com/a/b/c", "../d"),
+        ("https://example.com/a/b/c", "/absolute"),
+        ("https://example.com/a/b/c?x=1", "e?y=2"),
+        ("https://example.com/a/b/", "./e/f"),
+        ("https://example.com/a/b/c", "https://other.com/z"),
+        ("https://example.com/a/b/c", "//other.com/z"),
+    ]
+
+    def add_resolve_row(name, fn):
+        for _ in range(WARMUP_REPS):
+            for base, ref in RESOLVE_CASES:
+                try: fn(base, ref)
+                except Exception: pass
+        t0 = time.perf_counter()
+        ops = 0
+        nbytes = 0
+        for _ in range(REPEATS):
+            for base, ref in RESOLVE_CASES:
+                try:
+                    fn(base, ref)
+                    ops += 1
+                    nbytes += len(base.encode("utf-8")) + len(ref.encode("utf-8"))
+                except Exception:
+                    pass
+        t = time.perf_counter() - t0
+        rows.append([name, "resolve",
+                     f"{nbytes / t / 1e6:.2f} MB/s" if ops else "n/a",
+                     f"{ops / t:.0f}", f"{100 * ops / (len(RESOLVE_CASES) * REPEATS):.0f}%",
+                     f"{t:.4f} s"])
+        results.append({
+            "library": name, "operation": "resolve",
+            "throughput_mb_s": (nbytes / t / 1e6) if ops else 0.0,
+            "ops_per_sec": ops / t, "success_rate": ops / (len(RESOLVE_CASES) * REPEATS),
+            "total_time_s": t,
+        })
+
+    add_resolve_row("liburlparser", liburlparser.resolve)
+    if ada_url:
+        add_resolve_row("ada_url", ada_url.join_url)
+
+    # A ninth operation, "parse_git_url": parse an scp-like or normal git
+    # remote address ([user@]host:path or a full URL) and read
+    # host/user/path back out. liburlparser.ScpUrl (alias GitUrl) is new
+    # (see the "scp_url" section of src/urlparser.cpp) - closes a gap
+    # liburlparser had no equivalent of at all. giturlparse is the
+    # dedicated, popular peer for exactly this (pip install giturlparse);
+    # unlike ScpUrl it also splits out owner/repo and knows about specific
+    # platforms (GitHub/GitLab/Bitbucket), which is outside this
+    # benchmark's scope - it's timed here for the one thing both do:
+    # parse the address and expose host/path.
+    GIT_URLS = [
+        "git@github.com:mohammadraziei/liburlparser.git",
+        "git@gitlab.com:group/subgroup/project.git",
+        "git@bitbucket.org:team/repo.git",
+        "https://github.com/mohammadraziei/liburlparser.git",
+        "ssh://git@example.com:2222/path/repo.git",
+        "user@my-server.internal:~/projects/repo.git",
+    ]
+
+    def add_git_url_row(name, fn):
+        t, ops, nbytes = bench(GIT_URLS, fn)
+        rows.append([name, "parse_git_url",
+                     f"{nbytes / t / 1e6:.2f} MB/s" if ops else "n/a",
+                     f"{ops / t:.0f}", f"{100 * ops / (len(GIT_URLS) * REPEATS):.0f}%",
+                     f"{t:.4f} s"])
+        results.append({
+            "library": name, "operation": "parse_git_url",
+            "throughput_mb_s": (nbytes / t / 1e6) if ops else 0.0,
+            "ops_per_sec": ops / t, "success_rate": ops / (len(GIT_URLS) * REPEATS),
+            "total_time_s": t,
+        })
+
+    def parse_with_scpurl(u):
+        g = liburlparser.GitUrl(u)
+        return g.url.host, g.url.abspath
+
+    def parse_with_giturlparse(u):
+        p = giturlparse.parse(u)
+        return p.host, p.path
+
+    add_git_url_row("liburlparser", parse_with_scpurl)
+    if giturlparse:
+        add_git_url_row("giturlparse", parse_with_giturlparse)
 
     headers = ["Library", "Operation", "Throughput", "Ops/sec", "Success", f"Total time (x{REPEATS} reps)"]
     if tabulate:

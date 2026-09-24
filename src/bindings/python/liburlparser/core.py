@@ -3,7 +3,12 @@ from __future__ import annotations
 
 import warnings
 
-from ._urlparser_py import Host, Hostname, IPv4, IPv6, Psl, Url, __doc__, __version__, quote, unquote
+from ._urlparser_py import Host, Hostname, IPv4, IPv6, Psl, ScpUrl, Url, __doc__, __version__, quote, unquote, resolve
+
+# Alias: most callers reaching for ScpUrl are parsing a git remote
+# specifically - the class itself is named for the underlying address
+# *syntax* (shared with scp/rsync/sshfs too), not tied to git.
+GitUrl = ScpUrl
 
 psl = Psl.instance()  # psl - already loaded from the data embedded into the compiled extension
 

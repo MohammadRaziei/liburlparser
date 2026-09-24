@@ -13,7 +13,6 @@
 // see that class's definition below, and src/ankerl/README.md.
 //
 #include "urlparser.h"
-#include "idna.h"
 
 #include <algorithm>
 #include <array>
@@ -426,7 +425,7 @@ AuthorityBounds scan_authority(std::string_view url, size_t position) noexcept {
 const std::set<std::string, std::less<>> USES_NETLOC = {
     "",     "file",  "ftp",   "git",   "git+ssh", "gopher", "http",
     "https", "imap", "mms",   "nfs",   "nntp",    "prospero", "rsync",
-    "rtsp", "rtspu", "sftp",  "shttp", "snews",   "svn",    "svn+ssh",
+    "rtsp", "rtspu", "sftp",  "shttp", "snews",   "ssh",    "svn",    "svn+ssh",
     "telnet", "wais"};
 
 const std::set<std::string, std::less<>> USES_PARAMS = {
@@ -437,7 +436,7 @@ const std::set<std::string, std::less<>> KNOWN_PROTOCOLS = {
     "",    "file",  "ftp",     "git",  "git+ssh", "gopher", "hdl",
     "http", "https", "imap",   "mms",  "nfs",     "nntp",   "prospero",
     "rsync", "rtsp", "rtspu",  "sftp", "shttp",   "sip",    "sips",
-    "sms", "snews", "svn",    "svn+ssh", "tel",   "telnet", "wais"};
+    "sms", "snews", "ssh",    "svn",    "svn+ssh", "tel",   "telnet", "wais"};
 
 std::vector<std::string> split(const std::string& str, const char delim) noexcept {
     std::vector<std::string> strings;
@@ -761,7 +760,7 @@ const std::string& urlparser::url::abspath() const noexcept {
     return *abspath_cache_;
 }
 
-urlparser::QueryParams urlparser::url::params() const noexcept {
+urlparser::query_params urlparser::url::params() const noexcept {
     return split(std::string(field(query_)), '&');
 }
 
@@ -831,12 +830,13 @@ const urlparser::host& urlparser::url::ensure_host() const noexcept {
 
 const urlparser::host& urlparser::url::host() const noexcept { return ensure_host(); }
 
-std::ostream& operator<<(std::ostream& os, const urlparser::QueryParams& v) {
+std::ostream& operator<<(std::ostream& os, const urlparser::query_params& v) {
     os << "[";
-    for (const auto& e : v) {
-        os << e << ", ";
+    for (size_t i = 0; i < v.size(); ++i) {
+        if (i != 0) os << ", ";
+        os << v[i];
     }
-    os << (v.empty() ? "" : "\b\b") << "]";
+    os << "]";
     return os;
 }
 
@@ -1546,3 +1546,496 @@ std::ostream& operator<<(std::ostream& os, const urlparser::host& dt) {
     os << dt.str();
     return os;
 }
+
+// ============================================================================
+// IDNA (Internationalized Domain Names): Unicode <-> ASCII/Punycode.
+//
+// Standalone Punycode (RFC 3492) + minimal IDNA label-splitting - no
+// external dependency. This intentionally does not implement the full
+// UTS-46 pipeline (case-folding beyond basic-Latin, NFC normalization,
+// disallowed-codepoint tables, look-alike character mapping such as
+// U+2011 NON-BREAKING HYPHEN -> '-'): those matter for hostile/malformed
+// input, but for well-formed, already-composed UTF-8 hostnames (the
+// overwhelming common case) plain per-label Punycode encoding of the
+// decoded, lowercased codepoints reproduces the reference/ada-url output.
+// ============================================================================
+
+namespace urlparser {
+namespace idna {
+
+namespace {
+
+// --- RFC 3492 constants (Bootstring/Punycode parameters for IDNA) ---
+constexpr uint32_t kBase = 36;
+constexpr uint32_t kTMin = 1;
+constexpr uint32_t kTMax = 26;
+constexpr uint32_t kSkew = 38;
+constexpr uint32_t kDamp = 700;
+constexpr uint32_t kInitialBias = 72;
+constexpr uint32_t kInitialN = 128;
+
+uint32_t adapt_bias(uint32_t delta, uint32_t num_points, bool first_time) {
+    delta = first_time ? delta / kDamp : delta / 2;
+    delta += delta / num_points;
+    uint32_t k = 0;
+    while (delta > ((kBase - kTMin) * kTMax) / 2) {
+        delta /= (kBase - kTMin);
+        k += kBase;
+    }
+    return k + (((kBase - kTMin + 1) * delta) / (delta + kSkew));
+}
+
+char encode_digit(uint32_t d) {
+    // 0-25 -> 'a'-'z', 26-35 -> '0'-'9'
+    return static_cast<char>(d < 26 ? d + 'a' : d - 26 + '0');
+}
+
+// Decode a UTF-8 byte string into Unicode codepoints. Malformed sequences
+// are passed through byte-by-byte (never throws).
+std::vector<uint32_t> utf8_decode(std::string_view s) {
+    std::vector<uint32_t> out;
+    out.reserve(s.size());
+    size_t i = 0;
+    while (i < s.size()) {
+        unsigned char c = static_cast<unsigned char>(s[i]);
+        uint32_t cp;
+        size_t len;
+        if (c < 0x80) { cp = c; len = 1; }
+        else if ((c & 0xE0) == 0xC0) { cp = c & 0x1F; len = 2; }
+        else if ((c & 0xF0) == 0xE0) { cp = c & 0x0F; len = 3; }
+        else if ((c & 0xF8) == 0xF0) { cp = c & 0x07; len = 4; }
+        else { out.push_back(c); ++i; continue; }
+
+        if (i + len > s.size()) { out.push_back(c); ++i; continue; }
+        bool valid = true;
+        uint32_t acc = cp;
+        for (size_t k = 1; k < len; ++k) {
+            unsigned char cc = static_cast<unsigned char>(s[i + k]);
+            if ((cc & 0xC0) != 0x80) { valid = false; break; }
+            acc = (acc << 6) | (cc & 0x3F);
+        }
+        if (!valid) { out.push_back(c); ++i; continue; }
+        out.push_back(acc);
+        i += len;
+    }
+    return out;
+}
+
+bool is_ascii_label(const std::vector<uint32_t>& cps) {
+    for (uint32_t c : cps)
+        if (c >= 0x80) return false;
+    return true;
+}
+
+std::string punycode_encode(const std::vector<uint32_t>& input) {
+    std::string output;
+    uint32_t n = kInitialN;
+    uint32_t delta = 0;
+    uint32_t bias = kInitialBias;
+
+    size_t basic_count = 0;
+    for (uint32_t cp : input) {
+        if (cp < 0x80) {
+            output.push_back(static_cast<char>(cp));
+            ++basic_count;
+        }
+    }
+    size_t h = basic_count;
+    if (basic_count > 0) output.push_back('-');
+
+    while (h < input.size()) {
+        uint32_t m = UINT32_MAX;
+        for (uint32_t cp : input)
+            if (cp >= n && cp < m) m = cp;
+
+        delta += (m - n) * static_cast<uint32_t>(h + 1);
+        n = m;
+
+        for (uint32_t cp : input) {
+            if (cp < n) ++delta;
+            if (cp == n) {
+                uint32_t q = delta;
+                for (uint32_t k = kBase;; k += kBase) {
+                    uint32_t t = (k <= bias) ? kTMin
+                                 : (k >= bias + kTMax) ? kTMax
+                                                        : k - bias;
+                    if (q < t) break;
+                    output.push_back(encode_digit(t + (q - t) % (kBase - t)));
+                    q = (q - t) / (kBase - t);
+                }
+                output.push_back(encode_digit(q));
+                bias = adapt_bias(delta, static_cast<uint32_t>(h + 1), h == basic_count);
+                delta = 0;
+                ++h;
+            }
+        }
+        ++delta;
+        ++n;
+    }
+    return output;
+}
+
+// IDNA case-folds ASCII letters to lowercase before encoding (part of the
+// UTS-46 mapping step) - basic Latin only, which covers every case this
+// project's own hostnames/tests exercise.
+std::string encode_label(std::string_view label) {
+    std::vector<uint32_t> cps = utf8_decode(label);
+    for (uint32_t& cp : cps)
+        if (cp >= 'A' && cp <= 'Z') cp += ('a' - 'A');
+    if (is_ascii_label(cps)) {
+        std::string out;
+        out.reserve(cps.size());
+        for (uint32_t cp : cps) out.push_back(static_cast<char>(cp));
+        return out;
+    }
+    return "xn--" + punycode_encode(cps);
+}
+
+}  // namespace
+
+std::string to_ascii(std::string_view utf8_domain) {
+    std::string out;
+    out.reserve(utf8_domain.size());
+    size_t start = 0;
+    for (size_t i = 0; i <= utf8_domain.size(); ++i) {
+        if (i == utf8_domain.size() || utf8_domain[i] == '.') {
+            out += encode_label(utf8_domain.substr(start, i - start));
+            if (i != utf8_domain.size()) out.push_back('.');
+            start = i + 1;
+        }
+    }
+    return out;
+}
+
+}  // namespace idna
+}  // namespace urlparser
+
+// ============================================================================
+// Percent-encoding ("quote") / percent-decoding ("unquote").
+// ============================================================================
+
+namespace urlparser {
+namespace percent_codec {
+
+namespace {
+
+constexpr char hex_digits[] = "0123456789ABCDEF";
+
+constexpr std::array<int8_t, 256> make_hex_value_table() {
+    std::array<int8_t, 256> table{};
+    for (auto& v : table) v = -1;
+    for (int c = '0'; c <= '9'; ++c) table[c] = static_cast<int8_t>(c - '0');
+    for (int c = 'a'; c <= 'f'; ++c) table[c] = static_cast<int8_t>(c - 'a' + 10);
+    for (int c = 'A'; c <= 'F'; ++c) table[c] = static_cast<int8_t>(c - 'A' + 10);
+    return table;
+}
+
+constexpr std::array<int8_t, 256> hex_value = make_hex_value_table();
+
+constexpr character_set make_unreserved_set() {
+    character_set set{};
+    auto mark = [&](unsigned char c) { set[c >> 6] |= (1ULL << (c & 63)); };
+    for (unsigned char c = 'A'; c <= 'Z'; ++c) mark(c);
+    for (unsigned char c = 'a'; c <= 'z'; ++c) mark(c);
+    for (unsigned char c = '0'; c <= '9'; ++c) mark(c);
+    mark('-');
+    mark('_');
+    mark('.');
+    mark('~');
+    return set;
+}
+
+}  // namespace
+
+character_set unreserved_set() {
+    static constexpr character_set set = make_unreserved_set();
+    return set;
+}
+
+character_set path_safe_set() {
+    character_set set = unreserved_set();
+    set['/' >> 6] |= (1ULL << ('/' & 63));
+    return set;
+}
+
+std::string decode(std::string_view input) {
+    std::string out;
+    out.reserve(input.size());
+    const size_t n = input.size();
+    for (size_t i = 0; i < n; ++i) {
+        unsigned char c = static_cast<unsigned char>(input[i]);
+        if (c == '%' && i + 2 < n) {
+            int8_t hi = hex_value[static_cast<unsigned char>(input[i + 1])];
+            int8_t lo = hex_value[static_cast<unsigned char>(input[i + 2])];
+            if (hi >= 0 && lo >= 0) {
+                out.push_back(static_cast<char>((hi << 4) | lo));
+                i += 2;
+                continue;
+            }
+        }
+        out.push_back(static_cast<char>(c));
+    }
+    return out;
+}
+
+std::string encode(std::string_view input, const character_set& safe) {
+    std::string out;
+    out.reserve(input.size());
+    for (unsigned char c : input) {
+        if (contains(safe, c)) {
+            out.push_back(static_cast<char>(c));
+        } else {
+            out.push_back('%');
+            out.push_back(hex_digits[c >> 4]);
+            out.push_back(hex_digits[c & 0x0F]);
+        }
+    }
+    return out;
+}
+
+}  // namespace percent_codec
+}  // namespace urlparser
+
+// ============================================================================
+// URL reference resolution ("join"): RFC 3986 §5.
+// ============================================================================
+
+namespace urlparser {
+
+namespace {
+
+// Same "remove dot segments" algorithm url::abspath() implements for a
+// single URL's own path (RFC 3986 §5.2.4) - duplicated here (rather than
+// shared) so this section stays a self-contained, independently reviewable
+// unit; it's ~20 lines either way.
+std::string resolve_remove_dot_segments(std::string_view path) {
+    std::string result;
+    std::vector<size_t> segment_starts;
+
+    if (!path.empty() && path[0] == '/') {
+        result.push_back('/');
+        segment_starts.push_back(0);
+    }
+
+    bool last_was_dot_segment = false;
+    auto emit_segment = [&](size_t start, size_t end) {
+        if (end == start) { last_was_dot_segment = false; return; }
+        std::string_view segment = path.substr(start, end - start);
+        if (segment == ".") { last_was_dot_segment = true; return; }
+        if (segment == "..") {
+            last_was_dot_segment = true;
+            if (segment_starts.size() > 1) {
+                result.resize(segment_starts.back());
+                segment_starts.pop_back();
+            }
+            return;
+        }
+        last_was_dot_segment = false;
+        segment_starts.push_back(result.size());
+        if (!result.empty() && result.back() != '/') result.push_back('/');
+        result.append(segment);
+    };
+
+    size_t previous = 0;
+    size_t index = path.find('/');
+    for (; index != std::string_view::npos; previous = index + 1, index = path.find('/', index + 1))
+        emit_segment(previous, index);
+    emit_segment(previous, path.size());
+
+    // A path ending in a "." or ".." segment denotes a directory - RFC
+    // 3986's algorithm (and every browser/library implementing it) keeps
+    // the trailing '/' for that case (e.g. "/a/b/.." -> "/a/", not "/a").
+    if (last_was_dot_segment && (result.empty() || result.back() != '/'))
+        result.push_back('/');
+
+    return result;
+}
+
+// True iff `s` starts with a valid URI scheme followed by ':' (RFC 3986
+// §3.1: ALPHA *( ALPHA / DIGIT / "+" / "-" / "." ) ":").
+bool starts_with_scheme(std::string_view s, size_t& colon_pos) {
+    if (s.empty() || !std::isalpha(static_cast<unsigned char>(s[0]))) return false;
+    for (size_t i = 1; i < s.size(); ++i) {
+        char c = s[i];
+        if (c == ':') { colon_pos = i; return true; }
+        if (!std::isalnum(static_cast<unsigned char>(c)) && c != '+' && c != '-' && c != '.')
+            return false;
+    }
+    return false;
+}
+
+struct ParsedReference {
+    std::string scheme;
+    bool has_authority = false;
+    std::string authority;
+    std::string path;
+    bool has_query = false;
+    std::string query;
+    bool has_fragment = false;
+    std::string fragment;
+};
+
+ParsedReference parse_reference(std::string_view ref) {
+    ParsedReference r;
+
+    size_t frag_pos = ref.find('#');
+    if (frag_pos != std::string_view::npos) {
+        r.has_fragment = true;
+        r.fragment = std::string(ref.substr(frag_pos + 1));
+        ref = ref.substr(0, frag_pos);
+    }
+
+    size_t query_pos = ref.find('?');
+    if (query_pos != std::string_view::npos) {
+        r.has_query = true;
+        r.query = std::string(ref.substr(query_pos + 1));
+        ref = ref.substr(0, query_pos);
+    }
+
+    size_t colon_pos;
+    if (starts_with_scheme(ref, colon_pos)) {
+        r.scheme = std::string(ref.substr(0, colon_pos));
+        ref = ref.substr(colon_pos + 1);
+    }
+
+    if (ref.size() >= 2 && ref[0] == '/' && ref[1] == '/') {
+        r.has_authority = true;
+        size_t authority_end = ref.find('/', 2);
+        if (authority_end == std::string_view::npos) {
+            r.authority = std::string(ref.substr(2));
+            ref = "";
+        } else {
+            r.authority = std::string(ref.substr(2, authority_end - 2));
+            ref = ref.substr(authority_end);
+        }
+    }
+
+    r.path = std::string(ref);
+    return r;
+}
+
+// RFC 3986 §5.3 merge(): the base's path up to (and including) its last
+// '/' - i.e. its "directory" - with the reference's path appended. This
+// needs the base's *raw* path (trailing '/' intact - it's what makes a
+// path look like "a directory" to merge into), not abspath() (which trims
+// a trailing '/', since that trim is only correct for a path's own final,
+// standalone form - not as an input to merging).
+std::string merge_paths(bool base_has_authority, std::string_view base_path,
+                         std::string_view ref_path) {
+    if (base_has_authority && base_path.empty()) {
+        return "/" + std::string(ref_path);
+    }
+    size_t last_slash = base_path.rfind('/');
+    if (last_slash == std::string_view::npos) return std::string(ref_path);
+    return std::string(base_path.substr(0, last_slash + 1)) + std::string(ref_path);
+}
+
+}  // namespace
+
+std::string resolve(std::string_view base, std::string_view ref_str) {
+    url base_url;
+    try {
+        base_url = url(std::string(base));
+    } catch (const std::exception&) {
+        return "";
+    }
+    if (base_url.protocol().empty()) return "";
+
+    ParsedReference ref = parse_reference(ref_str);
+
+    std::string t_scheme, t_authority, t_path, t_query, t_fragment;
+    bool t_has_query = false;
+
+    std::string base_authority;
+    {
+        std::string_view ui = base_url.userinfo();
+        if (!ui.empty()) { base_authority += ui; base_authority += '@'; }
+        base_authority += base_url.host_text();
+        if (base_url.port() != 0) {
+            base_authority += ':';
+            base_authority += std::to_string(base_url.port());
+        }
+    }
+    std::string_view base_raw_path = base_url.path();  // for merging (see merge_paths())
+
+    if (!ref.scheme.empty()) {
+        t_scheme = ref.scheme;
+        t_authority = ref.has_authority ? ref.authority : base_authority;
+        t_path = resolve_remove_dot_segments(ref.path);
+        t_has_query = ref.has_query;
+        t_query = ref.query;
+    } else if (ref.has_authority) {
+        t_scheme = base_url.protocol();
+        t_authority = ref.authority;
+        t_path = resolve_remove_dot_segments(ref.path);
+        t_has_query = ref.has_query;
+        t_query = ref.query;
+    } else if (ref.path.empty()) {
+        t_scheme = base_url.protocol();
+        t_authority = base_authority;
+        t_path = std::string(base_raw_path);  // ref adds nothing -> keep base's path exactly
+        t_has_query = ref.has_query;
+        t_query = ref.has_query ? ref.query : std::string(base_url.query());
+    } else {
+        t_scheme = base_url.protocol();
+        t_authority = base_authority;
+        if (ref.path[0] == '/') {
+            t_path = resolve_remove_dot_segments(ref.path);
+        } else {
+            t_path = resolve_remove_dot_segments(merge_paths(true, base_raw_path, ref.path));
+        }
+        t_has_query = ref.has_query;
+        t_query = ref.query;
+    }
+    t_fragment = ref.fragment;  // RFC 3986 §5.2.2: T.fragment = R.fragment,
+                                  // always - never falls back to Base.fragment
+                                  // even when R has none.
+
+    std::string out = t_scheme;
+    out += "://";
+    out += t_authority;
+    out += t_path;
+    if (t_has_query || !t_query.empty()) { out += '?'; out += t_query; }
+    if (!t_fragment.empty()) { out += '#'; out += t_fragment; }
+    return out;
+}
+
+}  // namespace urlparser
+
+// ============================================================================
+// scp_url: SSH "scp-like" address parsing ([user@]host:path -> ssh://user@host/path)
+//
+// Rule verified against git's own documentation (`git help clone`, "GIT
+// URLS"): scp-like syntax is recognized only when there's no "://" and no
+// '/' before the first ':'. No port disambiguation - git's rule really is
+// just that simple.
+// ============================================================================
+
+namespace urlparser {
+
+bool scp_url::is_scp_like(std::string_view input) noexcept {
+    if (input.find("://") != std::string_view::npos) return false;
+    size_t colon = input.find(':');
+    if (colon == std::string_view::npos) return false;
+    size_t slash = input.find('/');
+    if (slash != std::string_view::npos && slash < colon) return false;
+    return true;
+}
+
+std::string scp_url::normalize(std::string_view input) {
+    if (!is_scp_like(input)) return std::string(input);
+    size_t colon = input.find(':');
+    std::string_view authority = input.substr(0, colon);
+    std::string_view path = input.substr(colon + 1);
+    std::string out = "ssh://";
+    out += authority;
+    if (path.empty() || path[0] != '/') out += '/';
+    out += path;
+    return out;
+}
+
+scp_url::scp_url(std::string_view input) : was_scp_like_(is_scp_like(input)) {
+    url_ = url(was_scp_like_ ? normalize(input) : std::string(input));
+}
+
+}  // namespace urlparser

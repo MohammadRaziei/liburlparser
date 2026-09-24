@@ -2,7 +2,6 @@
 #include <string>
 
 #include "urlparser.h"
-#include "idna.h"
 
 // Gap identified by comparing against ada-url/ada: liburlparser accepts
 // non-ASCII (Unicode) hostnames without error, but does not normalize them

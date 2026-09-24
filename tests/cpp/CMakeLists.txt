@@ -6,8 +6,6 @@ file(GLOB URLPARSER_TEST_SOURCES_CPP CONFIGURE_DEPENDS
 add_executable(test_liburlparser_cpp
     ${URLPARSER_TEST_SOURCES_CPP}
     ${PROJECT_SOURCE_DIR}/src/urlparser.cpp
-    ${PROJECT_SOURCE_DIR}/src/idna.cpp
-    ${PROJECT_SOURCE_DIR}/src/percent_codec.cpp
     ${URLPARSER_TEST_SOURCE_DIR}/utest/utest_main.cxx
 )
 

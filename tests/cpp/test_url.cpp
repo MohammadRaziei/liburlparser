@@ -196,6 +196,42 @@ UTEST(UrlTest, ParamsEmptyWhenNoQuery) {
     EXPECT_TRUE(url.params().empty());
 }
 
+// --- query_params: the named type itself, and its operator<< -------------
+// Previously untested (only ever used via `auto`), which hid a real bug:
+// operator<< used literal '\b' (backspace) bytes to visually erase the
+// trailing ", " separator - that only works on an interactive terminal;
+// captured to a stream/string/file (exactly what this test does), the
+// backspace bytes leaked into the output verbatim instead of erasing
+// anything.
+
+UTEST(UrlTest, QueryParamsIsUsableAsANamedType) {
+    urlparser::url url("https://example.com/?a=1&b=2");
+    urlparser::query_params params = url.params();
+    ASSERT_EQ(params.size(), (size_t)2);
+    EXPECT_STREQ(params[0].c_str(), "a=1");
+}
+
+UTEST(UrlTest, QueryParamsStreamOperatorFormatsCorrectly) {
+    urlparser::query_params params = {"a=1", "b=2", "c=3"};
+    std::ostringstream oss;
+    oss << params;
+    EXPECT_STREQ(oss.str().c_str(), "[a=1, b=2, c=3]");
+}
+
+UTEST(UrlTest, QueryParamsStreamOperatorHandlesEmpty) {
+    urlparser::query_params params;
+    std::ostringstream oss;
+    oss << params;
+    EXPECT_STREQ(oss.str().c_str(), "[]");
+}
+
+UTEST(UrlTest, QueryParamsStreamOperatorHandlesSingleElement) {
+    urlparser::query_params params = {"only=1"};
+    std::ostringstream oss;
+    oss << params;
+    EXPECT_STREQ(oss.str().c_str(), "[only=1]");
+}
+
 // --- operator==: value equality, not identity ---------------------------
 
 UTEST(UrlTest, EqualityComparesByValue) {

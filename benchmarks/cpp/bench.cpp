@@ -20,11 +20,16 @@
  * - it's an implementation detail, not a stable public entry point, so
  * benchmarking against it wouldn't be the fair apples-to-apples comparison
  * the rest of this file aims for.
+ *
+ * "parse_git_url" (scp_url / git_url) also reports liburlparser only:
+ * libgit2's equivalent, git_net_url_parse_standard_or_scp(), lives in
+ * src/util/net.h - not part of its public include/git2/*.h API - and
+ * getting it running standalone means bypassing libgit2's own CMake to
+ * link internal objects directly against an explicitly unstable API. Same
+ * "not a fair public-API comparison" call as percent_decode/encode above.
  */
 
 #include "urlparser.h"
-#include "idna.h"
-#include "percent_codec.h"
 #include <ada.h>
 #include <ada/ada_idna.h>
 
@@ -340,6 +345,50 @@ int main() {
         }
         record("liburlparser", "percent_encode", bytes, ops, now_seconds() - t0,
                static_cast<long>(raw.size()) * URLPARSER_BENCH_REPEATS);
+    }
+
+    // ── parse_git_url: liburlparser only ────────────────────────────────
+    // (scp_url / git_url is new - see the "scp_url" section of
+    // src/urlparser.cpp.) libgit2 has the equivalent -
+    // git_net_url_parse_standard_or_scp() - but it's declared in
+    // src/util/net.h, not include/git2/*.h: deliberately not part of
+    // libgit2's public API. It technically compiles against libgit2's
+    // internal .o files directly, but the result depends on running
+    // libgit2's own global runtime init sequence (git_libgit2_init(),
+    // src/libgit2/libgit2.c) which itself pulls in most of the rest of
+    // the library - so getting it running means rebuilding effectively
+    // all of libgit2 from raw objects outside its own CMake, against an
+    // explicitly-internal, unstable API. That's not a fair
+    // apples-to-apples public-API comparison (same reasoning as
+    // percent_decode/percent_encode above), so, like those, this is
+    // reported honestly as liburlparser-only rather than forced into a
+    // comparison libgit2 doesn't offer publicly.
+    {
+        std::vector<std::string> git_urls = {
+            "git@github.com:mohammadraziei/liburlparser.git",
+            "git@gitlab.com:group/subgroup/project.git",
+            "git@bitbucket.org:team/repo.git",
+            "https://github.com/mohammadraziei/liburlparser.git",
+            "ssh://git@example.com:2222/path/repo.git",
+            "user@my-server.internal:~/projects/repo.git",
+        };
+
+        for (int rep = 0; rep < URLPARSER_BENCH_WARMUP_REPS; rep++)
+            for (const auto& g : git_urls) {
+                urlparser::git_url gu(g);
+                g_sink += gu.as_url().host_text().size();
+            }
+        long ops = 0; double bytes = 0;
+        double t0 = now_seconds();
+        for (int rep = 0; rep < URLPARSER_BENCH_REPEATS; rep++) {
+            for (const auto& g : git_urls) {
+                urlparser::git_url gu(g);
+                g_sink += gu.as_url().host_text().size();
+                ops++; bytes += static_cast<double>(g.size());
+            }
+        }
+        record("liburlparser", "parse_git_url", bytes, ops, now_seconds() - t0,
+               static_cast<long>(git_urls.size()) * URLPARSER_BENCH_REPEATS);
     }
 
     write_results_json(domains.size(), urls.size());

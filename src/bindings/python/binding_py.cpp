@@ -7,7 +7,6 @@
 #include <string>
 #include <variant>
 #include "urlparser.h"
-#include "percent_codec.h"
 
 namespace nb = nanobind;
 using namespace nb::literals;
@@ -293,6 +292,11 @@ NB_MODULE(_urlparser_py, m) {
     }, "s"_a, "keep_slash"_a = false,
        "Percent-encode a string. keep_slash=True leaves '/' unescaped "
        "(handy for a whole path component).");
+    m.def("resolve", [](std::string_view base, std::string_view ref) {
+        return urlparser::resolve(base, ref);
+    }, "base"_a, "ref"_a,
+       "Resolve a URL reference against a base URL (RFC 3986 §5), e.g. "
+       "resolve('https://a.com/x/y', '../z') -> 'https://a.com/z'.");
     m.attr("__version__") = URLPARSER_VERSION_STRING;
     m.doc() = R"pbdoc(
         liburlparser
@@ -315,6 +319,7 @@ NB_MODULE(_urlparser_py, m) {
     nb::class_<urlparser::ipv6> ipv6_cls(m, "IPv6");
     nb::class_<urlparser::host> host_cls(m, "Host");
     nb::class_<urlparser::url> url_cls(m, "Url");
+    nb::class_<urlparser::scp_url> scp_cls(m, "ScpUrl");
 
     // --- Hostname: a domain name (subdomain/domain/suffix via PSL) --------
     hostname_cls
@@ -478,6 +483,20 @@ NB_MODULE(_urlparser_py, m) {
             "With parse_host=False `host` is left as a plain string and the "
             "PSL lookup / host-type classification is skipped entirely, "
             "for callers who only need protocol/path/query/fragment.");
+
+    // --- ScpUrl: SSH "scp-like" address ([user@]host:path), normalized to Url -
+    scp_cls
+        .def(nb::init<std::string_view>(), nb::arg("input"),
+             "Parse `input` - scp-like (e.g. 'git@github.com:user/repo.git') "
+             "or an already-normal URL - as a Url. See ScpUrl.is_scp_like/"
+             "normalize for the rule (matches git's own).")
+        .def_static("is_scp_like", &urlparser::scp_url::is_scp_like, nb::arg("input"))
+        .def_static("normalize", &urlparser::scp_url::normalize, nb::arg("input"))
+        .def_prop_ro("url", &urlparser::scp_url::as_url, nb::rv_policy::copy)
+        .def_prop_ro("was_scp_like", &urlparser::scp_url::was_scp_like)
+        .def("__repr__", [](const urlparser::scp_url& s) -> std::string {
+            return "<ScpUrl '" + s.as_url().str() + "'>";
+        });
 
     nb::class_<urlparser::psl> psl(m, "Psl", nb::dynamic_attr());
 
