@@ -297,6 +297,12 @@ NB_MODULE(_urlparser_py, m) {
     }, "base"_a, "ref"_a,
        "Resolve a URL reference against a base URL (RFC 3986 §5), e.g. "
        "resolve('https://a.com/x/y', '../z') -> 'https://a.com/z'.");
+    m.def("normalize", [](std::string_view input) {
+        return urlparser::normalize(input);
+    }, "input"_a,
+       "Parse and normalize a URL string in one call: "
+       "Url(input).normalized. Prefer Url(...).normalized directly if "
+       "you already have a parsed Url.");
     m.attr("__version__") = URLPARSER_VERSION_STRING;
     m.doc() = R"pbdoc(
         liburlparser
@@ -463,6 +469,10 @@ NB_MODULE(_urlparser_py, m) {
         .def_prop_ro("query", &urlparser::url::query)
         .def_prop_ro("fragment", &urlparser::url::fragment)
         .def_prop_ro("abspath", &urlparser::url::abspath)
+        .def_prop_ro("normalized", &urlparser::url::normalized,
+                     "Canonical, normalized form: default port omitted, "
+                     "dot-segments resolved, Unicode host IDNA-normalized. "
+                     "See urlparser::url::normalized() for the full list.")
         .def("__eq__", &urlparser::url::operator==)
         .def("to_dict", url_to_dict)
         .def("to_json", url_to_json)

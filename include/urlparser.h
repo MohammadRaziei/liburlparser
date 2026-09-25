@@ -732,6 +732,28 @@ class url {
     std::string_view path() const noexcept { return field(path_); }
     /** @brief The path, with '.'/'..' segments resolved. */
     const std::string& abspath() const noexcept;
+    /**
+     * @brief The URL's canonical, normalized form (roughly WHATWG URL
+     * "serialize a URL" / ada's normalize_url()): scheme/host already
+     * lowercase at parse time here (nothing to do for those), plus what
+     * str() alone doesn't give you - the scheme's default port omitted
+     * (e.g. no ":443" for an explicit "https://host:443/..."), the host
+     * IDNA-normalized to ASCII/Punycode (see idna::to_ascii - so a Unicode
+     * host normalizes the same as its already-ASCII form), and the path
+     * with '.'/'..' segments resolved (str() keeps the raw path; this
+     * uses abspath() instead - so this also inherits abspath()'s own
+     * fuzz-tested behavior of trimming a trailing '/' on a non-root path
+     * ("/a/" -> "/a") and collapsing repeated slashes ("/a//b" -> "/a/b"),
+     * both deliberate there (see AbspathDropsTrailingSlashOnNonRootPath /
+     * AbspathCollapsesRepeatedSlashes in tests/cpp/test_url.cpp) but a
+     * real, known difference from ada's normalize_url(), which keeps both
+     * as-is). Query and fragment are kept exactly as given - unlike a
+     * path, there's no single canonical form for a query string's
+     * parameter order to collapse to, so this doesn't try.
+     * Leading/trailing whitespace around the *original input* is already
+     * handled at parse time (see the url(...) constructor), not here.
+     */
+    std::string normalized() const;
     /** @brief The raw host text (e.g., "example.com", "192.0.2.1", or "[::1]"), before hostname/ip classification. */
     std::string_view host_text() const noexcept { return field(host_); }
     /** @brief The port number of the URL, or 0 if not specified. */
@@ -835,6 +857,15 @@ class scp_url {
  * site can say what it's for.
  */
 using git_url = scp_url;
+
+/**
+ * @brief Convenience wrapper: url(input).normalized(). Prefer calling
+ * .normalized() directly on a url you already have parsed - this just
+ * parses one and immediately normalizes it, so it's no faster than doing
+ * that yourself, only more convenient for a one-off string-in/string-out
+ * call.
+ */
+inline std::string normalize(std::string_view input) { return url(input).normalized(); }
 
 }  // namespace urlparser
 

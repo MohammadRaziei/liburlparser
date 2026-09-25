@@ -426,7 +426,7 @@ const std::set<std::string, std::less<>> USES_NETLOC = {
     "",     "file",  "ftp",   "git",   "git+ssh", "gopher", "http",
     "https", "imap", "mms",   "nfs",   "nntp",    "prospero", "rsync",
     "rtsp", "rtspu", "sftp",  "shttp", "snews",   "ssh",    "svn",    "svn+ssh",
-    "telnet", "wais"};
+    "telnet", "wais", "ws",   "wss"};
 
 const std::set<std::string, std::less<>> USES_PARAMS = {
     "",   "ftp",  "hdl",   "http", "https", "imap", "mms",
@@ -436,7 +436,8 @@ const std::set<std::string, std::less<>> KNOWN_PROTOCOLS = {
     "",    "file",  "ftp",     "git",  "git+ssh", "gopher", "hdl",
     "http", "https", "imap",   "mms",  "nfs",     "nntp",   "prospero",
     "rsync", "rtsp", "rtspu",  "sftp", "shttp",   "sip",    "sips",
-    "sms", "snews", "ssh",    "svn",    "svn+ssh", "tel",   "telnet", "wais"};
+    "sms", "snews", "ssh",    "svn",    "svn+ssh", "tel",   "telnet", "wais",
+    "ws",  "wss"};
 
 std::vector<std::string> split(const std::string& str, const char delim) noexcept {
     std::vector<std::string> strings;
@@ -455,6 +456,16 @@ bool urlparser::url::is_psl_loaded() noexcept { return urlparser::psl::instance(
 
 urlparser::url::url(std::string_view url, const bool ignore_www)
     : ignore_www_(ignore_www) {
+    // WHATWG URL parsing step 1: strip leading/trailing C0 control-or-space
+    // (0x00-0x20) before anything else. Every downstream field is a
+    // substring of `url` by offset, so narrowing it here - rather than
+    // trimming after the fact - is free: no copy, no re-parse, and every
+    // field computed below is correct from the start.
+    while (!url.empty() && static_cast<unsigned char>(url.front()) <= 0x20)
+        url.remove_prefix(1);
+    while (!url.empty() && static_cast<unsigned char>(url.back()) <= 0x20)
+        url.remove_suffix(1);
+
     // Every field is a non-expanding substring of url (case-folding only
     // changes case, never length), so their combined length can never
     // exceed url.size() - reserving exactly that means storage_ never
@@ -758,6 +769,93 @@ const std::string& urlparser::url::abspath() const noexcept {
 
     abspath_cache_ = std::move(result);
     return *abspath_cache_;
+}
+
+namespace {
+// WHATWG URL "special scheme" default ports - a URL like
+// "https://host:443/..." and "https://host/..." are the same origin, so
+// normalized() omits the port when it matches the scheme's default (an
+// explicit non-default port, or any scheme not in this list - "ssh" isn't
+// a WHATWG special scheme, for one - is always kept).
+int default_port_for_scheme(std::string_view scheme) noexcept {
+    if (scheme == "http" || scheme == "ws") return 80;
+    if (scheme == "https" || scheme == "wss") return 443;
+    if (scheme == "ftp") return 21;
+    return 0;
+}
+}  // namespace
+
+std::string urlparser::url::normalized() const {
+    std::string result;
+    result.reserve(storage_.size() + 16);
+
+    const std::string_view scheme = field(scheme_);
+    const std::string_view userinfo = field(userinfo_);
+    const std::string_view host = field(host_);
+    const std::string_view params = field(params_);
+    const std::string_view query = field(query_);
+    const std::string_view fragment = field(fragment_);
+
+    // scheme/host are already lowercased at parse time (see the
+    // appendLower() calls in the constructor) - nothing to do for that
+    // here. IDNA is the one host transform str() doesn't already apply.
+    const std::string ascii_host = urlparser::idna::to_ascii(host);
+
+    if (!scheme.empty()) {
+        result.append(scheme);
+        result.append(USES_NETLOC.find(scheme) != USES_NETLOC.end() ? "://" : ":");
+    } else if (!host.empty()) {
+        result.append("//");
+    }
+
+    if (!userinfo.empty()) {
+        result.append(userinfo);
+        result.append("@");
+    }
+
+    if (!ascii_host.empty()) {
+        result.append(ascii_host);
+    }
+
+    if (port_ != 0 && port_ != default_port_for_scheme(scheme)) {
+        result.append(":");
+        result.append(std::to_string(port_));
+    }
+
+    // abspath(), not the raw path field - the one piece of this that's a
+    // real dot-segment *resolution*, not just a straight re-serialization
+    // of already-parsed fields. Known, documented differences from ada's
+    // normalize_url() here: abspath()'s existing (separately-tested, so
+    // left as-is) dot-segment algorithm also collapses empty segments -
+    // "//a//b" -> "/a/b" - and trims a trailing '/' on a non-root path -
+    // "/a/" -> "/a" - where ada's leaves both alone.
+    const std::string& path = abspath();
+    if (path.empty()) {
+        if (!result.empty()) result.append("/");
+    } else {
+        if (!host.empty() && path[0] != '/') result.append(1, '/');
+        result.append(path);
+    }
+
+    if (has_params_) {
+        result.append(";");
+        result.append(params);
+    }
+
+    // Query and fragment are kept exactly as given - see the doc comment
+    // on normalized() in urlparser.h for why (no canonical parameter
+    // order to collapse a query string to).
+    if (has_query_) {
+        result.append("?");
+        result.append(query);
+    }
+
+    if (!fragment.empty()) {
+        result.append("#");
+        result.append(fragment);
+    }
+
+    return result;
 }
 
 urlparser::query_params urlparser::url::params() const noexcept {
