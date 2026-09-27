@@ -357,6 +357,36 @@ def main():
     if ada_url:
         add_resolve_row("ada_url", ada_url.join_url)
 
+    # normalize: liburlparser.normalize vs ada_url.normalize_url - both are
+    # each library's own public "canonicalize this URL string" entry
+    # point, so a direct, fair comparison (unlike idna_normalize/resolve
+    # above, this needs no wrapper on either side).
+    NORMALIZE_CASES = [
+        "https://example.com:443/path",
+        "http://example.com:80/path",
+        "https://example.com/a/../b",
+        "https://café.com/path",
+        "https://example.com",
+        "https://example.com/path?b=2&a=1#frag",
+    ]
+
+    def add_normalize_row(name, fn):
+        t, ops, nbytes = bench(NORMALIZE_CASES, fn)
+        rows.append([name, "normalize",
+                     f"{nbytes / t / 1e6:.2f} MB/s" if ops else "n/a",
+                     f"{ops / t:.0f}", f"{100 * ops / (len(NORMALIZE_CASES) * REPEATS):.0f}%",
+                     f"{t:.4f} s"])
+        results.append({
+            "library": name, "operation": "normalize",
+            "throughput_mb_s": (nbytes / t / 1e6) if ops else 0.0,
+            "ops_per_sec": ops / t, "success_rate": ops / (len(NORMALIZE_CASES) * REPEATS),
+            "total_time_s": t,
+        })
+
+    add_normalize_row("liburlparser", liburlparser.normalize)
+    if ada_url:
+        add_normalize_row("ada_url", ada_url.normalize_url)
+
     # A ninth operation, "parse_git_url": parse an scp-like or normal git
     # remote address ([user@]host:path or a full URL) and read
     # host/user/path back out. liburlparser.ScpUrl (alias GitUrl) is new

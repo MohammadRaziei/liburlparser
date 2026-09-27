@@ -29,7 +29,7 @@ target_link_libraries(bench_cpp PRIVATE url::base ada::ada)
 target_compile_definitions(bench_cpp PRIVATE
     URLPARSER_BENCH_DOMAINS_FILE="${URLPARSER_BENCH_DOMAINS_FILE}"
     URLPARSER_BENCH_URLS_FILE="${URLPARSER_BENCH_URLS_FILE}"
-    URLPARSER_BENCH_RESULTS_JSON="${URLPARSER_BENCH_RESULTS_DIR}/cpp.json")
+    URLPARSER_BENCH_RESULTS_JSON="${URLPARSER_BENCH_RESULTS_SCRATCH_DIR}/cpp.json")
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(bench_cpp PRIVATE -O3)

@@ -8,3 +8,8 @@ PyDomainExtractor>=0.6
 tld>=0.13
 publicsuffix2>=2.20191221
 can_ada>=0.5
+ada-url>=4.0
+giturlparse>=0.12
+
+# Benchmark tooling
+jinja2>=3.1          # renders the standalone HTML report (report/generate_report.py)

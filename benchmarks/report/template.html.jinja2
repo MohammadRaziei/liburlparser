@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>liburlparser Benchmarks</title>
+<style>
+:root {
+  --bg: {{ colors.bg }};
+  --fg: {{ colors.fg }};
+  --fg-dim: {{ colors.fg_dim }};
+  --border: {{ colors.border }};
+  --accent: {{ colors.accent }};
+  --accent-hover: {{ colors.accent_hover }};
+  --gold: {{ colors.gold }};
+  --card: {{ colors.card }};
+  --card-border: {{ colors.card_border }};
+  --code-bg: {{ colors.code_bg }};
+  --code-fg: {{ colors.code_fg }};
+  --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.55;
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px 80px; }
+header.hero {
+  padding: 56px 24px 32px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(103,157,203,0.10) 0%, rgba(255,211,64,0.05) 100%);
+}
+header.hero .inner { max-width: 1080px; margin: 0 auto; }
+h1 { font-size: 28px; margin: 0 0 8px; }
+h1 .accent { color: var(--accent); }
+.subtitle { color: var(--fg-dim); font-size: 15px; margin: 0; }
+.meta {
+  display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px;
+  font-size: 13px; color: var(--fg-dim); font-family: var(--mono);
+}
+.meta span b { color: var(--fg); }
+section.op-section { margin-top: 52px; }
+h2.op-title {
+  font-size: 19px; margin: 0 0 4px;
+  padding-bottom: 10px; border-bottom: 1px solid var(--border);
+}
+h3.lang-title {
+  font-size: 14px; margin: 22px 0 0; color: var(--accent-hover);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  display: flex; align-items: center; gap: 8px;
+}
+h3.lang-title::before {
+  content: ""; display: inline-block; width: 8px; height: 8px;
+  border-radius: 2px; background: var(--accent);
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 12px;
+}
+.chart-wrap { position: relative; height: 240px; margin-bottom: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+th { color: var(--fg-dim); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+td.num, th.num { text-align: right; font-family: var(--mono); }
+tr.is-subject td:first-child { color: var(--accent-hover); font-weight: 600; }
+tr.is-subject td:first-child::before {
+  content: "●"; color: var(--accent); font-size: 9px; margin-right: 6px;
+}
+.badge {
+  display: inline-block; font-size: 11px; font-family: var(--mono);
+  color: var(--fg-dim); background: var(--code-bg);
+  border: 1px solid var(--border); border-radius: 5px;
+  padding: 1px 6px; margin-left: 6px;
+}
+footer {
+  margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+  color: var(--fg-dim); font-size: 12.5px;
+}
+footer code { background: var(--code-bg); color: var(--code-fg); padding: 1px 5px; border-radius: 4px; }
+footer a { color: var(--accent-hover); }
+.empty-note {
+  color: var(--fg-dim); font-style: italic; padding: 24px;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="inner">
+    <h1><span class="accent">liburlparser</span> Benchmarks</h1>
+    <p class="subtitle">One section per operation, one subsection per language - C++ and its competitors, then Python and its competitors, never mixed on the same chart.</p>
+    <div class="meta">
+      <span>Generated <b>{{ generated_at }}</b></span>
+      {% if corpus %}
+      <span>Corpus: <b>{{ corpus.get("domains", "?") }}</b> domains, <b>{{ corpus.get("urls", "?") }}</b> URLs</span>
+      {% endif %}
+      <span>C++ results: <b>{{ "present" if cpp_present else "missing" }}</b></span>
+      <span>Python results: <b>{{ "present" if python_present else "missing" }}</b></span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+{% if not sections %}
+<div class="card empty-note">No benchmark results found - run the C++ and/or Python benchmark targets first.</div>
+{% endif %}
+
+{% for s in sections %}
+<section class="op-section" id="{{ s.id }}">
+  <h2 class="op-title">{{ s.title }} <span class="badge">{{ s.id }}</span></h2>
+
+  {% for sub in s.subsections %}
+  <h3 class="lang-title">{{ sub.language_label }}</h3>
+  <div class="card">
+    <div class="chart-wrap"><canvas id="{{ sub.chart_id }}"></canvas></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Library</th>
+          <th class="num">Throughput (MB/s)</th>
+          <th class="num">Ops/sec</th>
+          <th class="num">Success</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in sub.rows %}
+        <tr class="{{ 'is-subject' if r.library == 'liburlparser' else '' }}">
+          <td>{{ r.library }}</td>
+          <td class="num">{{ r.throughput_mb_s | fmt_num }}</td>
+          <td class="num">{{ r.ops_per_sec | fmt_num(0) }}</td>
+          <td class="num">{{ (r.success_rate * 100) | fmt_num(0) }}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endfor %}
+</section>
+{% endfor %}
+
+<footer>
+  Generated by <code>benchmarks/report/generate_report.py</code> from
+  <code>benchmarks/cpp/bench.cpp</code> and <code>benchmarks/python/bench.py</code>.
+  See <a href="https://github.com/mohammadraziei/liburlparser/tree/master/benchmarks">benchmarks/README.md</a>
+  for methodology. Chart.js is embedded, this file needs nothing else to view.
+</footer>
+
+</div>
+
+<script>{{ chartjs_source | safe }}</script>
+<script>
+const SECTIONS = {{ sections_json | safe }};
+const GRID_COLOR = "{{ colors.border }}";
+const TICK_COLOR = "{{ colors.fg_dim }}";
+
+SECTIONS.forEach(function (s) {
+  s.subsections.forEach(function (sub) {
+    const el = document.getElementById(sub.chart_id);
+    if (!el) return;
+    new Chart(el.getContext("2d"), {
+      type: "bar",
+      data: {
+        labels: sub.chart_labels,
+        datasets: [{
+          label: "Throughput (MB/s)",
+          data: sub.chart_throughput,
+          backgroundColor: sub.chart_colors,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: TICK_COLOR }, grid: { color: GRID_COLOR } },
+          y: { ticks: { color: TICK_COLOR }, grid: { color: GRID_COLOR }, beginAtZero: true },
+        },
+      },
+    });
+  });
+});
+</script>
+</body>
+</html>

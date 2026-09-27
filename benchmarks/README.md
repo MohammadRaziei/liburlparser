@@ -38,8 +38,20 @@ cmake --build build-bench --target urlparser_benchmarks_cpp
 cmake --build build-bench --target urlparser_benchmarks_python
 ```
 
+Building the top-level `urlparser_benchmarks` target (or the dedicated
+`urlparser_benchmarks_report` target on its own once both languages have
+run at least once) also renders a single, self-contained
+**`results/report.html`** — Chart.js and every result are embedded
+directly in the file, so it needs nothing else (no server, no network,
+no sibling files) to open and read. That's the one artifact from this
+whole directory meant to be committed; everything else here (the venv,
+the per-language JSON, the fetched corpus, Chart.js itself) is
+disposable build output and stays out of git (see `.gitignore`).
+
 Each one prints a results table and writes a JSON file to
-`build-bench/results/<language>.json`:
+`build-bench/results/<language>.json` (a *disposable build-dir* results
+folder — not the source-tree `benchmarks/results/` that holds the final
+`report.html`; see "Layout" below):
 
 ```json
 {
@@ -68,10 +80,19 @@ dependencies (including liburlparser) and defines an
 ```
 benchmarks/
   CMakeLists.txt   orchestrator: fetches the corpus, detects toolchains,
-                   adds each language below if its toolchain is present
+                   adds each language below if its toolchain is present,
+                   then renders the report
+  cmake/           Download.cmake — generic file(DOWNLOAD) helper used
+                   by report/ to fetch Chart.js
   cpp/             bench.cpp   — liburlparser, ada
   python/          bench.py    — liburlparser, tldextract, PyDomainExtractor,
-                                  tld, publicsuffix2, can_ada
+                                  tld, publicsuffix2, can_ada, ada_url,
+                                  giturlparse
+  report/          generate_report.py + template.html.jinja2 — combines
+                   both languages' JSON into results/report.html
+  results/         report.html only — the one committed artifact; every
+                   other input to it (JSON, Chart.js, the venv) lives in
+                   the disposable build dir instead
 ```
 
 ## Methodology

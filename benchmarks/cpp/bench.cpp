@@ -391,6 +391,109 @@ int main() {
                static_cast<long>(git_urls.size()) * URLPARSER_BENCH_REPEATS);
     }
 
+    // ── resolve: liburlparser vs ada ─────────────────────────────────────
+    // ada::parse(ref, &base) is ada's public equivalent (verified in
+    // include/ada/implementation.h: "optionally a base URL for resolving
+    // relative URLs" - the same feature as urlparser::resolve(), not
+    // something bolted on for this comparison).
+    {
+        std::vector<std::pair<std::string, std::string>> cases = {
+            {"https://example.com/a/b/c", "../d"},
+            {"https://example.com/a/b/c", "/absolute"},
+            {"https://example.com/a/b/c?x=1", "e?y=2"},
+            {"https://example.com/a/b/", "./e/f"},
+            {"https://example.com/a/b/c", "https://other.com/z"},
+            {"https://example.com/a/b/c", "//other.com/z"},
+        };
+
+        for (int rep = 0; rep < URLPARSER_BENCH_WARMUP_REPS; rep++)
+            for (const auto& [base, ref] : cases) {
+                auto r = urlparser::resolve(base, ref);
+                g_sink += r.size();
+            }
+        long ops = 0; double bytes = 0;
+        double t0 = now_seconds();
+        for (int rep = 0; rep < URLPARSER_BENCH_REPEATS; rep++) {
+            for (const auto& [base, ref] : cases) {
+                auto r = urlparser::resolve(base, ref);
+                g_sink += r.size();
+                ops++; bytes += static_cast<double>(base.size() + ref.size());
+            }
+        }
+        record("liburlparser", "resolve", bytes, ops, now_seconds() - t0,
+               static_cast<long>(cases.size()) * URLPARSER_BENCH_REPEATS);
+
+        for (int rep = 0; rep < URLPARSER_BENCH_WARMUP_REPS; rep++)
+            for (const auto& [base, ref] : cases) {
+                auto b = ada::parse(base);
+                if (b) { auto r = ada::parse(ref, &*b); if (r) g_sink += r->get_href().size(); }
+            }
+        ops = 0; bytes = 0;
+        t0 = now_seconds();
+        for (int rep = 0; rep < URLPARSER_BENCH_REPEATS; rep++) {
+            for (const auto& [base, ref] : cases) {
+                auto b = ada::parse(base);
+                if (b) {
+                    auto r = ada::parse(ref, &*b);
+                    if (r) { g_sink += r->get_href().size(); ops++; }
+                }
+                bytes += static_cast<double>(base.size() + ref.size());
+            }
+        }
+        record("ada", "resolve", bytes, ops, now_seconds() - t0,
+               static_cast<long>(cases.size()) * URLPARSER_BENCH_REPEATS);
+    }
+
+    // ── normalize: liburlparser vs ada ───────────────────────────────────
+    // ada::parse() always normalizes on parse (WHATWG semantics), so
+    // get_href() straight after parsing *is* ada's normalized form - no
+    // separate "normalize" entry point needed on ada's side for this to
+    // be a fair comparison.
+    {
+        std::vector<std::string> hosts = {
+            "https://example.com:443/path",
+            "http://example.com:80/path",
+            "https://example.com/a/../b",
+            "https://caf\xc3\xa9.com/path",
+            "https://example.com",
+            "https://example.com/path?b=2&a=1#frag",
+        };
+
+        for (int rep = 0; rep < URLPARSER_BENCH_WARMUP_REPS; rep++)
+            for (const auto& h : hosts) {
+                urlparser::url u(h);
+                g_sink += u.normalized().size();
+            }
+        long ops = 0; double bytes = 0;
+        double t0 = now_seconds();
+        for (int rep = 0; rep < URLPARSER_BENCH_REPEATS; rep++) {
+            for (const auto& h : hosts) {
+                urlparser::url u(h);
+                g_sink += u.normalized().size();
+                ops++; bytes += static_cast<double>(h.size());
+            }
+        }
+        record("liburlparser", "normalize", bytes, ops, now_seconds() - t0,
+               static_cast<long>(hosts.size()) * URLPARSER_BENCH_REPEATS);
+
+        for (int rep = 0; rep < URLPARSER_BENCH_WARMUP_REPS; rep++)
+            for (const auto& h : hosts) {
+                auto r = ada::parse(h);
+                if (r) g_sink += r->get_href().size();
+            }
+        ops = 0; bytes = 0;
+        t0 = now_seconds();
+        for (int rep = 0; rep < URLPARSER_BENCH_REPEATS; rep++) {
+            for (const auto& h : hosts) {
+                auto r = ada::parse(h);
+                if (r) { g_sink += r->get_href().size(); ops++; }
+                bytes += static_cast<double>(h.size());
+            }
+        }
+        record("ada", "normalize", bytes, ops, now_seconds() - t0,
+               static_cast<long>(hosts.size()) * URLPARSER_BENCH_REPEATS);
+    }
+
     write_results_json(domains.size(), urls.size());
     std::printf("(sanity sink: %zu - ignore, just proves every result above was actually used)\n",
                  static_cast<size_t>(g_sink));

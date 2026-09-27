@@ -40,10 +40,18 @@ set(URLPARSER_BENCH_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(URLPARSER_BENCH_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(URLPARSER_GITHUB_URL "https://github.com/mohammadraziei/liburlparser.git")
 
-# Every language benchmark writes its own JSON results file here — kept
-# separate per language rather than merged, since the set of libraries each
-# language tests differs.
-set(URLPARSER_BENCH_RESULTS_DIR ${URLPARSER_BENCH_BINARY_DIR}/results)
+# Two different "results" directories, two different lifetimes:
+#  - SCRATCH_DIR: each language's own raw JSON (cpp.json, python.json) -
+#    disposable build output, lives in the build dir, never committed.
+#  - RESULTS_DIR: the one artifact meant to survive - the standalone
+#    report.html that report/ renders from those JSONs - lives in the
+#    source tree so it can be committed and viewed on GitHub directly,
+#    with no build step required to see the last-generated numbers.
+set(URLPARSER_BENCH_RESULTS_SCRATCH_DIR ${URLPARSER_BENCH_BINARY_DIR}/results)
+file(MAKE_DIRECTORY ${URLPARSER_BENCH_RESULTS_SCRATCH_DIR})
+
+set(URLPARSER_BENCH_RESULTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/results"
+    CACHE PATH "Where the final standalone report.html is written -- the one artifact meant to be committed")
 file(MAKE_DIRECTORY ${URLPARSER_BENCH_RESULTS_DIR})
 
 # ── Toolchain detection ─────────────────────────────────────────────────
@@ -128,6 +136,13 @@ add_subdirectory(cpp)
 
 if(Python3_Interpreter_FOUND)
     add_subdirectory(python)
+
+    # The report needs at least the Python venv (for jinja2) to render -
+    # C++ is not a hard requirement for report generation itself, but this
+    # project always has a CXX compiler available (see above), so in
+    # practice both results are always present in the report.
+    add_subdirectory(report)
+    add_dependencies(urlparser_benchmarks urlparser_benchmarks_report)
 else()
-    message(WARNING "Python3 not found — Python benchmark skipped.")
+    message(WARNING "Python3 not found — Python benchmark and HTML report skipped.")
 endif()
