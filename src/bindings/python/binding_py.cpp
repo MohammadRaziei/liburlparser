@@ -1,6 +1,7 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/string_view.h>
+#include <nanobind/stl/unordered_map.h>
 #include <nanobind/stl/variant.h>
 #include <nanobind/stl/vector.h>
 
@@ -466,6 +467,11 @@ NB_MODULE(_urlparser_py, m) {
         .def_prop_ro("host_text", &urlparser::url::host_text)
         .def_prop_ro("port", &urlparser::url::port)
         .def_prop_ro("params", &urlparser::url::params)
+        .def_prop_ro("search_params", &urlparser::url::get_search_params,
+                     "Percent-decoded query as a dict: key -> list of values "
+                     "(repeated keys collect every value, in order). Same "
+                     "shape as ada_url.parse_search_params(). `params` above "
+                     "stays the raw, still-encoded 'key=value' string list.")
         .def_prop_ro("query", &urlparser::url::query)
         .def_prop_ro("fragment", &urlparser::url::fragment)
         .def_prop_ro("abspath", &urlparser::url::abspath)

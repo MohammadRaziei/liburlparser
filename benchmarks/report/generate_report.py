@@ -81,6 +81,7 @@ OPERATION_LABELS = [
     ("resolve", "Resolve a URL reference (RFC 3986 §5)"),
     ("parse_git_url", "Parse a git/scp-like remote address"),
     ("normalize", "Normalize a URL (default port, IDNA, dot-segments)"),
+    ("search_params", "Query string → decoded key/values map"),
 ]
 
 

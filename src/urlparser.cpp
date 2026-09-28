@@ -862,6 +862,39 @@ urlparser::query_params urlparser::url::params() const noexcept {
     return split(std::string(field(query_)), '&');
 }
 
+urlparser::url::search_params urlparser::url::get_search_params() const {
+    // Walks the query as a string_view directly rather than going through
+    // params(): params() copies the whole query into a std::string and
+    // allocates a vector<string> of raw "key=value" pairs first, all of
+    // which this then immediately re-splits and discards. Empty segments
+    // ("a=1&&b=2") are skipped, exactly as params()'s split() does.
+    search_params result;
+    const std::string_view query = field(query_);
+    if (query.empty()) return result;
+
+    // Pre-size for the pair count so the map doesn't rehash while growing -
+    // one cheap pass over the query beats repeated rehashes on the
+    // typical handful-of-params case.
+    result.reserve(1 + static_cast<size_t>(std::count(query.begin(), query.end(), '&')));
+
+    size_t pos = 0;
+    while (pos < query.size()) {
+        size_t end = query.find('&', pos);
+        if (end == std::string_view::npos) end = query.size();
+        const std::string_view pair = query.substr(pos, end - pos);
+        pos = end + 1;
+        if (pair.empty()) continue;
+
+        const size_t eq = pair.find('=');
+        const std::string_view key_raw = (eq == std::string_view::npos) ? pair : pair.substr(0, eq);
+        const std::string_view value_raw = (eq == std::string_view::npos) ? std::string_view()
+                                                                            : pair.substr(eq + 1);
+        result[urlparser::percent_codec::decode(key_raw)]
+            .push_back(urlparser::percent_codec::decode(value_raw));
+    }
+    return result;
+}
+
 namespace {
 // Shared by both extract_host() overloads: locates the [pos, end_pos) span
 // of the host within a URL, using the exact same scan_authority() logic

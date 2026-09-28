@@ -387,6 +387,37 @@ def main():
     if ada_url:
         add_normalize_row("ada_url", ada_url.normalize_url)
 
+    # search_params: URL string in -> percent-decoded key -> values dict
+    # out, on both sides (same shape - ada_url.parse_search_params() and
+    # Url.search_params both return {key: [values...]}). Both sides pay
+    # for the full URL parse too, not just the query decode - neither is
+    # timed doing less work than the other.
+    SEARCH_PARAMS_URLS = [
+        "https://example.com/?a=1&b=2&c=3",
+        "https://example.com/?name=caf%C3%A9&q=a%20b&page=2",
+        "https://example.com/?a=1&a=3&b=2&b=4",
+        "https://example.com/?sort=name&order=asc&filter=active&limit=50&offset=100",
+        "https://example.com/?flag&x=1&y=%E6%97%A5%E6%9C%AC",
+        "https://example.com/?q=hello%20world%26more&utm_source=newsletter&utm_medium=email",
+    ]
+
+    def add_search_params_row(name, fn):
+        t, ops, nbytes = bench(SEARCH_PARAMS_URLS, fn)
+        rows.append([name, "search_params",
+                     f"{nbytes / t / 1e6:.2f} MB/s" if ops else "n/a",
+                     f"{ops / t:.0f}", f"{100 * ops / (len(SEARCH_PARAMS_URLS) * REPEATS):.0f}%",
+                     f"{t:.4f} s"])
+        results.append({
+            "library": name, "operation": "search_params",
+            "throughput_mb_s": (nbytes / t / 1e6) if ops else 0.0,
+            "ops_per_sec": ops / t, "success_rate": ops / (len(SEARCH_PARAMS_URLS) * REPEATS),
+            "total_time_s": t,
+        })
+
+    add_search_params_row("liburlparser", lambda u: liburlparser.Url(u).search_params)
+    if ada_url:
+        add_search_params_row("ada_url", lambda u: ada_url.parse_search_params(ada_url.URL(u).search))
+
     # A ninth operation, "parse_git_url": parse an scp-like or normal git
     # remote address ([user@]host:path or a full URL) and read
     # host/user/path back out. liburlparser.ScpUrl (alias GitUrl) is new

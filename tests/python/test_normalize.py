@@ -45,3 +45,39 @@ def test_str_unaffected_by_normalized():
 def test_constructor_trims_whitespace():
     assert str(Url("  https://example.com/path  ")) == "https://example.com/path"
     assert str(Url("\t\nhttps://example.com/path\n\t")) == "https://example.com/path"
+
+
+# --- search_params: decoded key -> values dict ---------------------------
+# Gap: Url.params only ever gave the raw, still percent-encoded
+# "key=value" strings; there was no built-in way to get "the value of
+# query parameter x" without manually splitting and unquoting yourself.
+# Shape matches ada_url.parse_search_params().
+
+def test_search_params_simple():
+    u = Url("https://example.com/?a=1&b=2")
+    assert u.search_params == {"a": ["1"], "b": ["2"]}
+
+
+def test_search_params_repeated_keys_collect_in_order():
+    u = Url("https://example.com/?a=1&a=3&b=2")
+    assert u.search_params == {"a": ["1", "3"], "b": ["2"]}
+
+
+def test_search_params_percent_decodes_keys_and_values():
+    u = Url("https://example.com/?name=caf%C3%A9&q=a%20b")
+    assert u.search_params == {"name": ["café"], "q": ["a b"]}
+
+
+def test_search_params_valueless_key_gets_empty_string():
+    u = Url("https://example.com/?flag&a=1")
+    assert u.search_params == {"flag": [""], "a": ["1"]}
+
+
+def test_search_params_empty_when_no_query():
+    assert Url("https://example.com/").search_params == {}
+
+
+def test_params_stays_raw_and_unchanged():
+    # No breaking change: params is still the raw list.
+    u = Url("https://example.com/?a=1&b=caf%C3%A9")
+    assert u.params == ["a=1", "b=caf%C3%A9"]

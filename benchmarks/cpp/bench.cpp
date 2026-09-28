@@ -494,6 +494,66 @@ int main() {
                static_cast<long>(hosts.size()) * URLPARSER_BENCH_REPEATS);
     }
 
+    // ── search_params: liburlparser vs ada ───────────────────────────────
+    // Same job on both sides: URL string in -> percent-decoded key/value
+    // structure out. liburlparser: url(...) + get_search_params() (a key ->
+    // values map); ada: ada::parse(...) + ada::url_search_params over
+    // get_search() (WHATWG URLSearchParams, a pair list parsed and
+    // decoded eagerly in its constructor). Both sides pay for the full
+    // URL parse too - not just the query decode - so neither is timed
+    // doing less work than the other. size() is read on both purely to
+    // force the result to be used, not as the thing being timed.
+    {
+        std::vector<std::string> queries = {
+            "a=1&b=2&c=3",
+            "name=caf%C3%A9&q=a%20b&page=2",
+            "a=1&a=3&b=2&b=4",
+            "sort=name&order=asc&filter=active&limit=50&offset=100",
+            "flag&x=1&y=%E6%97%A5%E6%9C%AC",
+            "q=hello%20world%26more&utm_source=newsletter&utm_medium=email",
+        };
+        std::vector<std::string> urls_with_query;
+        for (const auto& q : queries) urls_with_query.push_back("https://example.com/?" + q);
+
+        for (int rep = 0; rep < URLPARSER_BENCH_WARMUP_REPS; rep++)
+            for (const auto& u : urls_with_query) {
+                urlparser::url parsed(u);
+                g_sink += parsed.get_search_params().size();
+            }
+        long ops = 0; double bytes = 0;
+        double t0 = now_seconds();
+        for (int rep = 0; rep < URLPARSER_BENCH_REPEATS; rep++) {
+            for (const auto& u : urls_with_query) {
+                urlparser::url parsed(u);
+                g_sink += parsed.get_search_params().size();
+                ops++; bytes += static_cast<double>(u.size());
+            }
+        }
+        record("liburlparser", "search_params", bytes, ops, now_seconds() - t0,
+               static_cast<long>(urls_with_query.size()) * URLPARSER_BENCH_REPEATS);
+
+        for (int rep = 0; rep < URLPARSER_BENCH_WARMUP_REPS; rep++)
+            for (const auto& u : urls_with_query) {
+                auto r = ada::parse(u);
+                if (r) { ada::url_search_params sp(r->get_search()); g_sink += sp.size(); }
+            }
+        ops = 0; bytes = 0;
+        t0 = now_seconds();
+        for (int rep = 0; rep < URLPARSER_BENCH_REPEATS; rep++) {
+            for (const auto& u : urls_with_query) {
+                auto r = ada::parse(u);
+                if (r) {
+                    ada::url_search_params sp(r->get_search());
+                    g_sink += sp.size();
+                    ops++;
+                }
+                bytes += static_cast<double>(u.size());
+            }
+        }
+        record("ada", "search_params", bytes, ops, now_seconds() - t0,
+               static_cast<long>(urls_with_query.size()) * URLPARSER_BENCH_REPEATS);
+    }
+
     write_results_json(domains.size(), urls.size());
     std::printf("(sanity sink: %zu - ignore, just proves every result above was actually used)\n",
                  static_cast<size_t>(g_sink));

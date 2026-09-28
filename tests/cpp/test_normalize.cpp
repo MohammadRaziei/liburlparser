@@ -63,6 +63,49 @@ UTEST(UrlTest, WsAndWssSerializeWithDoubleSlash) {
                  "wss://example.com/socket");
 }
 
+// --- get_search_params(): decoded key -> values map --------------------
+// Gap: params() only ever gave the raw, still percent-encoded "key=value"
+// strings; there was no built-in way to get "the value of query
+// parameter x" without manually splitting and percent-decoding yourself.
+
+UTEST(UrlTest, SearchParamsDecodesSimpleKeyValues) {
+    urlparser::url u("https://example.com/?a=1&b=2");
+    auto sp = u.get_search_params();
+    ASSERT_EQ(sp.size(), (size_t)2);
+    ASSERT_EQ(sp.at("a").size(), (size_t)1);
+    EXPECT_STREQ(sp.at("a")[0].c_str(), "1");
+    EXPECT_STREQ(sp.at("b")[0].c_str(), "2");
+}
+
+UTEST(UrlTest, SearchParamsCollectsRepeatedKeys) {
+    urlparser::url u("https://example.com/?a=1&a=3&b=2");
+    auto sp = u.get_search_params();
+    ASSERT_EQ(sp.size(), (size_t)2);
+    ASSERT_EQ(sp.at("a").size(), (size_t)2);
+    EXPECT_STREQ(sp.at("a")[0].c_str(), "1");
+    EXPECT_STREQ(sp.at("a")[1].c_str(), "3");
+}
+
+UTEST(UrlTest, SearchParamsPercentDecodesKeysAndValues) {
+    urlparser::url u("https://example.com/?name=caf%C3%A9&q=a%20b");
+    auto sp = u.get_search_params();
+    EXPECT_STREQ(sp.at("name")[0].c_str(), "caf\xc3\xa9");
+    EXPECT_STREQ(sp.at("q")[0].c_str(), "a b");
+}
+
+UTEST(UrlTest, SearchParamsHandlesValuelessKey) {
+    // "flag" with no '=' at all -> empty-string value, still present.
+    urlparser::url u("https://example.com/?flag&a=1");
+    auto sp = u.get_search_params();
+    ASSERT_TRUE(sp.count("flag") == 1);
+    EXPECT_STREQ(sp.at("flag")[0].c_str(), "");
+}
+
+UTEST(UrlTest, SearchParamsEmptyWhenNoQuery) {
+    urlparser::url u("https://example.com/");
+    EXPECT_TRUE(u.get_search_params().empty());
+}
+
 UTEST(UrlTest, FreeFunctionNormalizeMatchesMethod) {
     EXPECT_STREQ(urlparser::normalize("https://example.com:443/a/../b").c_str(),
                  "https://example.com/b");

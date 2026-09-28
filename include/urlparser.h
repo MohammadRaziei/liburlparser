@@ -82,6 +82,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <variant>
 #include <vector>
 
@@ -760,6 +761,21 @@ class url {
     int port() const noexcept { return port_; }
     /** @brief The '&'-separated query parameters, split into a vector. */
     query_params params() const noexcept;
+    /**
+     * @brief A percent-decoded key → values map of the query string (like
+     * JS's URLSearchParams, or ada_url.parse_search_params()). A repeated
+     * key (e.g. "a=1&a=3") collects every value under that key, in order.
+     * Gap this closes: params() above only ever gave the raw, still
+     * percent-encoded "key=value" strings (by design - see
+     * percent_codec's own doc comment on why liburlparser doesn't decode
+     * implicitly); there was no built-in way to go from that to "the
+     * value of query parameter x" without manually splitting on '=' and
+     * calling percent_codec::decode() yourself. get_search_params() does
+     * exactly that, once, for the whole query string.
+     */
+    using search_params = std::unordered_map<std::string, std::vector<std::string>>;
+    /** @brief Build the decoded key → values map described on search_params above. */
+    search_params get_search_params() const;
     /**
      * @brief The host part of the URL, classified as a hostname, ipv4, or ipv6.
      * Use std::get_if<hostname>/<ipv4>/<ipv6>(&url.host()) or std::visit to
