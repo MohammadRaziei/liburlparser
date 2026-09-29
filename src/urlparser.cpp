@@ -2040,14 +2040,14 @@ bool starts_with_scheme(std::string_view s, size_t& colon_pos) {
 }
 
 struct ParsedReference {
-    std::string scheme;
+    std::string_view scheme;
     bool has_authority = false;
-    std::string authority;
-    std::string path;
+    std::string_view authority;
+    std::string_view path;
     bool has_query = false;
-    std::string query;
+    std::string_view query;
     bool has_fragment = false;
-    std::string fragment;
+    std::string_view fragment;
 };
 
 ParsedReference parse_reference(std::string_view ref) {
@@ -2056,20 +2056,20 @@ ParsedReference parse_reference(std::string_view ref) {
     size_t frag_pos = ref.find('#');
     if (frag_pos != std::string_view::npos) {
         r.has_fragment = true;
-        r.fragment = std::string(ref.substr(frag_pos + 1));
+        r.fragment = ref.substr(frag_pos + 1);
         ref = ref.substr(0, frag_pos);
     }
 
     size_t query_pos = ref.find('?');
     if (query_pos != std::string_view::npos) {
         r.has_query = true;
-        r.query = std::string(ref.substr(query_pos + 1));
+        r.query = ref.substr(query_pos + 1);
         ref = ref.substr(0, query_pos);
     }
 
     size_t colon_pos;
     if (starts_with_scheme(ref, colon_pos)) {
-        r.scheme = std::string(ref.substr(0, colon_pos));
+        r.scheme = ref.substr(0, colon_pos);
         ref = ref.substr(colon_pos + 1);
     }
 
@@ -2077,15 +2077,15 @@ ParsedReference parse_reference(std::string_view ref) {
         r.has_authority = true;
         size_t authority_end = ref.find('/', 2);
         if (authority_end == std::string_view::npos) {
-            r.authority = std::string(ref.substr(2));
+            r.authority = ref.substr(2);
             ref = "";
         } else {
-            r.authority = std::string(ref.substr(2, authority_end - 2));
+            r.authority = ref.substr(2, authority_end - 2);
             ref = ref.substr(authority_end);
         }
     }
 
-    r.path = std::string(ref);
+    r.path = ref;
     return r;
 }
 
@@ -2110,7 +2110,7 @@ std::string merge_paths(bool base_has_authority, std::string_view base_path,
 std::string resolve(std::string_view base, std::string_view ref_str) {
     url base_url;
     try {
-        base_url = url(std::string(base));
+        base_url = url(base);
     } catch (const std::exception&) {
         return "";
     }
@@ -2118,7 +2118,18 @@ std::string resolve(std::string_view base, std::string_view ref_str) {
 
     ParsedReference ref = parse_reference(ref_str);
 
-    std::string t_scheme, t_authority, t_path, t_query, t_fragment;
+    // string_view, not std::string: every value ever assigned to these
+    // four - ref.* (a view into the caller's ref_str), base_url's own
+    // accessors, and base_authority below - already lives at least as
+    // long as this call, so there's nothing to copy before the final
+    // out.append() calls do the one real copy each needs. Found while
+    // comparing resolve()'s throughput against ada's (see benchmarks/):
+    // this and dropping url(std::string(base)) below (url's constructor
+    // already takes string_view) turned a ~22% gap into rough parity.
+    // t_path stays std::string - it's a freshly-allocated result in 3 of
+    // its 4 assignment sites (resolve_remove_dot_segments()).
+    std::string_view t_scheme, t_authority, t_query, t_fragment;
+    std::string t_path;
     bool t_has_query = false;
 
     std::string base_authority;
@@ -2150,7 +2161,7 @@ std::string resolve(std::string_view base, std::string_view ref_str) {
         t_authority = base_authority;
         t_path = std::string(base_raw_path);  // ref adds nothing -> keep base's path exactly
         t_has_query = ref.has_query;
-        t_query = ref.has_query ? ref.query : std::string(base_url.query());
+        t_query = ref.has_query ? ref.query : base_url.query();
     } else {
         t_scheme = base_url.protocol();
         t_authority = base_authority;
@@ -2166,7 +2177,7 @@ std::string resolve(std::string_view base, std::string_view ref_str) {
                                   // always - never falls back to Base.fragment
                                   // even when R has none.
 
-    std::string out = t_scheme;
+    std::string out(t_scheme);
     out += "://";
     out += t_authority;
     out += t_path;
