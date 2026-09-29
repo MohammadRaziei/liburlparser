@@ -862,20 +862,61 @@ urlparser::query_params urlparser::url::params() const noexcept {
     return split(std::string(field(query_)), '&');
 }
 
+namespace {
+// application/x-www-form-urlencoded component decode - what WHATWG's
+// URLSearchParams applies to each key/value: a literal '+' is a space,
+// %XX is its byte, anything malformed ("%zz", a trailing "%") is left as-is.
+// Deliberately NOT percent_codec::decode(): that one is the generic
+// RFC 3986 "unquote" and (like Python's urllib.parse.unquote) leaves '+'
+// alone - correct for a path or a userinfo, wrong for a query string.
+//
+// Decodes straight into `out` (no temporary string), and most components
+// contain neither '%' nor '+', so the common case is one scan + one copy
+// instead of a push_back per byte.
+inline int form_hex_value(unsigned char c) noexcept {
+    if (c >= '0' && c <= '9') return c - '0';
+    c |= 0x20;  // fold to lowercase
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    return -1;
+}
+
+void form_decode_into(std::string_view in, std::string& out) {
+    const size_t n = in.size();
+    size_t i = 0;
+    while (i < n && in[i] != '%' && in[i] != '+') ++i;
+    if (i == n) {
+        out.assign(in.data(), n);
+        return;
+    }
+    out.reserve(n);
+    out.assign(in.data(), i);  // the clean prefix, in one copy
+    for (; i < n; ++i) {
+        const unsigned char c = static_cast<unsigned char>(in[i]);
+        if (c == '+') {
+            out.push_back(' ');
+        } else if (c == '%' && i + 2 < n && form_hex_value(in[i + 1]) >= 0 &&
+                   form_hex_value(in[i + 2]) >= 0) {
+            out.push_back(static_cast<char>((form_hex_value(in[i + 1]) << 4) |
+                                            form_hex_value(in[i + 2])));
+            i += 2;
+        } else {
+            out.push_back(static_cast<char>(c));
+        }
+    }
+}
+}  // namespace
+
 urlparser::url::search_params urlparser::url::get_search_params() const {
     // Walks the query as a string_view directly rather than going through
-    // params(): params() copies the whole query into a std::string and
-    // allocates a vector<string> of raw "key=value" pairs first, all of
-    // which this then immediately re-splits and discards. Empty segments
-    // ("a=1&&b=2") are skipped, exactly as params()'s split() does.
+    // params() (which copies the whole query into a std::string and
+    // allocates a vector<string> of raw pairs, only to be re-split here).
+    // Empty segments ("a=1&&b=2") are skipped, exactly as params() does.
+    //
+    // No result.reserve(): measured (see the commit that added this) - for
+    // the typical handful of pairs, computing the initial bucket count
+    // costs more than letting the map grow.
     search_params result;
     const std::string_view query = field(query_);
-    if (query.empty()) return result;
-
-    // Pre-size for the pair count so the map doesn't rehash while growing -
-    // one cheap pass over the query beats repeated rehashes on the
-    // typical handful-of-params case.
-    result.reserve(1 + static_cast<size_t>(std::count(query.begin(), query.end(), '&')));
 
     size_t pos = 0;
     while (pos < query.size()) {
@@ -889,8 +930,11 @@ urlparser::url::search_params urlparser::url::get_search_params() const {
         const std::string_view key_raw = (eq == std::string_view::npos) ? pair : pair.substr(0, eq);
         const std::string_view value_raw = (eq == std::string_view::npos) ? std::string_view()
                                                                             : pair.substr(eq + 1);
-        result[urlparser::percent_codec::decode(key_raw)]
-            .push_back(urlparser::percent_codec::decode(value_raw));
+        std::string key;
+        form_decode_into(key_raw, key);
+        auto& values = result[std::move(key)];
+        values.emplace_back();
+        form_decode_into(value_raw, values.back());
     }
     return result;
 }

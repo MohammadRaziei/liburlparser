@@ -106,6 +106,53 @@ UTEST(UrlTest, SearchParamsEmptyWhenNoQuery) {
     EXPECT_TRUE(u.get_search_params().empty());
 }
 
+// Found by thinking about what my randomized comparison against ada could
+// NOT have caught: its generator built inputs with urllib's quote(), which
+// writes '+' as %2B, so a *literal* '+' never appeared in any test input.
+
+UTEST(UrlTest, SearchParamsPlusIsSpaceInValue) {
+    urlparser::url u("https://example.com/?q=hello+world");
+    EXPECT_STREQ(u.get_search_params().at("q")[0].c_str(), "hello world");
+}
+
+UTEST(UrlTest, SearchParamsPlusIsSpaceInKey) {
+    urlparser::url u("https://example.com/?a+b=1");
+    auto sp = u.get_search_params();
+    ASSERT_TRUE(sp.count("a b") == 1);
+    EXPECT_STREQ(sp.at("a b")[0].c_str(), "1");
+}
+
+UTEST(UrlTest, SearchParamsEncodedPlusStaysAPlus) {
+    urlparser::url u("https://example.com/?a=%2B&b=1%2B1");
+    auto sp = u.get_search_params();
+    EXPECT_STREQ(sp.at("a")[0].c_str(), "+");
+    EXPECT_STREQ(sp.at("b")[0].c_str(), "1+1");
+}
+
+UTEST(UrlTest, SearchParamsMixedPlusAndPercent) {
+    urlparser::url u("https://example.com/?q=a+b%20c+caf%C3%A9");
+    EXPECT_STREQ(u.get_search_params().at("q")[0].c_str(), "a b c caf\xc3\xa9");
+}
+
+UTEST(UrlTest, SearchParamsMalformedEscapesAreKept) {
+    urlparser::url u("https://example.com/?a=100%&b=%zz&c=%2");
+    auto sp = u.get_search_params();
+    EXPECT_STREQ(sp.at("a")[0].c_str(), "100%");
+    EXPECT_STREQ(sp.at("b")[0].c_str(), "%zz");
+    EXPECT_STREQ(sp.at("c")[0].c_str(), "%2");
+}
+
+UTEST(UrlTest, SearchParamsSkipsEmptySegments) {
+    urlparser::url u("https://example.com/?a=1&&b=2&");
+    auto sp = u.get_search_params();
+    ASSERT_EQ(sp.size(), (size_t)2);
+}
+
+UTEST(UrlTest, PercentCodecDecodeStillLeavesPlusAlone) {
+    // The generic RFC 3986 unquote must NOT gain form-decoding's '+' rule.
+    EXPECT_STREQ(urlparser::percent_codec::decode("a+b").c_str(), "a+b");
+}
+
 UTEST(UrlTest, FreeFunctionNormalizeMatchesMethod) {
     EXPECT_STREQ(urlparser::normalize("https://example.com:443/a/../b").c_str(),
                  "https://example.com/b");

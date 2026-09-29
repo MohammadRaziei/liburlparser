@@ -762,16 +762,23 @@ class url {
     /** @brief The '&'-separated query parameters, split into a vector. */
     query_params params() const noexcept;
     /**
-     * @brief A percent-decoded key → values map of the query string (like
-     * JS's URLSearchParams, or ada_url.parse_search_params()). A repeated
-     * key (e.g. "a=1&a=3") collects every value under that key, in order.
+     * @brief A decoded key → values map of the query string (like JS's
+     * URLSearchParams, or ada_url.parse_search_params()). A repeated key
+     * (e.g. "a=1&a=3") collects every value under that key, in order; a key
+     * with no '=' maps to one empty string.
+     *
+     * Decoding follows application/x-www-form-urlencoded, as URLSearchParams
+     * does: a literal '+' is a space ("q=hello+world" -> "hello world";
+     * "%2B" is how a real plus is written), %XX becomes its byte, and
+     * malformed escapes are left as-is. That's deliberately different from
+     * percent_codec::decode(), the generic RFC 3986 "unquote", which leaves
+     * '+' alone.
+     *
      * Gap this closes: params() above only ever gave the raw, still
-     * percent-encoded "key=value" strings (by design - see
-     * percent_codec's own doc comment on why liburlparser doesn't decode
-     * implicitly); there was no built-in way to go from that to "the
-     * value of query parameter x" without manually splitting on '=' and
-     * calling percent_codec::decode() yourself. get_search_params() does
-     * exactly that, once, for the whole query string.
+     * percent-encoded "key=value" strings (by design - see percent_codec's
+     * own doc comment on why liburlparser doesn't decode implicitly); there
+     * was no built-in way to get "the value of query parameter x" without
+     * manually splitting on '=' and decoding yourself.
      */
     using search_params = std::unordered_map<std::string, std::vector<std::string>>;
     /** @brief Build the decoded key → values map described on search_params above. */

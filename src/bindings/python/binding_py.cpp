@@ -467,10 +467,42 @@ NB_MODULE(_urlparser_py, m) {
         .def_prop_ro("host_text", &urlparser::url::host_text)
         .def_prop_ro("port", &urlparser::url::port)
         .def_prop_ro("params", &urlparser::url::params)
-        .def_prop_ro("search_params", &urlparser::url::get_search_params,
-                     "Percent-decoded query as a dict: key -> list of values "
-                     "(repeated keys collect every value, in order). Same "
-                     "shape as ada_url.parse_search_params(). `params` above "
+        .def_prop_ro("search_params", [](const urlparser::url& u) {
+            // Built by hand rather than via nanobind's std::unordered_map
+            // caster: that one decodes strictly, so a single legacy-encoded
+            // parameter ("caf%E9", Latin-1) would raise UnicodeDecodeError
+            // for the *whole* dict - even the well-formed parameters next to
+            // it. WHATWG decodes with replacement (U+FFFD) instead, which is
+            // what "replace" gives. Two keys that only differ in their
+            // invalid bytes both become the same replacement string, so
+            // their values are merged under it rather than one overwriting
+            // the other.
+            auto to_py = [](const std::string& s) {
+                PyObject* o = PyUnicode_DecodeUTF8(s.data(), static_cast<Py_ssize_t>(s.size()), "replace");
+                if (!o) throw nb::python_error();
+                return nb::steal(o);
+            };
+            nb::dict result;
+            for (const auto& [key, values] : u.get_search_params()) {
+                nb::object py_key = to_py(key);
+                PyObject* existing = PyDict_GetItemWithError(result.ptr(), py_key.ptr());
+                nb::object list;
+                if (existing) {
+                    list = nb::borrow(existing);
+                } else {
+                    if (PyErr_Occurred()) throw nb::python_error();
+                    list = nb::list();
+                    result[py_key] = list;
+                }
+                for (const auto& value : values) list.attr("append")(to_py(value));
+            }
+            return result;
+        },
+                     "Decoded query as a dict: key -> list of values (repeated "
+                     "keys collect every value, in order). application/x-www-"
+                     "form-urlencoded rules, like URLSearchParams: '+' is a "
+                     "space, %XX is decoded, invalid UTF-8 becomes U+FFFD. "
+                     "Same shape as ada_url.parse_search_params(). `params` "
                      "stays the raw, still-encoded 'key=value' string list.")
         .def_prop_ro("query", &urlparser::url::query)
         .def_prop_ro("fragment", &urlparser::url::fragment)

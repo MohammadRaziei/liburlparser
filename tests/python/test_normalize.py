@@ -81,3 +81,23 @@ def test_params_stays_raw_and_unchanged():
     # No breaking change: params is still the raw list.
     u = Url("https://example.com/?a=1&b=caf%C3%A9")
     assert u.params == ["a=1", "b=caf%C3%A9"]
+
+
+def test_search_params_plus_is_space():
+    u = Url("https://example.com/?q=hello+world&a+b=1")
+    assert u.search_params["q"] == ["hello world"]
+    assert u.search_params["a b"] == ["1"]
+
+
+def test_search_params_encoded_plus_stays_a_plus():
+    u = Url("https://example.com/?a=%2B")
+    assert u.search_params["a"] == ["+"]
+
+
+def test_search_params_invalid_utf8_becomes_replacement_char_not_an_exception():
+    # A single legacy-encoded parameter ("caf%E9", Latin-1) must not make
+    # the whole property raise - the well-formed parameters next to it
+    # (here, "ok") still come through fine.
+    u = Url("https://example.com/?name=caf%E9&ok=1")
+    assert u.search_params["ok"] == ["1"]
+    assert u.search_params["name"] == ["caf\ufffd"]
