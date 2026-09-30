@@ -1796,12 +1796,6 @@ std::vector<uint32_t> utf8_decode(std::string_view s) {
     return out;
 }
 
-bool is_ascii_label(const std::vector<uint32_t>& cps) {
-    for (uint32_t c : cps)
-        if (c >= 0x80) return false;
-    return true;
-}
-
 std::string punycode_encode(const std::vector<uint32_t>& input) {
     std::string output;
     uint32_t n = kInitialN;
@@ -1854,15 +1848,30 @@ std::string punycode_encode(const std::vector<uint32_t>& input) {
 // UTS-46 mapping step) - basic Latin only, which covers every case this
 // project's own hostnames/tests exercise.
 std::string encode_label(std::string_view label) {
+    // Fast path: an all-ASCII label (the overwhelmingly common case - most
+    // real hostnames never touch IDNA at all) needs neither UTF-8 decoding
+    // nor Punycode, just a lowercase fold. Skipping straight to that
+    // avoids utf8_decode()'s vector<uint32_t> (4 bytes per input byte,
+    // heap-allocated) for input that was never going to need it. Found
+    // while comparing normalized() against ada's normalize_url() -
+    // ada's IDNA has this same short-circuit (its "domain to ASCII"
+    // algorithm), which is a large part of why it was ~2x faster here.
+    bool all_ascii = true;
+    for (unsigned char c : label) {
+        if (c >= 0x80) { all_ascii = false; break; }
+    }
+    if (all_ascii) {
+        std::string out(label);
+        for (char& c : out)
+            if (c >= 'A' && c <= 'Z') c += ('a' - 'A');
+        return out;
+    }
+
     std::vector<uint32_t> cps = utf8_decode(label);
     for (uint32_t& cp : cps)
         if (cp >= 'A' && cp <= 'Z') cp += ('a' - 'A');
-    if (is_ascii_label(cps)) {
-        std::string out;
-        out.reserve(cps.size());
-        for (uint32_t cp : cps) out.push_back(static_cast<char>(cp));
-        return out;
-    }
+    // is_ascii_label(cps) is unreachable here - the scan above already
+    // ruled that out, or this label wouldn't have left the fast path.
     return "xn--" + punycode_encode(cps);
 }
 
