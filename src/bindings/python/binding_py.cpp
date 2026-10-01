@@ -1,4 +1,5 @@
 #include <nanobind/nanobind.h>
+#include <nanobind/stl/pair.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/string_view.h>
 #include <nanobind/stl/unordered_map.h>
@@ -304,6 +305,23 @@ NB_MODULE(_urlparser_py, m) {
        "Parse and normalize a URL string in one call: "
        "Url(input).normalized. Prefer Url(...).normalized directly if "
        "you already have a parsed Url.");
+    m.def("build_search_params",
+          [](const std::vector<std::pair<std::string, std::string>>& pairs) {
+              return urlparser::build_search_params(pairs);
+          }, "pairs"_a,
+          "Build a query string from an ordered list of (key, value) pairs "
+          "- the inverse of Url(...).search_params. E.g. "
+          "build_search_params([('q', 'hello world')]) -> 'q=hello+world'. "
+          "A repeated key writes multiple entries, in the order given - "
+          "never deduplicated or reordered.");
+    m.def("build_search_params",
+          [](const std::unordered_map<std::string, std::vector<std::string>>& params) {
+              return urlparser::build_search_params(params);
+          }, "params"_a,
+          "Same, from a dict shaped like Url(...).search_params (key -> "
+          "list of values). Key order follows the dict's own iteration "
+          "order - use the (key, value) pair-list overload when the "
+          "original order matters.");
     m.attr("__version__") = URLPARSER_VERSION_STRING;
     m.doc() = R"pbdoc(
         liburlparser

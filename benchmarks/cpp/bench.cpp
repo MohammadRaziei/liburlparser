@@ -554,6 +554,50 @@ int main() {
                static_cast<long>(urls_with_query.size()) * URLPARSER_BENCH_REPEATS);
     }
 
+    // ── build_search_params: liburlparser vs ada ─────────────────────────
+    // The inverse of search_params above: pairs in, query string out.
+    // ada::url_search_params has no "build from pairs" constructor, so the
+    // fair equivalent is its own public append()+to_string() - building
+    // the same object the same way a real caller would.
+    {
+        std::vector<std::pair<std::string, std::string>> pairs = {
+            {"a", "1"}, {"b", "2"}, {"q", "hello world"},
+            {"name", "caf\xc3\xa9"}, {"x", "b&c=d"}, {"utm_source", "newsletter"},
+        };
+
+        for (int rep = 0; rep < URLPARSER_BENCH_WARMUP_REPS; rep++) {
+            auto r = urlparser::build_search_params(pairs);
+            g_sink += r.size();
+        }
+        long ops = 0; double bytes = 0;
+        double t0 = now_seconds();
+        for (int rep = 0; rep < URLPARSER_BENCH_REPEATS; rep++) {
+            auto r = urlparser::build_search_params(pairs);
+            g_sink += r.size();
+            ops++;
+            for (const auto& [k, v] : pairs) bytes += static_cast<double>(k.size() + v.size());
+        }
+        record("liburlparser", "build_search_params", bytes, ops, now_seconds() - t0,
+               URLPARSER_BENCH_REPEATS);
+
+        for (int rep = 0; rep < URLPARSER_BENCH_WARMUP_REPS; rep++) {
+            ada::url_search_params sp;
+            for (const auto& [k, v] : pairs) sp.append(k, v);
+            g_sink += sp.to_string().size();
+        }
+        ops = 0; bytes = 0;
+        t0 = now_seconds();
+        for (int rep = 0; rep < URLPARSER_BENCH_REPEATS; rep++) {
+            ada::url_search_params sp;
+            for (const auto& [k, v] : pairs) sp.append(k, v);
+            g_sink += sp.to_string().size();
+            ops++;
+            for (const auto& [k, v] : pairs) bytes += static_cast<double>(k.size() + v.size());
+        }
+        record("ada", "build_search_params", bytes, ops, now_seconds() - t0,
+               URLPARSER_BENCH_REPEATS);
+    }
+
     write_results_json(domains.size(), urls.size());
     std::printf("(sanity sink: %zu - ignore, just proves every result above was actually used)\n",
                  static_cast<size_t>(g_sink));

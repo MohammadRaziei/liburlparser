@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from liburlparser import Url, normalize
+from liburlparser import Url, normalize, build_search_params
 
 # Gap: str() kept the raw path (no dot-segment resolution), kept an
 # explicit default port, didn't IDNA-normalize a Unicode host, and the
@@ -101,3 +101,46 @@ def test_search_params_invalid_utf8_becomes_replacement_char_not_an_exception():
     u = Url("https://example.com/?name=caf%E9&ok=1")
     assert u.search_params["ok"] == ["1"]
     assert u.search_params["name"] == ["caf\ufffd"]
+
+
+# --- build_search_params: the inverse of search_params -------------------
+# Expected values verified against ada_url.replace_search_params().
+
+def test_build_search_params_simple_pairs():
+    assert build_search_params([("a", "1"), ("b", "2")]) == "a=1&b=2"
+
+
+def test_build_search_params_space_becomes_plus():
+    assert build_search_params([("q", "hello world")]) == "q=hello+world"
+
+
+def test_build_search_params_escapes_reserved_chars():
+    assert build_search_params([("a", "b&c=d")]) == "a=b%26c%3Dd"
+
+
+def test_build_search_params_encodes_unicode():
+    assert build_search_params([("x", "café")]) == "x=caf%C3%A9"
+
+
+def test_build_search_params_tilde_is_escaped():
+    assert build_search_params([("k", "~")]) == "k=%7E"
+
+
+def test_build_search_params_repeated_keys_no_dedup():
+    assert build_search_params([("a", "1"), ("a", "2")]) == "a=1&a=2"
+
+
+def test_build_search_params_empty_list():
+    assert build_search_params([]) == ""
+
+
+def test_build_search_params_from_dict_overload():
+    result = build_search_params({"a": ["1", "2"]})
+    assert result == "a=1&a=2"
+
+
+def test_build_search_params_round_trips_with_search_params():
+    u = Url("https://example.com/?q=hello+world&a=1&a=2")
+    rebuilt = build_search_params(u.search_params)
+    u2 = Url("https://example.com/?" + rebuilt)
+    assert u2.search_params == u.search_params

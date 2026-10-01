@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .core import Host, Hostname, IPv4, IPv6, ScpUrl, GitUrl, Url, __doc__, __version__, psl, quote, unquote, resolve, normalize
+from .core import Host, Hostname, IPv4, IPv6, ScpUrl, GitUrl, Url, __doc__, __version__, psl, quote, unquote, resolve, normalize, build_search_params
 
 __all__ = [
     "Host",
@@ -17,4 +17,5 @@ __all__ = [
     "unquote",
     "resolve",
     "normalize",
+    "build_search_params",
 ]

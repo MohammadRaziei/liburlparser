@@ -418,6 +418,42 @@ def main():
     if ada_url:
         add_search_params_row("ada_url", lambda u: ada_url.parse_search_params(ada_url.URL(u).search))
 
+    # build_search_params: the inverse - pairs in, query string out.
+    BUILD_PAIRS = [("a", "1"), ("b", "2"), ("q", "hello world"),
+                   ("name", "café"), ("x", "b&c=d"), ("utm_source", "newsletter")]
+
+    def add_build_search_params_row(name, fn):
+        for _ in range(WARMUP_REPS):
+            try: fn(BUILD_PAIRS)
+            except Exception: pass
+        t0 = time.perf_counter()
+        ops = 0
+        nbytes = 0
+        for _ in range(REPEATS):
+            try:
+                fn(BUILD_PAIRS)
+                ops += 1
+                nbytes += sum(len(k) + len(v) for k, v in BUILD_PAIRS)
+            except Exception:
+                pass
+        t = time.perf_counter() - t0
+        rows.append([name, "build_search_params",
+                     f"{nbytes / t / 1e6:.2f} MB/s" if ops else "n/a",
+                     f"{ops / t:.0f}", f"{100 * ops / REPEATS:.0f}%",
+                     f"{t:.4f} s"])
+        results.append({
+            "library": name, "operation": "build_search_params",
+            "throughput_mb_s": (nbytes / t / 1e6) if ops else 0.0,
+            "ops_per_sec": ops / t, "success_rate": ops / REPEATS,
+            "total_time_s": t,
+        })
+
+    add_build_search_params_row("liburlparser", liburlparser.build_search_params)
+    if ada_url:
+        def ada_build(pairs):
+            return ada_url.replace_search_params("", *pairs)
+        add_build_search_params_row("ada_url", ada_build)
+
     # A ninth operation, "parse_git_url": parse an scp-like or normal git
     # remote address ([user@]host:path or a full URL) and read
     # host/user/path back out. liburlparser.ScpUrl (alias GitUrl) is new

@@ -83,6 +83,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -880,6 +881,31 @@ class scp_url {
  * site can say what it's for.
  */
 using git_url = scp_url;
+
+/**
+ * @brief Build an application/x-www-form-urlencoded query string from
+ * ordered key/value pairs - the inverse of url::get_search_params()
+ * (url::search_params). Matches WHATWG's own query-serialization rules,
+ * verified against ada_url.replace_search_params(): a space becomes '+'
+ * (not "%20"), the safe/unescaped set is ASCII alphanumeric plus
+ * `* - . _` only - narrower than percent_codec::unreserved_set(), which
+ * also leaves '~' unescaped; a query string does not. A repeated key
+ * (multiple pairs with the same first element) writes multiple "key=value"
+ * entries, in the order given - this never deduplicates or reorders.
+ * @param pairs Key/value pairs, in the order they should appear.
+ * @return The encoded query string (no leading '?').
+ */
+std::string build_search_params(const std::vector<std::pair<std::string, std::string>>& pairs);
+
+/**
+ * @brief Convenience overload: build from a url::search_params map
+ * (url::get_search_params()'s return type) instead of an ordered pair
+ * list. Each key's values are written out in their own vector order, but
+ * the *keys* themselves follow std::unordered_map's iteration order -
+ * unspecified, and not guaranteed to match the original query string's
+ * key order. Use the vector<pair> overload above when order matters.
+ */
+std::string build_search_params(const url::search_params& params);
 
 /**
  * @brief Convenience wrapper: url(input).normalized(). Prefer calling

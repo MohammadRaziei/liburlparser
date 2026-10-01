@@ -1,5 +1,7 @@
 #include "utest.h"
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "urlparser.h"
 
@@ -151,6 +153,67 @@ UTEST(UrlTest, SearchParamsSkipsEmptySegments) {
 UTEST(UrlTest, PercentCodecDecodeStillLeavesPlusAlone) {
     // The generic RFC 3986 unquote must NOT gain form-decoding's '+' rule.
     EXPECT_STREQ(urlparser::percent_codec::decode("a+b").c_str(), "a+b");
+}
+
+// --- build_search_params(): the inverse of get_search_params() ----------
+// Expected values verified against ada_url.replace_search_params().
+
+UTEST(UrlTest, BuildSearchParamsSimplePairs) {
+    std::vector<std::pair<std::string, std::string>> pairs = {{"a", "1"}, {"b", "2"}};
+    EXPECT_STREQ(urlparser::build_search_params(pairs).c_str(), "a=1&b=2");
+}
+
+UTEST(UrlTest, BuildSearchParamsSpaceBecomesPlus) {
+    std::vector<std::pair<std::string, std::string>> pairs = {{"q", "hello world"}};
+    EXPECT_STREQ(urlparser::build_search_params(pairs).c_str(), "q=hello+world");
+}
+
+UTEST(UrlTest, BuildSearchParamsEscapesReservedChars) {
+    std::vector<std::pair<std::string, std::string>> pairs = {{"a", "b&c=d"}};
+    EXPECT_STREQ(urlparser::build_search_params(pairs).c_str(), "a=b%26c%3Dd");
+}
+
+UTEST(UrlTest, BuildSearchParamsEncodesUnicodeAsUtf8Percent) {
+    std::vector<std::pair<std::string, std::string>> pairs = {{"x", "caf\xc3\xa9"}};
+    EXPECT_STREQ(urlparser::build_search_params(pairs).c_str(), "x=caf%C3%A9");
+}
+
+UTEST(UrlTest, BuildSearchParamsTildeIsEscaped) {
+    // Narrower safe set than percent_codec's RFC 3986 unreserved: '~' is
+    // NOT safe in a query string, unlike a path.
+    std::vector<std::pair<std::string, std::string>> pairs = {{"k", "~"}};
+    EXPECT_STREQ(urlparser::build_search_params(pairs).c_str(), "k=%7E");
+}
+
+UTEST(UrlTest, BuildSearchParamsKeepsStarDotDashUnderscore) {
+    std::vector<std::pair<std::string, std::string>> pairs = {{"k", "*-._"}};
+    EXPECT_STREQ(urlparser::build_search_params(pairs).c_str(), "k=*-._");
+}
+
+UTEST(UrlTest, BuildSearchParamsRepeatedKeysInOrderNoDedup) {
+    std::vector<std::pair<std::string, std::string>> pairs = {{"a", "1"}, {"a", "2"}};
+    EXPECT_STREQ(urlparser::build_search_params(pairs).c_str(), "a=1&a=2");
+}
+
+UTEST(UrlTest, BuildSearchParamsEmptyValueKeepsEquals) {
+    std::vector<std::pair<std::string, std::string>> pairs = {{"a", ""}};
+    EXPECT_STREQ(urlparser::build_search_params(pairs).c_str(), "a=");
+}
+
+UTEST(UrlTest, BuildSearchParamsEmptyPairsGivesEmptyString) {
+    std::vector<std::pair<std::string, std::string>> pairs;
+    EXPECT_STREQ(urlparser::build_search_params(pairs).c_str(), "");
+}
+
+UTEST(UrlTest, BuildSearchParamsRoundTripsWithGetSearchParams) {
+    urlparser::url u("https://example.com/?q=hello+world&a=1&a=2");
+    auto sp = u.get_search_params();
+    // Round-trip through the map overload; key order isn't guaranteed, so
+    // parse the rebuilt string back and compare the decoded maps instead
+    // of the raw strings.
+    std::string rebuilt = urlparser::build_search_params(sp);
+    urlparser::url u2("https://example.com/?" + rebuilt);
+    EXPECT_TRUE(u2.get_search_params() == sp);
 }
 
 UTEST(UrlTest, FreeFunctionNormalizeMatchesMethod) {

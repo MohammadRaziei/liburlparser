@@ -904,6 +904,37 @@ void form_decode_into(std::string_view in, std::string& out) {
         }
     }
 }
+
+// application/x-www-form-urlencoded component encode - the inverse of
+// form_decode_into() above, and WHATWG's own query-serialization rule
+// (verified against ada_url.replace_search_params()): a space becomes
+// '+' (not "%20"), and the safe/unescaped set is ASCII alphanumeric plus
+// `* - . _` only. Narrower than percent_codec::unreserved_set() (which
+// also leaves '~' unescaped) - deliberately not reused here, since '~'
+// unescaped is correct for a path but not for a query string.
+constexpr bool is_form_safe(unsigned char c) noexcept {
+    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ||
+           c == '*' || c == '-' || c == '.' || c == '_';
+}
+constexpr char kHexDigits[] = "0123456789ABCDEF";
+
+void form_encode_into(std::string_view in, std::string& out) {
+    size_t i = 0;
+    while (i < in.size() && is_form_safe(static_cast<unsigned char>(in[i]))) ++i;
+    out.append(in.data(), i);  // the clean prefix, in one copy
+    for (; i < in.size(); ++i) {
+        const unsigned char c = static_cast<unsigned char>(in[i]);
+        if (is_form_safe(c)) {
+            out.push_back(static_cast<char>(c));
+        } else if (c == ' ') {
+            out.push_back('+');
+        } else {
+            out.push_back('%');
+            out.push_back(kHexDigits[c >> 4]);
+            out.push_back(kHexDigits[c & 0x0F]);
+        }
+    }
+}
 }  // namespace
 
 urlparser::url::search_params urlparser::url::get_search_params() const {
@@ -937,6 +968,40 @@ urlparser::url::search_params urlparser::url::get_search_params() const {
         form_decode_into(value_raw, values.back());
     }
     return result;
+}
+
+std::string urlparser::build_search_params(
+    const std::vector<std::pair<std::string, std::string>>& pairs) {
+    std::string out;
+    if (pairs.empty()) return out;
+
+    // Reserve generously rather than exactly: every byte can expand to at
+    // most 3 ("%XX"), computing the exact size ahead of time would mean
+    // scanning everything twice for no real benefit at typical (short)
+    // query-parameter sizes.
+    size_t estimate = 0;
+    for (const auto& [k, v] : pairs) estimate += k.size() + v.size() + 2;
+    out.reserve(estimate);
+
+    bool first = true;
+    for (const auto& [key, value] : pairs) {
+        if (!first) out.push_back('&');
+        first = false;
+        form_encode_into(key, out);
+        out.push_back('=');
+        form_encode_into(value, out);
+    }
+    return out;
+}
+
+std::string urlparser::build_search_params(const urlparser::url::search_params& params) {
+    std::vector<std::pair<std::string, std::string>> pairs;
+    size_t total = 0;
+    for (const auto& [key, values] : params) total += values.size();
+    pairs.reserve(total);
+    for (const auto& [key, values] : params)
+        for (const auto& value : values) pairs.emplace_back(key, value);
+    return build_search_params(pairs);
 }
 
 namespace {

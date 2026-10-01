@@ -82,6 +82,7 @@ OPERATION_LABELS = [
     ("parse_git_url", "Parse a git/scp-like remote address"),
     ("normalize", "Normalize a URL (default port, IDNA, dot-segments)"),
     ("search_params", "Query string → decoded key/values map"),
+    ("build_search_params", "Key/value pairs → query string"),
 ]
 
 
