@@ -48,7 +48,7 @@
 //   - pyproject.toml's [tool.scikit-build.metadata.version] regex provider
 //   - version.py (bump/tag helper)
 #define URLPARSER_VERSION_MAJOR 2
-#define URLPARSER_VERSION_MINOR 0
+#define URLPARSER_VERSION_MINOR 1
 #define URLPARSER_VERSION_PATCH 0
 
 #define URLPARSER_VERSION_ENCODE(maj,min,pat) (((maj)*10000)+((min)*100)+(pat))
