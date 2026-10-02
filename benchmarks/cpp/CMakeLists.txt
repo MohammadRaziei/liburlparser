@@ -25,7 +25,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(liburlparser ada)
 
 add_executable(bench_cpp bench.cpp)
-target_link_libraries(bench_cpp PRIVATE url::base ada::ada)
+target_link_libraries(bench_cpp PRIVATE urlparser::urlparser ada::ada)
 target_compile_definitions(bench_cpp PRIVATE
     URLPARSER_BENCH_DOMAINS_FILE="${URLPARSER_BENCH_DOMAINS_FILE}"
     URLPARSER_BENCH_URLS_FILE="${URLPARSER_BENCH_URLS_FILE}"

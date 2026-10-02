@@ -19,4 +19,8 @@ execute_process(
 find_package(liburlparser CONFIG REQUIRED)
 
 add_executable(app main.cpp)
-target_link_libraries(app PRIVATE liburlparser::core)
+target_link_libraries(app PRIVATE urlparser::urlparser)
+
+# Plain paths are available too, for build systems that don't use the target:
+message(STATUS "urlparser_LIB_PATH     = ${urlparser_LIB_PATH}")
+message(STATUS "urlparser_INCLUDE_PATH = ${urlparser_INCLUDE_PATH}")

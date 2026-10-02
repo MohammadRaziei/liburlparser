@@ -188,10 +188,10 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(liburlparser)
 
-target_link_libraries(my_app PRIVATE url::base)</code></pre>
+target_link_libraries(my_app PRIVATE urlparser::urlparser)</code></pre>
             </div>
             <div class="install-note">
-                Requires CMake 3.19+ and a C++17-compatible compiler. Link against <code>url::base</code> and include <code>urlparser.h</code>.
+                Requires CMake 3.19+ and a C++17-compatible compiler. Link against <code>urlparser::urlparser</code> and include <code>urlparser.h</code>.
             </div>
         </div>
 
