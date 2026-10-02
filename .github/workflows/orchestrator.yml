@@ -99,6 +99,9 @@ jobs:
       id-token: write
 
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
     - name: Download documentation artifact
       uses: actions/download-artifact@v4
       with:
@@ -110,6 +113,18 @@ jobs:
       with:
         name: cmake-coverage-report
         path: ./pages/coverage
+
+    # Benchmarks are NOT run in CI: the report is generated locally
+    # (cmake --build <dir> --target urlparser_benchmarks_report) and committed
+    # as benchmarks/results/report.html. CI only publishes it, as /benchmarks/.
+    - name: Add benchmark report
+      run: |
+        if [ ! -f benchmarks/results/report.html ]; then
+          echo "::error::benchmarks/results/report.html is missing - generate it locally and commit it"
+          exit 1
+        fi
+        mkdir -p pages/benchmarks
+        cp benchmarks/results/report.html pages/benchmarks/index.html
 
     - name: List pages directory
       run: find pages -maxdepth 2

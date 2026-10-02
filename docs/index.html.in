@@ -372,6 +372,9 @@ liburlparser --doc</code></pre>
                     <i class="fa-solid fa-chart-pie"></i> Coverage report
                     <span class="footer-link-badge">dev</span>
                 </a>
+                <a class="footer-link" href="benchmarks/index.html">
+                    <i class="fa-solid fa-gauge-high"></i> Benchmarks
+                </a>
             </div>
         </div>
     </div>

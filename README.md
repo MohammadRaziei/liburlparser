@@ -15,7 +15,7 @@
 [![forks - liburlparser](https://img.shields.io/github/forks/mohammadraziei/liburlparser?style=social)](https://github.com/mohammadraziei/liburlparser)
 
 [![PyPi](https://img.shields.io/pypi/v/liburlparser.svg)](https://pypi.org/project/liburlparser/)
-![Python](https://img.shields.io/badge/Python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11-blue)
+![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-blue)
 ![Cpp](https://img.shields.io/badge/C++-17-blue)
 
 [![GitHub release](https://img.shields.io/github/release/mohammadraziei/liburlparser?include_prereleases=&sort=semver&color=purple)](https://github.com/mohammadraziei/liburlparser/releases/)
@@ -216,49 +216,102 @@ you can see all methods in python we can use in c++ very easily
 
 ## Installation
 
-### C++:
+### C++
 
-#### build steps:
+Requires a C++17 compiler and CMake >= 3.19. The library is a static library plus one header (`urlparser.h`),
+and its CMake target is **`urlparser::urlparser`** - the same name no matter how you get it:
+
+#### 1. FetchContent
+
+```cmake
+include(FetchContent)
+FetchContent_Declare(
+  liburlparser
+  GIT_REPOSITORY https://github.com/mohammadraziei/liburlparser.git
+  GIT_TAG        master
+)
+FetchContent_MakeAvailable(liburlparser)
+
+target_link_libraries(my_app PRIVATE urlparser::urlparser)
+```
+
+#### 2. From the pip package
+
+The Python wheel also ships the compiled C++ library, its header and a CMake
+package config (same idea as `python -m nanobind --cmake_dir`), so a C++
+project can use a plain `pip install liburlparser` without building anything:
+
+```cmake
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+execute_process(
+    COMMAND ${Python3_EXECUTABLE} -m liburlparser --cmake-dir
+    OUTPUT_VARIABLE liburlparser_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    COMMAND_ERROR_IS_FATAL ANY)
+
+find_package(liburlparser CONFIG REQUIRED)
+target_link_libraries(my_app PRIVATE urlparser::urlparser)
+```
+
+For build systems that prefer plain paths over the target, `find_package` also sets:
+
+| Variable                 | Value                                                              |
+| ------------------------ | ------------------------------------------------------------------ |
+| `urlparser_LIB_PATH`     | full path of the compiled library (`liburlparser.a`, `urlparser.lib`, ...) |
+| `urlparser_INCLUDE_PATH` | directory containing `urlparser.h`                                 |
+
+The same locations are available from the command line and from Python:
 
 ```sh
-# 1. Clone the repository with submodules (recursive)
-# --recursive is essential to download third-party libs like googletest
-git clone --recursive https://github.com/mohammadraziei/liburlparser
+python -m liburlparser --cmake-dir     # directory with liburlparserConfig.cmake
+python -m liburlparser --include-dir   # directory with urlparser.h
+python -m liburlparser --lib-dir       # directory with the compiled library
+```
+
+```python
+import liburlparser
+liburlparser.get_cmake_dir(), liburlparser.get_include_dir(), liburlparser.get_lib_dir()
+```
+
+A complete example project is in
+[examples/find_liburlparser_via_python](examples/find_liburlparser_via_python).
+
+#### 3. Build and install from source
+
+```sh
+git clone https://github.com/mohammadraziei/liburlparser
 cd liburlparser
 
-# 2. Configure the project
-# -B build tells CMake to create a 'build' directory and generate files there
-cmake -B build
+# configure and build (-B creates the 'build' directory)
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
 
-# 3. Build the project
-# --build abstracts the underlying build tool (Make, Ninja, MSBuild, etc.)
-cmake --build build --config Debug
-
-# 4. Run examples
-# Note: On Windows, the path might be ./build/Debug/example.exe
+# run the example (on Windows with multi-config generators: ./build/Release/example.exe)
 ./build/example
 
-# 5. Make install
-# --install handles the installation process
-sudo cmake --install build
+# install the library, header and CMake package (add --prefix <dir> to choose where)
+cmake --install build
+```
+
+Then, in your project (add `-DCMAKE_PREFIX_PATH=<prefix>` if you used a custom prefix):
+
+```cmake
+find_package(liburlparser CONFIG REQUIRED)
+target_link_libraries(my_app PRIVATE urlparser::urlparser)
 ```
 
 ### Python and Command Line:
 
-Be aware that it required `python>=3.8`
+Be aware that it requires `python>=3.10`
 
 #### Installation
 
 ###### from source
 
-To install from source, you must ensure all submodules are cloned:
-
 ```bash
-# 1. Clone recursively to get third-party dependencies
-git clone --recursive https://github.com/mohammadraziei/liburlparser
+git clone https://github.com/mohammadraziei/liburlparser
 cd liburlparser
 
-# 2. Install using pip
 pip install .
 
 # Optional: If you want to see build logs
@@ -289,6 +342,18 @@ pip install ./liburlparser
 ```
 
 ### Performance
+
+Up-to-date, reproducible results for both C++ and Python (compared against other libraries)
+are on the **[Benchmarks page](https://mohammadraziei.github.io/liburlparser/benchmarks/)**.
+The report is generated locally and published with the documentation:
+
+```sh
+cmake -S benchmarks -B build-bench -DCMAKE_BUILD_TYPE=Release
+cmake --build build-bench --target urlparser_benchmarks_report
+# -> benchmarks/results/report.html
+```
+
+The two tables below are the original measurements from March 2022.
 
 #### Extract From Host
 
@@ -330,5 +395,6 @@ Project Link:
 
 - [https://github.com/mohammadraziei/liburlparser](https://github.com/mohammadraziei/liburlparser)
 - [https://pypi.org/project/liburlparser](https://pypi.org/project/liburlparser)
+- [Documentation](https://mohammadraziei.github.io/liburlparser/) and [Benchmarks](https://mohammadraziei.github.io/liburlparser/benchmarks/)
 
 [license-shield]: https://img.shields.io/github/license/othneildrew/Best-README-Template.svg?style=flat-square
