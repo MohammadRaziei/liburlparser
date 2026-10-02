@@ -53,7 +53,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Build wheels
-      uses: pypa/cibuildwheel@v2.23.4
+      uses: pypa/cibuildwheel@v4.2.1
       env:
         MACOSX_DEPLOYMENT_TARGET: "10.13"
         CIBW_ARCHS_MACOS: universal2
