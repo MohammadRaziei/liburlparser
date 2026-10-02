@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from . import Host, Url, __doc__, __version__, utils
+from . import Host, Url, __doc__, __version__, get_cmake_dir, get_include_dir, get_lib_dir, utils
 
 
 def show_if_not_none(_str, _class, _parts):
@@ -20,6 +20,15 @@ def show_if_not_none(_str, _class, _parts):
 
 
 def main(args):
+    # Build-system helpers (same idea as `python -m nanobind --cmake_dir`):
+    # print a path and exit, so a CMakeLists.txt / Makefile can locate the
+    # shipped C++ package without importing anything itself.
+    for flag, getter in ((args.cmake_dir, get_cmake_dir),
+                         (args.include_dir, get_include_dir),
+                         (args.lib_dir, get_lib_dir)):
+        if flag:
+            print(getter())
+            return
     if args.url and args.host:
         sys.stderr.write("Error: Either --url or --host argument must be provided\n")
         exit(1)
@@ -43,6 +52,12 @@ def cli():
     parser.add_argument('-v', '--version', action='store_true', help="showing version of module")
     parser.add_argument('--parts', type=str, nargs='+', help="list of parts to display")
     parser.add_argument('--doc', action='store_true', help="showing version of module")
+    parser.add_argument("--cmake-dir", "--cmake_dir", dest="cmake_dir", action="store_true",
+                        help="print the directory containing liburlparserConfig.cmake")
+    parser.add_argument("--include-dir", "--include_dir", dest="include_dir", action="store_true",
+                        help="print the directory containing urlparser.h")
+    parser.add_argument("--lib-dir", "--lib_dir", dest="lib_dir", action="store_true",
+                        help="print the directory containing the compiled C++ library")
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
     main(args)
 

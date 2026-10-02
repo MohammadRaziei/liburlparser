@@ -96,6 +96,42 @@ embed_file_as_string(
 )
 
 
+# --- C++ core library (static) ---
+# Built in every mode (including scikit-build), so the Python extension
+# links the very same library that gets shipped to C++ consumers.
+# Install layout: the wheel carries include/, lib/ and cmake/ inside the
+# `liburlparser` package (nanobind/pybind11 pattern, see get_cmake_dir() in
+# the Python package); a plain `cmake --install` uses the usual prefix layout.
+if(DEFINED SKBUILD)
+    set(_urlparser_lib_dest   liburlparser/lib)
+    set(_urlparser_inc_dest   liburlparser/include)
+    set(_urlparser_cmake_dest liburlparser/cmake)
+else()
+    set(_urlparser_lib_dest   lib)
+    set(_urlparser_inc_dest   include)
+    set(_urlparser_cmake_dest lib/cmake/liburlparser)
+endif()
+
+add_library(urlparser STATIC ${SOURCES})
+add_library(url::base ALIAS urlparser)          # historical in-tree name
+add_library(liburlparser::core ALIAS urlparser) # same name as the installed package
+
+set_target_properties(urlparser PROPERTIES
+    POSITION_INDEPENDENT_CODE ON        # linked into the Python extension
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON
+    EXPORT_NAME core                    # consumers link liburlparser::core
+    OUTPUT_NAME urlparser               # liburlparser.a / urlparser.lib
+)
+target_include_directories(urlparser
+    PUBLIC
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:${_urlparser_inc_dest}>
+    PRIVATE
+        ${PROJECT_SOURCE_DIR}/src
+        ${GENERATED_HEADERS_DIR})
+
+
 if(DEFINED PYTHON_PROJECT_NAME)
     # Try to import all Python components potentially needed by nanobind
     #set(Python3_FIND_STRATEGY LOCATION)
@@ -132,10 +168,10 @@ if(DEFINED PYTHON_PROJECT_NAME)
             ${NB_ABI_ARGS}
 
             # Source code goes here
-            ${PROJECT_SOURCE_DIR}/src/bindings/python/binding_py.cpp ${SOURCES}
+            ${PROJECT_SOURCE_DIR}/src/bindings/python/binding_py.cpp
     )
 
-    target_include_directories(${NB_MODULE} PRIVATE include src ${GENERATED_HEADERS_DIR})
+    target_link_libraries(${NB_MODULE} PRIVATE urlparser)
 
     if(DEFINED SKBUILD)
         install(TARGETS ${NB_MODULE}
@@ -149,34 +185,35 @@ if(DEFINED PYTHON_PROJECT_NAME)
     endif()
 endif()
 
+# --- install (find_package(liburlparser CONFIG) -> liburlparser::core) ---
+include(CMakePackageConfigHelpers)
+install(TARGETS urlparser EXPORT liburlparserTargets
+    ARCHIVE DESTINATION ${_urlparser_lib_dest}
+    LIBRARY DESTINATION ${_urlparser_lib_dest})
+install(DIRECTORY include/ DESTINATION ${_urlparser_inc_dest})
+install(EXPORT liburlparserTargets
+    FILE liburlparserTargets.cmake
+    NAMESPACE liburlparser::
+    DESTINATION ${_urlparser_cmake_dest})
+configure_package_config_file(
+    ${PROJECT_SOURCE_DIR}/cmake/liburlparserConfig.cmake.in
+    ${PROJECT_BINARY_DIR}/liburlparserConfig.cmake
+    INSTALL_DESTINATION ${_urlparser_cmake_dest})
+write_basic_package_version_file(
+    ${PROJECT_BINARY_DIR}/liburlparserConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion)
+install(FILES
+    ${PROJECT_BINARY_DIR}/liburlparserConfig.cmake
+    ${PROJECT_BINARY_DIR}/liburlparserConfigVersion.cmake
+    DESTINATION ${_urlparser_cmake_dest})
+
 if(DEFINED SKBUILD)
     RETURN()
 endif()
 
-
-
-add_library(urlparser STATIC ${SOURCES})
-add_library(url::base ALIAS urlparser)
-target_include_directories(urlparser PRIVATE ${GENERATED_HEADERS_DIR})
-
-
-target_include_directories(urlparser
-        PUBLIC
-            ${PROJECT_SOURCE_DIR}/include
-        PRIVATE
-            ${PROJECT_SOURCE_DIR}/src)
-
-
 add_executable(example examples/main.cpp)
 target_link_libraries(example PRIVATE url::base)
-
-install(TARGETS urlparser
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    INCLUDES DESTINATION include
-)
-
-
 
 enable_testing()
 find_package(Threads REQUIRED)
