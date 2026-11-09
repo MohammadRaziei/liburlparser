@@ -3,9 +3,9 @@
 # Usage (CMake >= 3.15):
 #
 #   find_package(liburlparser CONFIG REQUIRED)
-#   target_link_libraries(app PRIVATE urlparser::urlparser)
+#   target_link_libraries(app PRIVATE liburlparser::urlparser)
 #
-# `urlparser::urlparser` is the same target you get from
+# `liburlparser::urlparser` is the same target you get from
 # FetchContent/add_subdirectory. It carries everything a consumer needs: the
 # compiled static library and the include directory for <urlparser.h>. All
 # paths are resolved relative to this file, so the package works wherever it

@@ -38,9 +38,20 @@ if (CYGWIN OR UNIX)
 endif()
 
 
+# URLPARSER_SKBUILD is true only when liburlparser itself is the scikit-build-core
+# project being built (the wheel build). SKBUILD alone is not enough: it is also
+# defined when another scikit-build-core project (e.g. httpp) pulls this one in with
+# add_subdirectory() or FetchContent, and then it must behave as a plain C++ library:
+# no nanobind module, no early RETURN() before the liburlparser::urlparser target and the tests.
+if(DEFINED SKBUILD AND CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    set(URLPARSER_SKBUILD ON)
+else()
+    set(URLPARSER_SKBUILD OFF)
+endif()
+
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
-if(DEFINED SKBUILD)
+if(URLPARSER_SKBUILD)
     set(PYTHON_PROJECT_NAME "${SKBUILD_PROJECT_NAME}")
 elseif(BUILD_PYTHON)
     set(PYTHON_PROJECT_NAME "${CMAKE_BINARY_DIR}")
@@ -102,7 +113,7 @@ embed_file_as_string(
 # Install layout: the wheel carries include/, lib/ and cmake/ inside the
 # `liburlparser` package (nanobind/pybind11 pattern, see get_cmake_dir() in
 # the Python package); a plain `cmake --install` uses the usual prefix layout.
-if(DEFINED SKBUILD)
+if(URLPARSER_SKBUILD)
     set(_urlparser_lib_dest   liburlparser/lib)
     set(_urlparser_inc_dest   liburlparser/include)
     set(_urlparser_cmake_dest liburlparser/cmake)
@@ -113,16 +124,16 @@ else()
 endif()
 
 add_library(urlparser STATIC ${SOURCES})
-# The public target is `urlparser::urlparser` - the same name whether the
+# The public target is `liburlparser::urlparser` - the same name whether the
 # library comes from FetchContent/add_subdirectory (this alias) or from an
 # installed package (find_package(liburlparser), exported below).
-add_library(urlparser::urlparser ALIAS urlparser)
+add_library(liburlparser::urlparser ALIAS urlparser)
 
 set_target_properties(urlparser PROPERTIES
     POSITION_INDEPENDENT_CODE ON        # linked into the Python extension
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN ON
-    EXPORT_NAME urlparser               # installed as urlparser::urlparser (see install(EXPORT))
+    EXPORT_NAME urlparser               # installed as liburlparser::urlparser (see install(EXPORT))
     OUTPUT_NAME urlparser               # liburlparser.a / urlparser.lib
 )
 target_include_directories(urlparser
@@ -175,7 +186,7 @@ if(DEFINED PYTHON_PROJECT_NAME)
 
     target_link_libraries(${NB_MODULE} PRIVATE urlparser)
 
-    if(DEFINED SKBUILD)
+    if(URLPARSER_SKBUILD)
         install(TARGETS ${NB_MODULE}
                 CONFIGURATIONS Release
                 LIBRARY DESTINATION
@@ -187,7 +198,7 @@ if(DEFINED PYTHON_PROJECT_NAME)
     endif()
 endif()
 
-# --- install: find_package(liburlparser CONFIG) -> urlparser::urlparser ---
+# --- install: find_package(liburlparser CONFIG) -> liburlparser::urlparser ---
 include(CMakePackageConfigHelpers)
 install(TARGETS urlparser EXPORT liburlparserTargets
     ARCHIVE DESTINATION ${_urlparser_lib_dest}
@@ -195,7 +206,7 @@ install(TARGETS urlparser EXPORT liburlparserTargets
 install(DIRECTORY include/ DESTINATION ${_urlparser_inc_dest})
 install(EXPORT liburlparserTargets
     FILE liburlparserTargets.cmake
-    NAMESPACE urlparser::
+    NAMESPACE liburlparser::
     DESTINATION ${_urlparser_cmake_dest})
 
 # urlparser_LIB_PATH / urlparser_INCLUDE_PATH for consumers that want plain
@@ -228,12 +239,15 @@ install(FILES
     ${PROJECT_BINARY_DIR}/liburlparserConfigVersion.cmake
     DESTINATION ${_urlparser_cmake_dest})
 
-if(DEFINED SKBUILD)
+if(URLPARSER_SKBUILD)
     RETURN()
 endif()
 
-add_executable(example examples/main.cpp)
-target_link_libraries(example PRIVATE urlparser::urlparser)
+# The example is only for the top-level build; as a dependency it would just be compiled for nothing.
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    add_executable(example examples/main.cpp)
+    target_link_libraries(example PRIVATE liburlparser::urlparser)
+endif()
 
 enable_testing()
 find_package(Threads REQUIRED)

@@ -219,7 +219,7 @@ you can see all methods in python we can use in c++ very easily
 ### C++
 
 Requires a C++17 compiler and CMake >= 3.19. The library is a static library plus one header (`urlparser.h`),
-and its CMake target is **`urlparser::urlparser`** - the same name no matter how you get it:
+and its CMake target is **`liburlparser::urlparser`** - the same name no matter how you get it:
 
 #### 1. FetchContent
 
@@ -232,7 +232,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(liburlparser)
 
-target_link_libraries(my_app PRIVATE urlparser::urlparser)
+target_link_libraries(my_app PRIVATE liburlparser::urlparser)
 ```
 
 #### 2. From the pip package
@@ -250,7 +250,7 @@ execute_process(
     COMMAND_ERROR_IS_FATAL ANY)
 
 find_package(liburlparser CONFIG REQUIRED)
-target_link_libraries(my_app PRIVATE urlparser::urlparser)
+target_link_libraries(my_app PRIVATE liburlparser::urlparser)
 ```
 
 For build systems that prefer plain paths over the target, `find_package` also sets:
@@ -297,7 +297,7 @@ Then, in your project (add `-DCMAKE_PREFIX_PATH=<prefix>` if you used a custom p
 
 ```cmake
 find_package(liburlparser CONFIG REQUIRED)
-target_link_libraries(my_app PRIVATE urlparser::urlparser)
+target_link_libraries(my_app PRIVATE liburlparser::urlparser)
 ```
 
 ### Python and Command Line:
