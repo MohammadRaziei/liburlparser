@@ -29,8 +29,11 @@ releases are short, those entries are brief.
 - `url(const std::string&)` and `url(const char*)` constructors next to the `string_view` one. A `std::string` or a string
   literal now converts to a `url` implicitly, so a function taking `const urlparser::url&` can be called as
   `f("http://example.com/")` (before, that was two user conversions and did not compile; `url u(some_string)` always did).
-- `link_check` test: links the real `liburlparser::urlparser` target. With `-DURLPARSER_SHARED=ON` it fails to link
-  when a public symbol lacks `URLPARSER_API`.
+- `url(const std::string&)` and `url(const char*)` constructors next to the `string_view` one. A `std::string` or a string
+  literal now converts to a `url` implicitly, so a function taking `const urlparser::url&` can be called as
+  `f("http://example.com/")` (before, that was two user conversions and did not compile; `url u(some_string)` always did).
+- `test_liburlparser_linked`: `tests/cpp/test_link_check.cpp` built alone against the real `liburlparser::urlparser`
+  target. With `-DURLPARSER_SHARED=ON` it fails to link when a public symbol lacks `URLPARSER_API`.
 
 ### Changed
 - The Public Suffix List is fetched at configure time only when liburlparser is the top-level project. As a

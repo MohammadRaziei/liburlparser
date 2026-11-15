@@ -55,12 +55,17 @@ target_include_directories(fuzz_abspath PRIVATE
 target_compile_definitions(fuzz_abspath PRIVATE URLPARSER_STATIC)
 add_test(NAME fuzz_abspath COMMAND $<TARGET_FILE:fuzz_abspath> 42 300000)
 
-# The only test that links the real liburlparser::urlparser target, exactly like an
-# outside consumer would. With -DURLPARSER_SHARED=ON the library is built with hidden
-# visibility, so this fails to link when a public symbol is missing URLPARSER_API.
-add_executable(link_check link_check.cpp)
-target_link_libraries(link_check PRIVATE liburlparser::urlparser)
-add_test(NAME link_check COMMAND $<TARGET_FILE:link_check>)
+# test_link_check.cpp is also built alone against the real liburlparser::urlparser target,
+# exactly like an outside consumer would link it. With -DURLPARSER_SHARED=ON the library
+# is built with hidden visibility, so this fails to link when a public symbol is missing
+# URLPARSER_API (test_liburlparser_cpp above compiles the sources in and cannot notice).
+add_executable(test_liburlparser_linked
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_link_check.cpp
+    ${URLPARSER_TEST_SOURCE_DIR}/utest/utest_main.cxx
+)
+target_include_directories(test_liburlparser_linked PRIVATE ${URLPARSER_TEST_SOURCE_DIR}/utest)
+target_link_libraries(test_liburlparser_linked PRIVATE liburlparser::urlparser)
+add_test(NAME test_liburlparser_linked COMMAND $<TARGET_FILE:test_liburlparser_linked>)
 
 add_custom_target(urlparser_test_cpp
     COMMAND ${CMAKE_COMMAND} -E echo "-- Running C++ tests..."
