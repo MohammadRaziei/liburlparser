@@ -91,6 +91,7 @@ if(BUILD_PYTHON)
                     -DCOV_FILE=${URLPARSER_COVERAGE_PYTHON_BINARY_DIR}/coverage.lcov
                     -DSOURCE_PATH=
                     -DPREFIX_PATH=src/bindings/python/
+                    -DSTRIP_FUNCTIONS=ON
                     -P ${PROJECT_SOURCE_DIR}/cmake/FixLCovPaths.cmake
 
             # Generate HTML report

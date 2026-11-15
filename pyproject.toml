@@ -47,6 +47,11 @@ build = ["cp310-*", "cp311-*", "cp312-*"]
 test-command = "pytest {project}/tests -k \"not test_cli_subprocess\""
 test-extras = ["test"]
 test-skip = ["*universal2:arm64"]
+
+[tool.cibuildwheel.windows]
+# The wheel carries urlparser.dll itself (liburlparser/lib, found at import by os.add_dll_directory), so delvewheel
+# must not look for it on PATH (it fails with "Unable to find library: urlparser.dll"); it still vendors the rest.
+repair-wheel-command = "delvewheel repair --no-dll urlparser.dll -w {dest_dir} {wheel}"
 # build-verbosity = 1
 
 # Configuration for Cross-Platform Build
