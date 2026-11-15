@@ -20,7 +20,7 @@ releases are short, those entries are brief.
   of the parser at run time. It is OFF otherwise, so `add_subdirectory()` and `FetchContent` keep getting a static
   library. The extension module finds the library through `$ORIGIN/lib` (`@loader_path/lib` on macOS); on Windows
   `liburlparser/__init__.py` calls `os.add_dll_directory()`.
-- **`URLPARSER_WITH_PSL`** CMake option (default ON). OFF embeds no Public Suffix List and never downloads it: the
+- **`URLPARSER_PSL`** CMake option (default ON). OFF embeds no Public Suffix List and never downloads it: the
   library is about 340 KB smaller and `hostname::suffix()` is just the last label.
 - `url::default_port(scheme)` and `url::port_or_default()` (also in Python as `Url.default_port()` and
   `Url.port_or_default`). The table is the one `normalized()` already used (http 80, https 443, ws 80, wss 443, ftp 21).
@@ -39,6 +39,12 @@ releases are short, those entries are brief.
 - The Public Suffix List is fetched at configure time only when liburlparser is the top-level project. As a
   dependency it embeds the tracked copy and no longer rewrites a file inside the consumer's source tree.
 - `CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS` is gone, the export macro replaces it.
+- **C++ tests.** `tests/cpp/` now holds only utest `test_*.cpp` files plus the shared helper header, which is renamed
+  from `common.h` to `conftest.h` (like `tests/python/conftest.py`). `fuzz_abspath.cpp` is now the utest
+  `test_abspath_property.cpp` (seed 42 and 300000 iterations by default; `URLPARSER_FUZZ_SEED` and
+  `URLPARSER_FUZZ_ITERATIONS` change them), and `perf_regression_guard.cpp` moved to `tests/perf/` because it times code
+  and must always be built with `-O3`. With `-DURLPARSER_PSL=OFF` the tests that need the Public Suffix List are
+  compiled out and a `NoPslTest` checks that mode instead.
 - A shared build is only as fast as the static one because of `-fvisibility-inlines-hidden` (see ARCHITECTURE.md,
   section 7). The CMake target keeps that flag.
 

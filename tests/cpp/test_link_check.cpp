@@ -48,7 +48,7 @@ UTEST(link_check, ip_and_host_types) {
 
 UTEST(link_check, hostname_and_psl) {
     urlparser::hostname h("www.example.co.uk");
-    // With URLPARSER_WITH_PSL=OFF the list is empty and suffix() is only the last label.
+    // With URLPARSER_PSL=OFF the list is empty and suffix() is only the last label.
     ASSERT_TRUE(!urlparser::url::is_psl_loaded() || h.suffix() == "co.uk");
     ASSERT_EQ(urlparser::psl::instance().is_loaded(), urlparser::url::is_psl_loaded());
 }

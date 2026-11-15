@@ -55,13 +55,13 @@ endif()
 # library. Public symbols carry URLPARSER_API (include/urlparser.h) either way.
 option(URLPARSER_SHARED "Build liburlparser as a shared library" ${URLPARSER_SKBUILD})
 
-# URLPARSER_WITH_PSL: embed the Public Suffix List (about 330 KB of data, used by
+# URLPARSER_PSL: embed the Public Suffix List (about 330 KB of data, used by
 # hostname::suffix()/domain()/subdomain() and psl). With OFF nothing is embedded: the
 # list stays empty (psl::is_loaded() is false and hostname::suffix() is just the last
 # label, "uk" for "example.co.uk"), the library is about 340 KB smaller and the
 # configure step never touches the network. Everything else (url, ipv4, ipv6,
 # percent_codec, idna, resolve) is unaffected.
-option(URLPARSER_WITH_PSL "Embed the Public Suffix List" ON)
+option(URLPARSER_PSL "Embed the Public Suffix List" ON)
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
@@ -88,7 +88,7 @@ elseif(BUILD_PYTHON)
 endif()
 
 
-# Public Suffix List. With URLPARSER_WITH_PSL=ON the top-level project tries a fresh
+# Public Suffix List. With URLPARSER_PSL=ON the top-level project tries a fresh
 # download on every configure (cached per build directory via a marker file - see
 # cmake/PublicSuffixList.cmake for why), overwriting the one real, tracked copy at
 # src/public_suffix_list.dat in place; on a failed download it just warns and keeps
@@ -96,7 +96,7 @@ endif()
 # in include/urlparser.h. When liburlparser is only a dependency (add_subdirectory,
 # FetchContent, a git submodule) it never downloads: that would rewrite a file inside
 # the consumer's source tree, so the tracked copy is embedded as it is.
-if(URLPARSER_WITH_PSL)
+if(URLPARSER_PSL)
     if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
         include(${PROJECT_SOURCE_DIR}/cmake/PublicSuffixList.cmake)
         fetch_public_suffix_list(
@@ -111,8 +111,8 @@ if(URLPARSER_WITH_PSL)
     endif()
 else()
     set(PUBLIC_SUFFIX_LIST_DAT ${CMAKE_CURRENT_BINARY_DIR}/public_suffix_list_disabled.dat)
-    file(WRITE ${PUBLIC_SUFFIX_LIST_DAT} "// VERSION: disabled (URLPARSER_WITH_PSL=OFF)\n")
-    message(STATUS "Public Suffix List: disabled (URLPARSER_WITH_PSL=OFF)")
+    file(WRITE ${PUBLIC_SUFFIX_LIST_DAT} "// VERSION: disabled (URLPARSER_PSL=OFF)\n")
+    message(STATUS "Public Suffix List: disabled (URLPARSER_PSL=OFF)")
 endif()
 
 
@@ -167,7 +167,7 @@ else()
     # header, so the definition travels with the target (and its installed export).
     target_compile_definitions(urlparser PUBLIC URLPARSER_STATIC)
 endif()
-message(STATUS "liburlparser: URLPARSER_SHARED=${URLPARSER_SHARED} URLPARSER_WITH_PSL=${URLPARSER_WITH_PSL}")
+message(STATUS "liburlparser: URLPARSER_SHARED=${URLPARSER_SHARED} URLPARSER_PSL=${URLPARSER_PSL}")
 # The public target is `liburlparser::urlparser` - the same name whether the
 # library comes from FetchContent/add_subdirectory (this alias) or from an
 # installed package (find_package(liburlparser), exported below).

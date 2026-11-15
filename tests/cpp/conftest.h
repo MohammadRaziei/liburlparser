@@ -1,6 +1,9 @@
-#ifndef MYTEST_COMMON_H
-#define MYTEST_COMMON_H
+// Shared helpers for the C++ tests (the counterpart of tests/python/conftest.py).
+#ifndef URLPARSER_TEST_CONFTEST_H
+#define URLPARSER_TEST_CONFTEST_H
 #include <filesystem>
+#include <ostream>
+#include <string>
 
 template <typename=void>
 std::string makeAbsolutePath(const std::string& relativePath) {
@@ -16,4 +19,4 @@ struct BaseData {
     }
 };
 
-#endif // MYTEST_COMMON_H
+#endif // URLPARSER_TEST_CONFTEST_H

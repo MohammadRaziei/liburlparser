@@ -264,7 +264,7 @@ For build systems that prefer plain paths over the target, `find_package` also s
 The pip package ships the C++ core as a **shared** library (`liburlparser/lib/`), so every C++ package that links it
 shares one copy at run time. Public symbols are marked `URLPARSER_API`. From FetchContent or `add_subdirectory()` you
 get a static library, unless you pass `-DURLPARSER_SHARED=ON`. If you do not need the Public Suffix List
-(`hostname::suffix()` and friends), `-DURLPARSER_WITH_PSL=OFF` drops about 340 KB and the download.
+(`hostname::suffix()` and friends), `-DURLPARSER_PSL=OFF` drops about 340 KB and the download.
 
 The same locations are available from the command line and from Python:
 

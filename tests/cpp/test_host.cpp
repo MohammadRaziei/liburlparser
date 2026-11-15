@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "urlparser.h"
-#include "common.h"
+#include "conftest.h"
 
 
 
@@ -68,6 +68,7 @@ static void check_host_row(int *utest_result, const HostData& host_data) {
     EXPECT_STREQ(host.suffix().c_str(), host_data.suffix.c_str());
 }
 
+#ifndef URLPARSER_TEST_NO_PSL  // these need the embedded Public Suffix List (URLPARSER_PSL=ON)
 UTEST(CSVHostTest, CheckPSLisLoaded){
     ASSERT_TRUE(urlparser::psl::instance().is_loaded());
 }
@@ -84,6 +85,7 @@ UTEST(CSVHostTest, HostDataInput) {
         }
     }
 }
+#endif  // URLPARSER_TEST_NO_PSL
 
 // --- str()/full_domain(): the PSL-free fast path -------------------------
 
@@ -213,6 +215,8 @@ UTEST(VersionTest, MatchesVersionMacros) {
     EXPECT_STREQ(std::string(urlparser::version::string()).c_str(), URLPARSER_VERSION_STRING);
 }
 
+#ifndef URLPARSER_TEST_NO_PSL  // these need the embedded Public Suffix List (URLPARSER_PSL=ON)
+
 // --- PSL reload: load_from_string should take effect immediately -------
 
 UTEST(HostTest, LoadPslFromStringChangesFutureLookups) {
@@ -286,6 +290,21 @@ UTEST(PslTest, SuffixOfMatchesHostnameSuffix) {
     urlparser::hostname h("example.co.uk");
     EXPECT_STREQ(p.suffix_of("example.co.uk").c_str(), h.suffix().c_str());
 }
+
+#else  // URLPARSER_TEST_NO_PSL
+
+// --- built with URLPARSER_PSL=OFF -------------------------------------
+
+UTEST(NoPslTest, NothingIsLoadedAndSuffixIsTheLastLabel) {
+    EXPECT_FALSE(urlparser::psl::instance().is_loaded());
+    EXPECT_FALSE(urlparser::url::is_psl_loaded());
+    // Without a list every host falls back to "the last label is the suffix".
+    urlparser::hostname h("www.example.co.uk");
+    EXPECT_STREQ(h.suffix().c_str(), "uk");
+    EXPECT_STREQ(h.str().c_str(), "www.example.co.uk");
+}
+
+#endif  // URLPARSER_TEST_NO_PSL
 
 // --- ipv4 ------------------------------------------------------------------
 

@@ -15,7 +15,12 @@
 // Always built at -O2/-O3 regardless of the parent build's CMAKE_BUILD_TYPE
 // (see its CMakeLists.txt target_compile_options) - unlike the correctness
 // test suite, which sometimes builds at -O0 for coverage instrumentation,
-// where a timing assertion would be meaningless.
+// where a timing assertion would be meaningless. That is also why it lives in
+// tests/perf/ and is not a utest test_*.cpp of tests/cpp/ (those are all
+// compiled into one executable).
+//
+// With -DURLPARSER_PSL=OFF the suffix lookup below is trivial, so the
+// hostname part then only guards hostname construction.
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>

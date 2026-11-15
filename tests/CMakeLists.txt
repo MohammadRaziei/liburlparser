@@ -23,6 +23,7 @@ find_program(LCOV_EXECUTABLE lcov)
 find_program(GENHTML_EXECUTABLE genhtml)
 
 add_subdirectory(${URLPARSER_TEST_SOURCE_DIR}/cpp)
+add_subdirectory(${URLPARSER_TEST_SOURCE_DIR}/perf)
 add_subdirectory(${URLPARSER_TEST_SOURCE_DIR}/python)
 
 if(TARGET urlparser_coverage_cpp AND TARGET urlparser_coverage_python)

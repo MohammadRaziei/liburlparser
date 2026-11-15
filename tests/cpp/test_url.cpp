@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "urlparser.h"
-#include "common.h"
+#include "conftest.h"
 
 
 struct UrlData : public BaseData{
@@ -88,6 +88,7 @@ static void check_url_row(int *utest_result, const UrlData& url_data) {
     EXPECT_STREQ(std::string(url.fragment()).c_str(), url_data.fragment.c_str());
 }
 
+#ifndef URLPARSER_TEST_NO_PSL  // these need the embedded Public Suffix List (URLPARSER_PSL=ON)
 UTEST(CSVUrlTest, CheckPSLisLoaded){
     ASSERT_TRUE(urlparser::psl::instance().is_loaded());
 }
@@ -104,6 +105,7 @@ UTEST(CSVUrlTest, UrlDataInput) {
         }
     }
 }
+#endif  // URLPARSER_TEST_NO_PSL
 
 // --- str(): full URL reconstruction ------------------------------------
 
@@ -166,7 +168,7 @@ UTEST(UrlTest, AbspathDropsTrailingSlashOnNonRootPath) {
     // the segment-by-segment resolver (the empty final segment after the
     // last '/' is skipped) - so a path like "/a/" was wrongly treated as
     // "already normalized" and returned unchanged instead of as "/a".
-    // Found by tests/cpp/fuzz_abspath.cpp against an independent
+    // Found by tests/cpp/test_abspath_property.cpp against an independent
     // reference implementation, not by manual inspection - kept here as
     // the specific case rather than only in the fuzzer, so a plain
     // `ctest` run catches it without a separate fuzz invocation.

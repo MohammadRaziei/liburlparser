@@ -11,9 +11,12 @@
 // production code - the point is to catch a fast-path/slow-path
 // disagreement, so the two must not share implementation.
 //
-// Not wired into CTest by default (see CMakeLists.txt: opt-in target,
-// deterministic seed by default for reproducibility, but accepts a seed
-// argument for actual fuzzing runs).
+// Runs with every test run: a fixed seed (42) and 300000 iterations take about
+// 0.2 s, so a failure is reproducible. For real fuzzing set URLPARSER_FUZZ_SEED
+// and/or URLPARSER_FUZZ_ITERATIONS in the environment, e.g.
+//   URLPARSER_FUZZ_SEED=7 URLPARSER_FUZZ_ITERATIONS=50000000 ./test_liburlparser_cpp --filter=abspath_property.*
+#include "utest.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <random>
@@ -80,16 +83,21 @@ std::string random_path(std::mt19937& rng) {
     return s;
 }
 
+unsigned long env_number(const char* name, unsigned long fallback) {
+    const char* value = std::getenv(name);
+    return (value && *value) ? std::strtoul(value, nullptr, 10) : fallback;
+}
+
 }  // namespace
 
-int main(int argc, char** argv) {
-    const unsigned seed = argc > 1 ? static_cast<unsigned>(std::strtoul(argv[1], nullptr, 10)) : 42u;
-    const int iterations = argc > 2 ? std::atoi(argv[2]) : 200000;
+UTEST(abspath_property, matches_the_reference_implementation) {
+    const unsigned seed = static_cast<unsigned>(env_number("URLPARSER_FUZZ_SEED", 42));
+    const unsigned long iterations = env_number("URLPARSER_FUZZ_ITERATIONS", 300000);
 
     std::mt19937 rng(seed);
-    int mismatches = 0;
+    unsigned long mismatches = 0;
 
-    for (int i = 0; i < iterations; ++i) {
+    for (unsigned long i = 0; i < iterations; ++i) {
         const std::string random_part = random_path(rng);
         // The URL parser always normalizes the path to start with '/'
         // (WHATWG behavior) before abspath() ever sees it - construct and
@@ -108,6 +116,6 @@ int main(int argc, char** argv) {
         }
     }
 
-    std::printf("%d iterations (seed=%u), %d mismatches\n", iterations, seed, mismatches);
-    return mismatches == 0 ? 0 : 1;
+    std::fprintf(stderr, "abspath_property: %lu iterations (seed=%u), %lu mismatches\n", iterations, seed, mismatches);
+    ASSERT_EQ(mismatches, 0ul);
 }
