@@ -411,8 +411,10 @@ call here than the non-LTO baseline. Not enabled.
 This was the single largest performance bug found in the whole project, and
 it had nothing to do with algorithms.
 
-`liburlparser` builds as a **static** library, not shared — and that
-wasn't the original design. It started as `SHARED`, and a specific call —
+`liburlparser` builds as a **static** library by default, not shared — and that
+wasn't the original design. (Since 2.3.0 the wheel ships a shared build again, with
+`URLPARSER_API` exports and `-fvisibility-inlines-hidden`, which is fix 2 below, and the
+Python extension links it instead of compiling the sources in.) It started as `SHARED`, and a specific call —
 `hostname::from_url(url, true)` inside a tight loop — was measured at
 roughly **2.4 ms per 10,000 iterations**, several times slower than it had
 any right to be. Chasing it down:

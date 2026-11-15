@@ -479,11 +479,18 @@ NB_MODULE(_urlparser_py, m) {
                     nb::arg("urlstr"))
         .def_prop_ro("protocol", &urlparser::url::protocol)
         .def_prop_ro("userinfo", &urlparser::url::userinfo)
+        // Raw (still percent-encoded) halves of userinfo, split at its first ':'.
+        .def_prop_ro("username", &urlparser::url::username)
+        .def_prop_ro("password", &urlparser::url::password)
         // Returns a Host (hostname/ipv4/ipv6, wrapped uniformly) - see
         // is_hostname()/is_ipv4()/is_ipv6()/get_*()/try_*() on Host.
         .def_prop_ro("host", &urlparser::url::host, nb::rv_policy::copy)
         .def_prop_ro("host_text", &urlparser::url::host_text)
         .def_prop_ro("port", &urlparser::url::port)
+        // port, or the scheme's default port (http 80, https 443, ws 80, wss 443, ftp 21)
+        // when the URL names none; 0 when there is neither.
+        .def_prop_ro("port_or_default", &urlparser::url::port_or_default)
+        .def_static("default_port", &urlparser::url::default_port, nb::arg("scheme"))
         .def_prop_ro("params", &urlparser::url::params)
         .def_prop_ro("search_params", [](const urlparser::url& u) {
             // Built by hand rather than via nanobind's std::unordered_map

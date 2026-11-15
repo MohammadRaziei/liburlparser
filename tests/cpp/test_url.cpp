@@ -294,3 +294,137 @@ UTEST(UrlTest, EmptyPortDefaultsToZero) {
     urlparser::url url("http://example.com:/path");
     EXPECT_EQ(url.port(), 0);
 }
+
+// --- default_port() / port_or_default() ---------------------------------
+
+UTEST(UrlTest, DefaultPortCoversTheWhatwgSpecialSchemes) {
+    EXPECT_EQ(urlparser::url::default_port("http"), 80);
+    EXPECT_EQ(urlparser::url::default_port("https"), 443);
+    EXPECT_EQ(urlparser::url::default_port("ws"), 80);
+    EXPECT_EQ(urlparser::url::default_port("wss"), 443);
+    EXPECT_EQ(urlparser::url::default_port("ftp"), 21);
+}
+
+UTEST(UrlTest, DefaultPortIsZeroForSchemesWithoutOne) {
+    EXPECT_EQ(urlparser::url::default_port("ssh"), 0);
+    EXPECT_EQ(urlparser::url::default_port("socks5"), 0);
+    EXPECT_EQ(urlparser::url::default_port("gopher"), 0);
+    EXPECT_EQ(urlparser::url::default_port(""), 0);
+    // Matched as given (protocol() already returns lowercase), not case-folded.
+    EXPECT_EQ(urlparser::url::default_port("HTTP"), 0);
+}
+
+UTEST(UrlTest, PortOrDefaultPrefersTheExplicitPort) {
+    EXPECT_EQ(urlparser::url("https://example.com:8443/").port_or_default(), 8443);
+    EXPECT_EQ(urlparser::url("http://example.com:443/").port_or_default(), 443);
+}
+
+UTEST(UrlTest, PortOrDefaultFallsBackToTheSchemeDefault) {
+    urlparser::url plain("http://example.com/");
+    EXPECT_EQ(plain.port(), 0);  // port() itself stays "not specified"
+    EXPECT_EQ(plain.port_or_default(), 80);
+    EXPECT_EQ(urlparser::url("https://example.com").port_or_default(), 443);
+    EXPECT_EQ(urlparser::url("HTTPS://Example.com/").port_or_default(), 443);
+    EXPECT_EQ(urlparser::url("example.com/path").port_or_default(), 0);
+    EXPECT_EQ(urlparser::url("gopher://example.com/").port_or_default(), 0);
+}
+
+// --- username() / password() --------------------------------------------
+
+UTEST(UrlTest, UsernameAndPasswordSplitUserinfoAtTheFirstColon) {
+    urlparser::url url("https://user:pass@example.com/");
+    EXPECT_STREQ(std::string(url.username()).c_str(), "user");
+    EXPECT_STREQ(std::string(url.password()).c_str(), "pass");
+}
+
+UTEST(UrlTest, PasswordKeepsLaterColons) {
+    urlparser::url url("https://user:a:b@example.com/");
+    EXPECT_STREQ(std::string(url.username()).c_str(), "user");
+    EXPECT_STREQ(std::string(url.password()).c_str(), "a:b");
+}
+
+UTEST(UrlTest, UsernameWithoutColonHasEmptyPassword) {
+    urlparser::url url("https://user@example.com/");
+    EXPECT_STREQ(std::string(url.username()).c_str(), "user");
+    EXPECT_TRUE(url.password().empty());
+}
+
+UTEST(UrlTest, EmptyPasswordAndEmptyUsernameAreBothAllowed) {
+    urlparser::url no_password("https://user:@example.com/");
+    EXPECT_STREQ(std::string(no_password.username()).c_str(), "user");
+    EXPECT_TRUE(no_password.password().empty());
+
+    urlparser::url no_user("https://:secret@example.com/");
+    EXPECT_TRUE(no_user.username().empty());
+    EXPECT_STREQ(std::string(no_user.password()).c_str(), "secret");
+}
+
+UTEST(UrlTest, NoUserinfoMeansEmptyUsernameAndPassword) {
+    urlparser::url url("https://example.com/");
+    EXPECT_TRUE(url.username().empty());
+    EXPECT_TRUE(url.password().empty());
+}
+
+UTEST(UrlTest, UsernameAndPasswordStayPercentEncoded) {
+    urlparser::url url("https://us%40er:p%3Aw@example.com/");
+    EXPECT_STREQ(std::string(url.username()).c_str(), "us%40er");
+    EXPECT_STREQ(std::string(url.password()).c_str(), "p%3Aw");
+    EXPECT_STREQ(urlparser::percent_codec::decode(url.username()).c_str(), "us@er");
+    EXPECT_STREQ(urlparser::percent_codec::decode(url.password()).c_str(), "p:w");
+}
+
+// --- IPv4 / IPv6 literal hosts ------------------------------------------
+
+UTEST(UrlTest, Ipv4HostWithPort) {
+    urlparser::url url("http://127.0.0.1:8080/x");
+    EXPECT_STREQ(std::string(url.host_text()).c_str(), "127.0.0.1");
+    EXPECT_EQ(url.port(), 8080);
+    EXPECT_TRUE(std::get_if<urlparser::ipv4>(&url.host().variant()) != nullptr);
+}
+
+UTEST(UrlTest, Ipv6HostKeepsItsBracketsInHostText) {
+    urlparser::url url("http://[::1]:8080/");
+    EXPECT_STREQ(std::string(url.host_text()).c_str(), "[::1]");
+    EXPECT_EQ(url.port(), 8080);
+    EXPECT_STREQ(url.abspath().c_str(), "/");
+    EXPECT_TRUE(std::get_if<urlparser::ipv6>(&url.host().variant()) != nullptr);
+}
+
+UTEST(UrlTest, Ipv6HostWithoutPort) {
+    urlparser::url url("http://[::1]/path");
+    EXPECT_STREQ(std::string(url.host_text()).c_str(), "[::1]");
+    EXPECT_EQ(url.port(), 0);
+    EXPECT_EQ(url.port_or_default(), 80);
+    EXPECT_STREQ(std::string(url.path()).c_str(), "/path");
+}
+
+UTEST(UrlTest, Ipv6HostWithUserinfoAndQuery) {
+    urlparser::url url("https://user:pw@[2001:db8::1]:8443/a?b=1");
+    EXPECT_STREQ(std::string(url.username()).c_str(), "user");
+    EXPECT_STREQ(std::string(url.password()).c_str(), "pw");
+    EXPECT_STREQ(std::string(url.host_text()).c_str(), "[2001:db8::1]");
+    EXPECT_EQ(url.port(), 8443);
+    EXPECT_STREQ(std::string(url.query()).c_str(), "b=1");
+}
+
+UTEST(UrlTest, UnknownSchemeStillParses) {
+    // The parser is scheme-agnostic: deciding which schemes a caller accepts is the caller's policy.
+    urlparser::url url("gopher://example.com:70/x");
+    EXPECT_STREQ(std::string(url.protocol()).c_str(), "gopher");
+    EXPECT_STREQ(std::string(url.host_text()).c_str(), "example.com");
+    EXPECT_EQ(url.port(), 70);
+}
+
+// --- implicit construction from std::string / const char* ---------------
+
+static std::string describe_url(const urlparser::url& u) {
+    return std::string(u.protocol()) + "|" + std::string(u.host_text()) + "|" + std::to_string(u.port_or_default());
+}
+
+UTEST(UrlTest, ConvertsImplicitlyFromStringLiteralAndStdString) {
+    EXPECT_STREQ(describe_url("https://example.com/a").c_str(), "https|example.com|443");
+    const std::string text = "http://[::1]:8080/";
+    EXPECT_STREQ(describe_url(text).c_str(), "http|[::1]|8080");
+    EXPECT_STREQ(describe_url(std::string_view("http://example.com")).c_str(), "http|example.com|80");
+    EXPECT_STREQ(describe_url(static_cast<const char*>(nullptr)).c_str(), "||0");
+}

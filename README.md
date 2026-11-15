@@ -218,7 +218,8 @@ you can see all methods in python we can use in c++ very easily
 
 ### C++
 
-Requires a C++17 compiler and CMake >= 3.19. The library is a static library plus one header (`urlparser.h`),
+Requires a C++17 compiler and CMake >= 3.19. The library is one header (`urlparser.h`) plus a static library
+(a shared one in the pip package, see below),
 and its CMake target is **`liburlparser::urlparser`** - the same name no matter how you get it:
 
 #### 1. FetchContent
@@ -257,8 +258,13 @@ For build systems that prefer plain paths over the target, `find_package` also s
 
 | Variable                 | Value                                                              |
 | ------------------------ | ------------------------------------------------------------------ |
-| `urlparser_LIB_PATH`     | full path of the compiled library (`liburlparser.a`, `urlparser.lib`, ...) |
+| `urlparser_LIB_PATH`     | full path of the compiled library (`liburlparser.so`, `.dylib`, `urlparser.lib`, ...) |
 | `urlparser_INCLUDE_PATH` | directory containing `urlparser.h`                                 |
+
+The pip package ships the C++ core as a **shared** library (`liburlparser/lib/`), so every C++ package that links it
+shares one copy at run time. Public symbols are marked `URLPARSER_API`. From FetchContent or `add_subdirectory()` you
+get a static library, unless you pass `-DURLPARSER_SHARED=ON`. If you do not need the Public Suffix List
+(`hostname::suffix()` and friends), `-DURLPARSER_WITH_PSL=OFF` drops about 340 KB and the download.
 
 The same locations are available from the command line and from Python:
 

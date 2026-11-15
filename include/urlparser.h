@@ -48,7 +48,7 @@
 //   - pyproject.toml's [tool.scikit-build.metadata.version] regex provider
 //   - version.py (bump/tag helper)
 #define URLPARSER_VERSION_MAJOR 2
-#define URLPARSER_VERSION_MINOR 2
+#define URLPARSER_VERSION_MINOR 3
 #define URLPARSER_VERSION_PATCH 0
 
 #define URLPARSER_VERSION_ENCODE(maj,min,pat) (((maj)*10000)+((min)*100)+(pat))
@@ -74,6 +74,44 @@
 //     psl.url / psl.update() in Python point at the same place the
 //     build itself downloaded from - one URL, not two to keep in sync.
 #define URLPARSER_PUBLIC_SUFFIX_LIST_URL "https://publicsuffix.org/list/public_suffix_list.dat"
+
+/**
+ * URLPARSER_API marks every public symbol of the library, so it can be built
+ * as a shared library with hidden default visibility (and as a DLL on
+ * Windows) while the public API stays reachable.
+ *
+ *   - URLPARSER_STATIC   define it when building or linking the static
+ *                        library (CMake does this for you through the
+ *                        liburlparser::urlparser target); URLPARSER_API is
+ *                        then empty.
+ *   - URLPARSER_BUILDING is defined only while compiling the shared library
+ *                        itself (dllexport on Windows).
+ *   - otherwise          consumers of the shared library get dllimport on
+ *                        Windows and default visibility elsewhere.
+ */
+#ifndef URLPARSER_API
+#  if defined(URLPARSER_STATIC)
+#    define URLPARSER_API
+#  elif defined(_WIN32) || defined(__CYGWIN__)
+#    ifdef URLPARSER_BUILDING
+#      define URLPARSER_API __declspec(dllexport)
+#    else
+#      define URLPARSER_API __declspec(dllimport)
+#    endif
+#  elif defined(__GNUC__) || defined(__clang__)
+#    define URLPARSER_API __attribute__((visibility("default")))
+#  else
+#    define URLPARSER_API
+#  endif
+#endif
+
+#ifdef _MSC_VER
+// Exported classes hold std:: members (std::string, std::optional, ...);
+// MSVC warns that they lack a dll-interface. They are only touched through
+// the exported members, so the warning is noise here.
+#  pragma warning(push)
+#  pragma warning(disable : 4251)
+#endif
 
 #include <array>
 #include <cstdint>
@@ -125,7 +163,7 @@ using query_params = std::vector<std::string>;
  * domain_name() need is deferred until one of them is first called, and
  * cached from then on.
  */
-class hostname {
+class URLPARSER_API hostname {
    public:
     /**
      * @brief Create a hostname from a URL string, without taking ownership.
@@ -258,7 +296,7 @@ namespace detail {
 class suffix_table;
 }  // namespace detail
 
-class psl {
+class URLPARSER_API psl {
    public:
     /** @brief The one, lazily-built, shared PSL instance. */
     static psl& instance() noexcept;
@@ -347,7 +385,7 @@ class psl {
  * format has edge cases (leading zeros, legacy octal/hex octets) better
  * left to a battle-tested implementation than re-derived here.
  */
-class ipv4 {
+class URLPARSER_API ipv4 {
    public:
     /** @brief Default-constructs 0.0.0.0. */
     ipv4() noexcept = default;
@@ -439,7 +477,7 @@ class ipv4 {
  * that a hand-written parser is far more likely to introduce bugs than to
  * avoid them.
  */
-class ipv6 {
+class URLPARSER_API ipv6 {
    public:
     /** @brief Default-constructs "::" (all zero). */
     ipv6() noexcept = default;
@@ -547,7 +585,7 @@ class ipv6 {
  * all; variant() gives direct access to the underlying std::variant for
  * std::visit or structured, exhaustive handling.
  */
-class host {
+class URLPARSER_API host {
    public:
     using variant_type = std::variant<hostname, ipv4, ipv6>;
 
@@ -670,7 +708,7 @@ class host {
  * automatically correct (no dangling views) with no custom copy/move logic
  * needed.
  */
-class url {
+class URLPARSER_API url {
    public:
     /**
      * @brief Check if the Public Suffix List (PSL) is loaded.
@@ -710,6 +748,18 @@ class url {
     url(std::string_view url, const bool ignore_www = DEFAULT_IGNORE_WWW);
 
     /**
+     * @brief Same as the string_view constructor. These two overloads exist so a
+     * std::string or a string literal converts to a url implicitly (one user
+     * conversion): a function taking `const urlparser::url&` can then be called
+     * as f("http://example.com/") or f(some_std_string), which the string_view
+     * constructor alone does not allow (std::string -> string_view -> url is two).
+     */
+    url(const std::string& text, const bool ignore_www = DEFAULT_IGNORE_WWW)
+        : url(std::string_view(text), ignore_www) {}
+    url(const char* text, const bool ignore_www = DEFAULT_IGNORE_WWW)
+        : url(std::string_view(text ? text : ""), ignore_www) {}
+
+    /**
      * @brief Default constructor for the url class.
      * Creates an empty URL object.
      */
@@ -730,6 +780,25 @@ class url {
     std::string_view fragment() const noexcept { return field(fragment_); }
     /** @brief The userinfo of the URL (e.g., "username:password"). */
     std::string_view userinfo() const noexcept { return field(userinfo_); }
+    /**
+     * @brief The part of userinfo() before the first ':' (the whole userinfo
+     * when it has no ':'), raw and still percent-encoded like path() and
+     * query(). Decode it with percent_codec::decode() when needed.
+     */
+    std::string_view username() const noexcept {
+        const std::string_view u = userinfo();
+        return u.substr(0, u.find(':'));
+    }
+    /**
+     * @brief The part of userinfo() after the first ':', raw and still
+     * percent-encoded; empty when userinfo() has no ':'. Decode it with
+     * percent_codec::decode() when needed.
+     */
+    std::string_view password() const noexcept {
+        const std::string_view u = userinfo();
+        const size_t colon = u.find(':');
+        return colon == std::string_view::npos ? std::string_view() : u.substr(colon + 1);
+    }
     /** @brief The raw path of the URL, exactly as it appears in the source (no dot-segment resolution - see abspath() for that). */
     std::string_view path() const noexcept { return field(path_); }
     /** @brief The path, with '.'/'..' segments resolved. */
@@ -760,6 +829,20 @@ class url {
     std::string_view host_text() const noexcept { return field(host_); }
     /** @brief The port number of the URL, or 0 if not specified. */
     int port() const noexcept { return port_; }
+    /**
+     * @brief The default port of a scheme, or 0 when the scheme has none.
+     * Covers the WHATWG "special" schemes only (http 80, https 443, ws 80,
+     * wss 443, ftp 21) - the same table normalized() uses to drop a
+     * redundant port. Policy beyond that (for example a proxy scheme such
+     * as socks5) belongs to the caller. The scheme is matched as given
+     * (lowercase, as protocol() returns it).
+     */
+    static int default_port(std::string_view scheme) noexcept;
+    /**
+     * @brief port() when the URL names one, else the default port of its
+     * scheme (see default_port()), else 0.
+     */
+    int port_or_default() const noexcept { return port_ != 0 ? port_ : default_port(protocol()); }
     /** @brief The '&'-separated query parameters, split into a vector. */
     query_params params() const noexcept;
     /**
@@ -831,7 +914,7 @@ class url {
  * wouldn't even grant any access beyond what url's own public API (used
  * here via composition) already gives.
  */
-class scp_url {
+class URLPARSER_API scp_url {
    public:
     /**
      * @brief True iff `input` matches the scp-like address shape:
@@ -895,7 +978,7 @@ using git_url = scp_url;
  * @param pairs Key/value pairs, in the order they should appear.
  * @return The encoded query string (no leading '?').
  */
-std::string build_search_params(const std::vector<std::pair<std::string, std::string>>& pairs);
+URLPARSER_API std::string build_search_params(const std::vector<std::pair<std::string, std::string>>& pairs);
 
 /**
  * @brief Convenience overload: build from a url::search_params map
@@ -905,7 +988,7 @@ std::string build_search_params(const std::vector<std::pair<std::string, std::st
  * unspecified, and not guaranteed to match the original query string's
  * key order. Use the vector<pair> overload above when order matters.
  */
-std::string build_search_params(const url::search_params& params);
+URLPARSER_API std::string build_search_params(const url::search_params& params);
 
 /**
  * @brief Convenience wrapper: url(input).normalized(). Prefer calling
@@ -921,32 +1004,32 @@ inline std::string normalize(std::string_view input) { return url(input).normali
 /**
  * @brief Output stream operator for query_params.
  */
-std::ostream& operator<<(std::ostream& os, const urlparser::query_params& dt);
+URLPARSER_API std::ostream& operator<<(std::ostream& os, const urlparser::query_params& dt);
 
 /**
  * @brief Output stream operator for url.
  */
-std::ostream& operator<<(std::ostream& os, const urlparser::url& dt);
+URLPARSER_API std::ostream& operator<<(std::ostream& os, const urlparser::url& dt);
 
 /**
  * @brief Output stream operator for hostname.
  */
-std::ostream& operator<<(std::ostream& os, const urlparser::hostname& dt);
+URLPARSER_API std::ostream& operator<<(std::ostream& os, const urlparser::hostname& dt);
 
 /**
  * @brief Output stream operator for ipv4.
  */
-std::ostream& operator<<(std::ostream& os, const urlparser::ipv4& dt);
+URLPARSER_API std::ostream& operator<<(std::ostream& os, const urlparser::ipv4& dt);
 
 /**
  * @brief Output stream operator for ipv6.
  */
-std::ostream& operator<<(std::ostream& os, const urlparser::ipv6& dt);
+URLPARSER_API std::ostream& operator<<(std::ostream& os, const urlparser::ipv6& dt);
 
 /**
  * @brief Output stream operator for the host variant (hostname/ipv4/ipv6).
  */
-std::ostream& operator<<(std::ostream& os, const urlparser::host& dt);
+URLPARSER_API std::ostream& operator<<(std::ostream& os, const urlparser::host& dt);
 
 // ============================================================================
 // IDNA (Internationalized Domain Names): Unicode <-> ASCII/Punycode.
@@ -980,7 +1063,7 @@ namespace idna {
  * @param utf8_domain The UTF-8-encoded domain/hostname to normalize.
  * @return The ASCII/Punycode form.
  */
-std::string to_ascii(std::string_view utf8_domain);
+URLPARSER_API std::string to_ascii(std::string_view utf8_domain);
 
 }  // namespace idna
 }  // namespace urlparser
@@ -1018,11 +1101,11 @@ constexpr bool contains(const character_set& set, unsigned char c) noexcept {
 
 /// RFC 3986 "unreserved" characters: A-Z a-z 0-9 - _ . ~
 /// (the default safe set for encode()).
-character_set unreserved_set();
+URLPARSER_API character_set unreserved_set();
 
 /// unreserved_set() plus '/' - the common default when encoding a full path
 /// component (mirrors Python's urllib.parse.quote(..., safe="/")).
-character_set path_safe_set();
+URLPARSER_API character_set path_safe_set();
 
 /**
  * @brief Percent-decode ("unquote") a string: every %XX triplet (two hex
@@ -1031,15 +1114,15 @@ character_set path_safe_set();
  * untouched, byte-for-byte, matching Python's urllib.parse.unquote()
  * behaviour for malformed input rather than throwing.
  */
-std::string decode(std::string_view input);
+URLPARSER_API std::string decode(std::string_view input);
 
 /**
  * @brief Percent-encode ("quote") a string: every byte not in `safe` is
  * replaced by %XX (uppercase hex). Defaults to unreserved_set() (RFC 3986
  * unreserved characters only) when no character_set is given.
  */
-std::string encode(std::string_view input,
-                    const character_set& safe = unreserved_set());
+URLPARSER_API std::string encode(std::string_view input,
+                                 const character_set& safe = unreserved_set());
 
 }  // namespace percent_codec
 }  // namespace urlparser
@@ -1077,8 +1160,12 @@ namespace urlparser {
  * returns "" for such input), not something specific to resolve() itself,
  * so it's left as-is here rather than special-cased.
  */
-std::string resolve(std::string_view base, std::string_view ref);
+URLPARSER_API std::string resolve(std::string_view base, std::string_view ref);
 
 }  // namespace urlparser
+
+#ifdef _MSC_VER
+#  pragma warning(pop)
+#endif
 
 #endif  // URLPARSER_H

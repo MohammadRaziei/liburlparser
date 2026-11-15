@@ -18,6 +18,9 @@ target_include_directories(test_liburlparser_cpp PRIVATE
 )
 
 target_link_libraries(test_liburlparser_cpp PRIVATE Threads::Threads)
+# These executables compile src/urlparser.cpp themselves (they test the code being
+# changed, not an installed library), so URLPARSER_API must stay empty for them.
+target_compile_definitions(test_liburlparser_cpp PRIVATE URLPARSER_STATIC)
 
 add_test(NAME test_liburlparser_cpp COMMAND $<TARGET_FILE:test_liburlparser_cpp>)
 
@@ -36,6 +39,7 @@ target_include_directories(perf_regression_guard PRIVATE
     ${GENERATED_HEADERS_DIR}
 )
 target_compile_options(perf_regression_guard PRIVATE -O3)
+target_compile_definitions(perf_regression_guard PRIVATE URLPARSER_STATIC)
 add_test(NAME perf_regression_guard COMMAND $<TARGET_FILE:perf_regression_guard>)
 
 # Randomized property test for url::abspath() against an independent
@@ -48,7 +52,15 @@ target_include_directories(fuzz_abspath PRIVATE
     ${PROJECT_SOURCE_DIR}/src
     ${GENERATED_HEADERS_DIR}
 )
+target_compile_definitions(fuzz_abspath PRIVATE URLPARSER_STATIC)
 add_test(NAME fuzz_abspath COMMAND $<TARGET_FILE:fuzz_abspath> 42 300000)
+
+# The only test that links the real liburlparser::urlparser target, exactly like an
+# outside consumer would. With -DURLPARSER_SHARED=ON the library is built with hidden
+# visibility, so this fails to link when a public symbol is missing URLPARSER_API.
+add_executable(link_check link_check.cpp)
+target_link_libraries(link_check PRIVATE liburlparser::urlparser)
+add_test(NAME link_check COMMAND $<TARGET_FILE:link_check>)
 
 add_custom_target(urlparser_test_cpp
     COMMAND ${CMAKE_COMMAND} -E echo "-- Running C++ tests..."

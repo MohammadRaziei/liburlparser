@@ -31,7 +31,6 @@ set(PyProject_VERSION ${PROJECT_VERSION})
 
 if (MSVC)
     add_compile_options(/EHsc)
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 if (CYGWIN OR UNIX)
     add_compile_definitions(_GNU_SOURCE)
@@ -48,6 +47,21 @@ if(DEFINED SKBUILD AND CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 else()
     set(URLPARSER_SKBUILD OFF)
 endif()
+
+# URLPARSER_SHARED: build the C++ core as a shared library instead of a static one.
+# On by default for the wheel build (the wheel ships liburlparser.so/.dylib/.dll next
+# to the Python extension, so every package that links it shares one copy at run time);
+# off otherwise, so FetchContent/add_subdirectory consumers keep getting a static
+# library. Public symbols carry URLPARSER_API (include/urlparser.h) either way.
+option(URLPARSER_SHARED "Build liburlparser as a shared library" ${URLPARSER_SKBUILD})
+
+# URLPARSER_WITH_PSL: embed the Public Suffix List (about 330 KB of data, used by
+# hostname::suffix()/domain()/subdomain() and psl). With OFF nothing is embedded: the
+# list stays empty (psl::is_loaded() is false and hostname::suffix() is just the last
+# label, "uk" for "example.co.uk"), the library is about 340 KB smaller and the
+# configure step never touches the network. Everything else (url, ipv4, ipv6,
+# percent_codec, idna, resolve) is unaffected.
+option(URLPARSER_WITH_PSL "Embed the Public Suffix List" ON)
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
@@ -74,21 +88,32 @@ elseif(BUILD_PYTHON)
 endif()
 
 
-# Fetch the Public Suffix List: tries a fresh download first every
-# configure (cached per build directory via a marker file - see
-# cmake/PublicSuffixList.cmake for why), overwriting the one real,
-# tracked copy at src/public_suffix_list.dat in place. On a failed
-# download it just warns and keeps using that existing file. The URL
-# itself lives in a single place: URLPARSER_PUBLIC_SUFFIX_LIST_URL in
-# include/urlparser.h.
-include(${PROJECT_SOURCE_DIR}/cmake/PublicSuffixList.cmake)
-fetch_public_suffix_list(
-    HEADER_FILE ${PROJECT_SOURCE_DIR}/include/urlparser.h
-    VERSION_PREFIX URLPARSER_
-    TARGET_FILE ${PROJECT_SOURCE_DIR}/src/public_suffix_list.dat
-    OUTPUT_VAR PUBLIC_SUFFIX_LIST_DAT
-    URL_OUTPUT_VAR PUBLIC_SUFFIX_LIST_URL
-)
+# Public Suffix List. With URLPARSER_WITH_PSL=ON the top-level project tries a fresh
+# download on every configure (cached per build directory via a marker file - see
+# cmake/PublicSuffixList.cmake for why), overwriting the one real, tracked copy at
+# src/public_suffix_list.dat in place; on a failed download it just warns and keeps
+# that file. The URL itself lives in a single place: URLPARSER_PUBLIC_SUFFIX_LIST_URL
+# in include/urlparser.h. When liburlparser is only a dependency (add_subdirectory,
+# FetchContent, a git submodule) it never downloads: that would rewrite a file inside
+# the consumer's source tree, so the tracked copy is embedded as it is.
+if(URLPARSER_WITH_PSL)
+    if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+        include(${PROJECT_SOURCE_DIR}/cmake/PublicSuffixList.cmake)
+        fetch_public_suffix_list(
+            HEADER_FILE ${PROJECT_SOURCE_DIR}/include/urlparser.h
+            VERSION_PREFIX URLPARSER_
+            TARGET_FILE ${PROJECT_SOURCE_DIR}/src/public_suffix_list.dat
+            OUTPUT_VAR PUBLIC_SUFFIX_LIST_DAT
+            URL_OUTPUT_VAR PUBLIC_SUFFIX_LIST_URL
+        )
+    else()
+        set(PUBLIC_SUFFIX_LIST_DAT ${PROJECT_SOURCE_DIR}/src/public_suffix_list.dat)
+    endif()
+else()
+    set(PUBLIC_SUFFIX_LIST_DAT ${CMAKE_CURRENT_BINARY_DIR}/public_suffix_list_disabled.dat)
+    file(WRITE ${PUBLIC_SUFFIX_LIST_DAT} "// VERSION: disabled (URLPARSER_WITH_PSL=OFF)\n")
+    message(STATUS "Public Suffix List: disabled (URLPARSER_WITH_PSL=OFF)")
+endif()
 
 
 file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
@@ -115,15 +140,34 @@ embed_file_as_string(
 # the Python package); a plain `cmake --install` uses the usual prefix layout.
 if(URLPARSER_SKBUILD)
     set(_urlparser_lib_dest   liburlparser/lib)
+    set(_urlparser_bin_dest   liburlparser/lib)   # a Windows DLL sits beside its import library
     set(_urlparser_inc_dest   liburlparser/include)
     set(_urlparser_cmake_dest liburlparser/cmake)
 else()
     set(_urlparser_lib_dest   lib)
+    set(_urlparser_bin_dest   bin)
     set(_urlparser_inc_dest   include)
     set(_urlparser_cmake_dest lib/cmake/liburlparser)
 endif()
 
-add_library(urlparser STATIC ${SOURCES})
+if(URLPARSER_SHARED)
+    add_library(urlparser SHARED ${SOURCES})
+    # dllexport while compiling the library itself; consumers get dllimport.
+    target_compile_definitions(urlparser PRIVATE URLPARSER_BUILDING)
+    if(NOT URLPARSER_SKBUILD)
+        # A plain install gets the usual liburlparser.so.2 -> liburlparser.so.2.3.0
+        # chain; the wheel keeps one plain file (no symlinks inside a wheel).
+        set_target_properties(urlparser PROPERTIES
+            VERSION ${PROJECT_VERSION}
+            SOVERSION ${PROJECT_VERSION_MAJOR})
+    endif()
+else()
+    add_library(urlparser STATIC ${SOURCES})
+    # Static: URLPARSER_API must be empty for everyone who compiles against the
+    # header, so the definition travels with the target (and its installed export).
+    target_compile_definitions(urlparser PUBLIC URLPARSER_STATIC)
+endif()
+message(STATUS "liburlparser: URLPARSER_SHARED=${URLPARSER_SHARED} URLPARSER_WITH_PSL=${URLPARSER_WITH_PSL}")
 # The public target is `liburlparser::urlparser` - the same name whether the
 # library comes from FetchContent/add_subdirectory (this alias) or from an
 # installed package (find_package(liburlparser), exported below).
@@ -186,6 +230,17 @@ if(DEFINED PYTHON_PROJECT_NAME)
 
     target_link_libraries(${NB_MODULE} PRIVATE urlparser)
 
+    if(URLPARSER_SHARED)
+        # In the wheel the module sits in liburlparser/ and the library in
+        # liburlparser/lib/ (see _urlparser_lib_dest). On Windows there is no rpath:
+        # liburlparser/__init__.py adds that directory with os.add_dll_directory().
+        if(APPLE)
+            set_target_properties(${NB_MODULE} PROPERTIES INSTALL_RPATH "@loader_path/lib")
+        elseif(UNIX)
+            set_target_properties(${NB_MODULE} PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+        endif()
+    endif()
+
     if(URLPARSER_SKBUILD)
         install(TARGETS ${NB_MODULE}
                 CONFIGURATIONS Release
@@ -202,7 +257,8 @@ endif()
 include(CMakePackageConfigHelpers)
 install(TARGETS urlparser EXPORT liburlparserTargets
     ARCHIVE DESTINATION ${_urlparser_lib_dest}
-    LIBRARY DESTINATION ${_urlparser_lib_dest})
+    LIBRARY DESTINATION ${_urlparser_lib_dest}
+    RUNTIME DESTINATION ${_urlparser_bin_dest})
 install(DIRECTORY include/ DESTINATION ${_urlparser_inc_dest})
 install(EXPORT liburlparserTargets
     FILE liburlparserTargets.cmake
@@ -224,7 +280,7 @@ file(GENERATE
     CONTENT
 "# Generated by liburlparser's CMakeLists.txt - do not edit.
 get_filename_component(urlparser_LIB_PATH
-    \"\${CMAKE_CURRENT_LIST_DIR}/${_urlparser_rel_lib}/$<TARGET_FILE_NAME:urlparser>\" ABSOLUTE)
+    \"\${CMAKE_CURRENT_LIST_DIR}/${_urlparser_rel_lib}/$<TARGET_LINKER_FILE_NAME:urlparser>\" ABSOLUTE)
 get_filename_component(urlparser_INCLUDE_PATH
     \"\${CMAKE_CURRENT_LIST_DIR}/${_urlparser_rel_inc}\" ABSOLUTE)
 ")

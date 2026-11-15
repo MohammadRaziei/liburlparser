@@ -771,19 +771,18 @@ const std::string& urlparser::url::abspath() const noexcept {
     return *abspath_cache_;
 }
 
-namespace {
 // WHATWG URL "special scheme" default ports - a URL like
 // "https://host:443/..." and "https://host/..." are the same origin, so
 // normalized() omits the port when it matches the scheme's default (an
 // explicit non-default port, or any scheme not in this list - "ssh" isn't
-// a WHATWG special scheme, for one - is always kept).
-int default_port_for_scheme(std::string_view scheme) noexcept {
+// a WHATWG special scheme, for one - is always kept). Also public as
+// url::default_port() / url::port_or_default().
+int urlparser::url::default_port(std::string_view scheme) noexcept {
     if (scheme == "http" || scheme == "ws") return 80;
     if (scheme == "https" || scheme == "wss") return 443;
     if (scheme == "ftp") return 21;
     return 0;
 }
-}  // namespace
 
 std::string urlparser::url::normalized() const {
     std::string result;
@@ -817,7 +816,7 @@ std::string urlparser::url::normalized() const {
         result.append(ascii_host);
     }
 
-    if (port_ != 0 && port_ != default_port_for_scheme(scheme)) {
+    if (port_ != 0 && port_ != default_port(scheme)) {
         result.append(":");
         result.append(std::to_string(port_));
     }

@@ -8,6 +8,37 @@ All notable changes to liburlparser are documented here. The format follows
 The entries up to 2.1.0 were written from the git history and the release tags. Since the commit messages of the 1.x
 releases are short, those entries are brief.
 
+## [2.3.0] - 2026-11-15
+
+### Added
+- **`URLPARSER_API`**, the export macro for every public symbol in `urlparser.h` (classes, `operator<<`, the free
+  functions of `percent_codec`, `idna`, `resolve` and `build_search_params`). The library can now be built as a shared
+  library with hidden default visibility (and as a DLL on Windows). `URLPARSER_STATIC` makes it expand to nothing;
+  CMake defines it for you.
+- **`URLPARSER_SHARED`** CMake option. It is ON for the wheel build, so the wheel now ships a shared
+  `liburlparser.so` / `.dylib` / `.dll` in `liburlparser/lib/`, and several C++ packages that link it share one copy
+  of the parser at run time. It is OFF otherwise, so `add_subdirectory()` and `FetchContent` keep getting a static
+  library. The extension module finds the library through `$ORIGIN/lib` (`@loader_path/lib` on macOS); on Windows
+  `liburlparser/__init__.py` calls `os.add_dll_directory()`.
+- **`URLPARSER_WITH_PSL`** CMake option (default ON). OFF embeds no Public Suffix List and never downloads it: the
+  library is about 340 KB smaller and `hostname::suffix()` is just the last label.
+- `url::default_port(scheme)` and `url::port_or_default()` (also in Python as `Url.default_port()` and
+  `Url.port_or_default`). The table is the one `normalized()` already used (http 80, https 443, ws 80, wss 443, ftp 21).
+- `url::username()` and `url::password()` (also in Python): the two halves of `userinfo()`, raw and still
+  percent-encoded.
+- `url(const std::string&)` and `url(const char*)` constructors next to the `string_view` one. A `std::string` or a string
+  literal now converts to a `url` implicitly, so a function taking `const urlparser::url&` can be called as
+  `f("http://example.com/")` (before, that was two user conversions and did not compile; `url u(some_string)` always did).
+- `link_check` test: links the real `liburlparser::urlparser` target. With `-DURLPARSER_SHARED=ON` it fails to link
+  when a public symbol lacks `URLPARSER_API`.
+
+### Changed
+- The Public Suffix List is fetched at configure time only when liburlparser is the top-level project. As a
+  dependency it embeds the tracked copy and no longer rewrites a file inside the consumer's source tree.
+- `CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS` is gone, the export macro replaces it.
+- A shared build is only as fast as the static one because of `-fvisibility-inlines-hidden` (see ARCHITECTURE.md,
+  section 7). The CMake target keeps that flag.
+
 ## [2.2.0] - 2026-11-09
 
 ### Changed

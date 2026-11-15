@@ -113,3 +113,44 @@ def test_url_host_returns_independent_copy():
     v4 += 5
     assert str(v4) == "192.168.1.6"
     assert str(url.host) == "192.168.1.1"
+
+
+@pytest.mark.parametrize(
+    ("scheme", "port"),
+    [("http", 80), ("https", 443), ("ws", 80), ("wss", 443), ("ftp", 21), ("ssh", 0), ("socks5", 0), ("", 0)],
+)
+def test_default_port(scheme, port):
+    assert Url.default_port(scheme) == port
+
+
+def test_port_or_default():
+    assert Url("https://example.com:8443/").port_or_default == 8443
+    plain = Url("http://example.com/")
+    assert plain.port == 0
+    assert plain.port_or_default == 80
+    assert Url("gopher://example.com/").port_or_default == 0
+
+
+@pytest.mark.parametrize(
+    ("text", "username", "password"),
+    [
+        ("https://user:pass@example.com/", "user", "pass"),
+        ("https://user:a:b@example.com/", "user", "a:b"),
+        ("https://user@example.com/", "user", ""),
+        ("https://user:@example.com/", "user", ""),
+        ("https://:secret@example.com/", "", "secret"),
+        ("https://example.com/", "", ""),
+        ("https://us%40er:p%3Aw@example.com/", "us%40er", "p%3Aw"),
+    ],
+)
+def test_username_and_password(text, username, password):
+    url = Url(text)
+    assert url.username == username
+    assert url.password == password
+
+
+def test_ipv6_literal_host():
+    url = Url("http://[::1]:8080/")
+    assert url.host_text == "[::1]"
+    assert url.port == 8080
+    assert url.host.is_ipv6()
