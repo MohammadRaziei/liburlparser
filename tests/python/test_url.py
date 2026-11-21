@@ -5,8 +5,7 @@ import csv
 from pathlib import Path
 
 import pytest
-
-from liburlparser import Host, IPv4, IPv6, Url
+from liburlparser import IPv4, IPv6, Url
 
 with (Path(__file__).parent.parent / "data" / "url_data.csv").open("r") as f:
     reader = csv.DictReader(f)
@@ -44,6 +43,14 @@ def test_params_splits_on_ampersand():
 def test_abspath_resolves_dot_dot():
     url = Url("https://example.com/a/b/../c")
     assert url.abspath == "/a/c"
+
+
+def test_abspath_keeps_the_trailing_slash():
+    assert Url("https://example.com/a/").abspath == "/a/"
+    assert Url("https://example.com/a").abspath == "/a"
+    assert Url("https://example.com/a/b/..").abspath == "/a/"
+    assert Url("https://example.com/a/b/.").abspath == "/a/b/"
+    assert Url("https://example.com/a/..").abspath == "/"
 
 
 def test_equality_compares_by_value():

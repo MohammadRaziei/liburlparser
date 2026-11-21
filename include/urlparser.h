@@ -49,7 +49,7 @@
 //   - version.py (bump/tag helper)
 #define URLPARSER_VERSION_MAJOR 2
 #define URLPARSER_VERSION_MINOR 3
-#define URLPARSER_VERSION_PATCH 0
+#define URLPARSER_VERSION_PATCH 1
 
 #define URLPARSER_VERSION_ENCODE(maj,min,pat) (((maj)*10000)+((min)*100)+(pat))
 #define URLPARSER_VERSION \
@@ -801,7 +801,10 @@ class URLPARSER_API url {
     }
     /** @brief The raw path of the URL, exactly as it appears in the source (no dot-segment resolution - see abspath() for that). */
     std::string_view path() const noexcept { return field(path_); }
-    /** @brief The path, with '.'/'..' segments resolved. */
+    /**
+     * @brief The path, with '.'/'..' segments resolved and repeated '/' collapsed. A trailing '/' is kept (RFC 3986 5.2.4):
+     * "/a/" stays "/a/", and a path that ends in a dot segment ends in '/' too ("/a/b/.." is "/a/").
+     */
     const std::string& abspath() const noexcept;
     /**
      * @brief The URL's canonical, normalized form (roughly WHATWG URL
@@ -812,13 +815,12 @@ class URLPARSER_API url {
      * IDNA-normalized to ASCII/Punycode (see idna::to_ascii - so a Unicode
      * host normalizes the same as its already-ASCII form), and the path
      * with '.'/'..' segments resolved (str() keeps the raw path; this
-     * uses abspath() instead - so this also inherits abspath()'s own
-     * fuzz-tested behavior of trimming a trailing '/' on a non-root path
-     * ("/a/" -> "/a") and collapsing repeated slashes ("/a//b" -> "/a/b"),
-     * both deliberate there (see AbspathDropsTrailingSlashOnNonRootPath /
-     * AbspathCollapsesRepeatedSlashes in tests/cpp/test_url.cpp) but a
-     * real, known difference from ada's normalize_url(), which keeps both
-     * as-is). Query and fragment are kept exactly as given - unlike a
+     * uses abspath() instead - so this also inherits abspath()'s
+     * collapsing of repeated slashes ("/a//b" -> "/a/b"), deliberate there
+     * (see AbspathCollapsesRepeatedSlashes in tests/cpp/test_url.cpp) but a
+     * real, known difference from ada's normalize_url(), which keeps them
+     * as-is. A trailing '/' is kept, as in ada: "/a" and "/a/" stay two
+     * different paths. Query and fragment are kept exactly as given - unlike a
      * path, there's no single canonical form for a query string's
      * parameter order to collapse to, so this doesn't try.
      * Leading/trailing whitespace around the *original input* is already

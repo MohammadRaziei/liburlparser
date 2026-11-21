@@ -61,6 +61,11 @@ std::string reference_abspath(const std::string& path) {
     };
     for (; index != std::string::npos; previous = index + 1, index = path.find('/', index + 1)) emit(previous, index);
     emit(previous, path.size());
+
+    // RFC 3986 5.2.4: a trailing '/' stays, and a last segment of "." or ".." leaves a '/' behind.
+    const std::string last = path.substr(path.rfind('/') == std::string::npos ? 0 : path.rfind('/') + 1);
+    const bool directory = !path.empty() && (path.back() == '/' || last == "." || last == "..");
+    if (directory && !result.empty() && result.back() != '/') result.push_back('/');
     return result;
 }
 

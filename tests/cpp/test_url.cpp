@@ -161,23 +161,37 @@ UTEST(UrlTest, AbspathIsPureNotMutating) {
     EXPECT_STREQ(url.str().c_str(), before.c_str());
 }
 
-UTEST(UrlTest, AbspathDropsTrailingSlashOnNonRootPath) {
-    // Regression test: path_is_already_normalized()'s fast path originally
-    // only checked for '//' and '.'/'..' segments, missing that a bare
-    // trailing '/' on a path with NEITHER of those also gets dropped by
-    // the segment-by-segment resolver (the empty final segment after the
-    // last '/' is skipped) - so a path like "/a/" was wrongly treated as
-    // "already normalized" and returned unchanged instead of as "/a".
-    // Found by tests/cpp/test_abspath_property.cpp against an independent
-    // reference implementation, not by manual inspection - kept here as
-    // the specific case rather than only in the fuzzer, so a plain
-    // `ctest` run catches it without a separate fuzz invocation.
-    urlparser::url url("https://example.com/a/");
-    EXPECT_STREQ(url.abspath().c_str(), "/a");
+UTEST(UrlTest, AbspathKeepsTrailingSlash) {
+    // "/dir" and "/dir/" are two different resources (a server may serve an
+    // index for one and redirect the other), and RFC 3986 section 5.2.4 and
+    // the WHATWG URL standard both keep the trailing '/'. It used to be
+    // dropped, which made a client ask for "/dir" when the URL said "/dir/".
+    EXPECT_STREQ(urlparser::url("https://example.com/a/").abspath().c_str(), "/a/");
+    EXPECT_STREQ(urlparser::url("https://example.com/a/b/").abspath().c_str(), "/a/b/");
+    EXPECT_STREQ(urlparser::url("https://example.com/a").abspath().c_str(), "/a");
+    EXPECT_STREQ(urlparser::url("https://example.com/a/b.txt").abspath().c_str(), "/a/b.txt");
+}
+
+UTEST(UrlTest, AbspathKeepsTheDirectoryAfterADotSegment) {
+    // A path that ends in "." or ".." names a directory, so the result ends in '/' (RFC 3986 section 5.2.4).
+    EXPECT_STREQ(urlparser::url("https://example.com/a/b/..").abspath().c_str(), "/a/");
+    EXPECT_STREQ(urlparser::url("https://example.com/a/b/.").abspath().c_str(), "/a/b/");
+    EXPECT_STREQ(urlparser::url("https://example.com/a/b/../").abspath().c_str(), "/a/");
+    EXPECT_STREQ(urlparser::url("https://example.com/a/..").abspath().c_str(), "/");
+    EXPECT_STREQ(urlparser::url("https://example.com/..").abspath().c_str(), "/");
+    EXPECT_STREQ(urlparser::url("https://example.com/a//").abspath().c_str(), "/a/");  // repeated '/' still collapse
+}
+
+UTEST(UrlTest, NormalizedKeepsTheTrailingSlash) {
+    // normalized() builds its path from abspath(), so "/a" and "/a/" stay two different normalized URLs, as in ada.
+    EXPECT_STREQ(urlparser::url("HTTPS://Example.com:443/a/").normalized().c_str(),
+                 urlparser::url("https://example.com/a/").normalized().c_str());
+    EXPECT_TRUE(urlparser::url("https://example.com/a/").normalized() != urlparser::url("https://example.com/a").normalized());
+    EXPECT_TRUE(urlparser::url("https://example.com/a/b/../").normalized().find("/a/") != std::string::npos);
 }
 
 UTEST(UrlTest, AbspathKeepsBareRootSlash) {
-    // The trailing-slash trim above must not eat the root itself.
+    // The root stays a single '/'.
     urlparser::url url("https://example.com/");
     EXPECT_STREQ(url.abspath().c_str(), "/");
 }

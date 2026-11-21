@@ -700,12 +700,6 @@ namespace {
 // check ada's parse_prepared_path() does before its own path parser.
 bool path_is_already_normalized(std::string_view path) noexcept {
     if (path.find("//") != std::string_view::npos) return false;  // collapses to '/'
-    // A trailing '/' on anything longer than the bare root ("/a/" -> "/a")
-    // is dropped by the segment-by-segment resolver below (the final,
-    // empty segment after the last '/' is skipped) - a path with no dots
-    // at all can still need this trim, so it has to be checked separately
-    // from the dot-segment logic that follows.
-    if (path.size() > 1 && path.back() == '/') return false;
     const size_t dot = path.find('.');
     if (dot == std::string_view::npos) return true;  // no dots at all - nothing to resolve
     if (!path.empty() && path[0] == '.') return false;  // leading "." or ".." segment
@@ -726,9 +720,12 @@ bool path_is_already_normalized(std::string_view path) noexcept {
 const std::string& urlparser::url::abspath() const noexcept {
     if (abspath_cache_.has_value()) return *abspath_cache_;
 
-    // Resolves '.'/'..' path segments, the way a filesystem path resolver
-    // would - a pure computation (no mutation of any *other* internal
-    // state) - computed once and cached in abspath_cache_ from here on.
+    // Resolves '.'/'..' path segments - a pure computation (no mutation of
+    // any *other* internal state) - computed once and cached in
+    // abspath_cache_ from here on. Like RFC 3986 section 5.2.4 (and the
+    // WHATWG URL standard) a trailing '/' is kept: "/dir" and "/dir/" are two
+    // different resources, so "/a/" stays "/a/", and a path that ends in a dot
+    // segment names a directory too ("/a/b/.." -> "/a/", "/a/b/." -> "/a/b/").
     const std::string_view path = field(path_);
 
     if (path_is_already_normalized(path)) {
@@ -766,6 +763,11 @@ const std::string& urlparser::url::abspath() const noexcept {
         emit_segment(previous, index);
     }
     emit_segment(previous, path.size());
+
+    const bool names_a_directory = !path.empty() && (path.back() == '/' || path == "." || path == ".." ||
+                                                     (path.size() >= 2 && path.compare(path.size() - 2, 2, "/.") == 0) ||
+                                                     (path.size() >= 3 && path.compare(path.size() - 3, 3, "/..") == 0));
+    if (names_a_directory && !result.empty() && result.back() != '/') result.append(1, '/');
 
     abspath_cache_ = std::move(result);
     return *abspath_cache_;
@@ -826,8 +828,9 @@ std::string urlparser::url::normalized() const {
     // of already-parsed fields. Known, documented differences from ada's
     // normalize_url() here: abspath()'s existing (separately-tested, so
     // left as-is) dot-segment algorithm also collapses empty segments -
-    // "//a//b" -> "/a/b" - and trims a trailing '/' on a non-root path -
-    // "/a/" -> "/a" - where ada's leaves both alone.
+    // "//a//b" -> "/a/b" - where ada's leaves them alone. A trailing '/'
+    // is kept ("/a/" stays "/a/"), as in ada: "/a" and "/a/" are two
+    // different resources.
     const std::string& path = abspath();
     if (path.empty()) {
         if (!result.empty()) result.append("/");
@@ -2165,9 +2168,9 @@ ParsedReference parse_reference(std::string_view ref) {
 // RFC 3986 §5.3 merge(): the base's path up to (and including) its last
 // '/' - i.e. its "directory" - with the reference's path appended. This
 // needs the base's *raw* path (trailing '/' intact - it's what makes a
-// path look like "a directory" to merge into), not abspath() (which trims
-// a trailing '/', since that trim is only correct for a path's own final,
-// standalone form - not as an input to merging).
+// path look like "a directory" to merge into), not abspath() (which has
+// already resolved the dot segments and collapsed repeated slashes, while
+// merge() works on the text as written and removes dot segments afterwards).
 std::string merge_paths(bool base_has_authority, std::string_view base_path,
                          std::string_view ref_path) {
     if (base_has_authority && base_path.empty()) {

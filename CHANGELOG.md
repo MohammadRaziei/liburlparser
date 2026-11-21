@@ -8,6 +8,23 @@ All notable changes to liburlparser are documented here. The format follows
 The entries up to 2.1.0 were written from the git history and the release tags. Since the commit messages of the 1.x
 releases are short, those entries are brief.
 
+## [2.3.1] - 2026-11-21
+
+### Fixed
+- **`url::abspath()` keeps the trailing `/`.** It used to drop it (`/dir/` came back as `/dir`), which turned a
+  directory into a file name and made a client that builds its request line from `abspath()` ask for `/dir` when the
+  URL said `/dir/`. RFC 3986 section 5.2.4 and the WHATWG URL standard keep it, and `/dir` and `/dir/` are different
+  resources. Now `/a/` stays `/a/`, and a path that ends in a dot segment ends in `/` too: `/a/b/..` is `/a/` and
+  `/a/b/.` is `/a/b/`. Repeated slashes still collapse (`/a//` is `/a/`), and the root is still `/`. The fast path
+  `path_is_already_normalized()` no longer treats a trailing `/` as something to trim, so the common case stays a straight
+  copy. The old `AbspathDropsTrailingSlashOnNonRootPath` test is replaced by `AbspathKeepsTrailingSlash` and
+  `AbspathKeepsTheDirectoryAfterADotSegment`, and the reference implementation in `test_abspath_property.cpp` follows
+  the same rule.
+- **`url::normalized()` follows.** It builds its path from `abspath()`, so `https://h/a/` normalizes to `https://h/a/`
+  and no longer equals the normalization of `https://h/a`. That was a documented difference from ada's
+  `normalize_url()`; for the trailing slash it is gone (collapsing repeated slashes is still a difference). Code that used
+  `normalized()` as a key and wants `/a` and `/a/` to be the same must trim the slash itself.
+
 ## [2.3.0] - 2026-11-15
 
 ### Added
