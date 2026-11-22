@@ -135,6 +135,46 @@ UTEST(UrlTest, StrOmitsEmptyPathAsRoot) {
 
 // --- abspath(): '.'/'..' segment resolution, pure (no side effects) ----
 
+// A scheme that is not in USES_NETLOC (like "git+https", "direct", "myapp") still has an authority when the text had a host, a
+// user or a port. str() and normalized() used to write only ":" for it and glue the host to the scheme ("direct://x" came back
+// as "direct:x/"), which parses again as a *path*: the url did not survive its own str().
+UTEST(UrlTest, StrKeepsTheSlashesOfAnUnlistedSchemeThatHasAHost) {
+    EXPECT_STREQ(urlparser::url("direct://x").str().c_str(), "direct://x/");
+    EXPECT_STREQ(urlparser::url("myapp://host/path?q=1#f").str().c_str(), "myapp://host/path?q=1#f");
+    EXPECT_STREQ(urlparser::url("myapp://u:p@host:8080/p").str().c_str(), "myapp://u:p@host:8080/p");
+}
+
+UTEST(UrlTest, StrKeepsTheSlashesOfAnUnlistedSchemeThatHasOnlyAUserOrAPort) {
+    EXPECT_STREQ(urlparser::url("direct://:3128").str().c_str(), "direct://:3128/");
+    EXPECT_STREQ(urlparser::url("direct://u@").str().c_str(), "direct://u@/");
+}
+
+UTEST(UrlTest, AnUnlistedSchemeWithAHostSurvivesItsOwnStr) {
+    for (const char* text : {"direct://x", "direct://x/p", "myapp://u:p@host:8080/p?q#f", "direct://:3128", "direct://u@"}) {
+        urlparser::url first(text);
+        urlparser::url again(first.str());
+        EXPECT_STREQ(std::string(again.protocol()).c_str(), std::string(first.protocol()).c_str());
+        EXPECT_STREQ(std::string(again.host_text()).c_str(), std::string(first.host_text()).c_str());
+        EXPECT_EQ(again.port(), first.port());
+        EXPECT_STREQ(std::string(again.username()).c_str(), std::string(first.username()).c_str());
+        // str() writes "/" for an empty path when there is an authority (StrOmitsEmptyPathAsRoot), listed scheme or not
+        const std::string expected_path = first.path().empty() ? "/" : std::string(first.path());
+        EXPECT_STREQ(std::string(again.path()).c_str(), expected_path.c_str());
+    }
+}
+
+UTEST(UrlTest, NormalizedKeepsTheSlashesOfAnUnlistedSchemeThatHasAHost) {
+    EXPECT_STREQ(urlparser::url("direct://x").normalized().c_str(), "direct://x/");
+    EXPECT_STREQ(urlparser::url("MyApp://Host:8080/a/../b").normalized().c_str(), "myapp://host:8080/b");
+}
+
+// What did not change: a scheme without an authority is still written with ":" alone, and the listed ones with "://".
+UTEST(UrlTest, StrStillWritesAColonAloneForAnUnlistedSchemeWithoutAnAuthority) {
+    EXPECT_STREQ(urlparser::url("mailto:someone@example.com").str().c_str(), "mailto:someone@example.com");
+    EXPECT_STREQ(urlparser::url("tel:+123456").str().c_str(), "tel:+123456");
+    EXPECT_STREQ(urlparser::url("http://h").str().c_str(), "http://h/");
+}
+
 UTEST(UrlTest, AbspathResolvesDotDot) {
     urlparser::url url("https://example.com/a/b/../c");
     EXPECT_STREQ(url.abspath().c_str(), "/a/c");

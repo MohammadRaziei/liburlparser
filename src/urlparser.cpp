@@ -432,6 +432,14 @@ const std::set<std::string, std::less<>> USES_PARAMS = {
     "",   "ftp",  "hdl",   "http", "https", "imap", "mms",
     "prospero", "rtsp", "rtspu", "sftp", "shttp", "sip", "sips", "tel"};
 
+// What follows the scheme when a url is written back: "://" for a scheme in USES_NETLOC, and also for any other scheme whose
+// text had an authority (a host, a user or a port); ":" alone for the rest ("mailto:a@b", "tel:+123"). Without the second
+// rule "direct://x" came back as "direct:x/", which parses again as a path, so the url did not survive its own str().
+// (An empty authority, "direct://", is not recorded by the parser and is still written as "direct:/".)
+const char* scheme_separator(std::string_view scheme, bool has_authority) {
+    return has_authority || USES_NETLOC.find(scheme) != USES_NETLOC.end() ? "://" : ":";
+}
+
 const std::set<std::string, std::less<>> KNOWN_PROTOCOLS = {
     "",    "file",  "ftp",     "git",  "git+ssh", "gopher", "hdl",
     "http", "https", "imap",   "mms",  "nfs",     "nntp",   "prospero",
@@ -640,9 +648,10 @@ std::string urlparser::url::str() const noexcept {
     const std::string_view query = field(query_);
     const std::string_view fragment = field(fragment_);
 
+    const bool has_authority = !host.empty() || !userinfo.empty() || port_ != 0;
     if (!scheme.empty()) {
         result.append(scheme);
-        result.append(USES_NETLOC.find(scheme) != USES_NETLOC.end() ? "://" : ":");
+        result.append(scheme_separator(scheme, has_authority));
     } else if (!host.empty()) {
         result.append("//");
     }
@@ -802,9 +811,10 @@ std::string urlparser::url::normalized() const {
     // here. IDNA is the one host transform str() doesn't already apply.
     const std::string ascii_host = urlparser::idna::to_ascii(host);
 
+    const bool has_authority = !host.empty() || !userinfo.empty() || port_ != 0;
     if (!scheme.empty()) {
         result.append(scheme);
-        result.append(USES_NETLOC.find(scheme) != USES_NETLOC.end() ? "://" : ":");
+        result.append(scheme_separator(scheme, has_authority));
     } else if (!host.empty()) {
         result.append("//");
     }

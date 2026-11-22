@@ -8,6 +8,20 @@ All notable changes to liburlparser are documented here. The format follows
 The entries up to 2.1.0 were written from the git history and the release tags. Since the commit messages of the 1.x
 releases are short, those entries are brief.
 
+## [Unreleased]
+
+### Fixed
+- **`url::str()` and `url::normalized()` keep the `//` of a scheme that is not in the netloc table, when the url has an
+  authority.** They wrote `scheme:` for every scheme outside `USES_NETLOC` and glued the host to it, so `redis://h:6379/0`
+  came back as `redis:h:6379/0`, `postgres://u:p@h/db` as `postgres:u:p@h/db`, and `s3://bucket/key` as `s3:bucket/key`:
+  the text parsed again as a *path*, and the host was lost. Python's `urlunsplit`, which the table is copied from, writes
+  `//` whenever the netloc is not empty, and so does the WHATWG serializer. Now `//` follows the scheme when it is listed
+  **or** when the url has a host, a user or a port (a helper `scheme_separator()` shared by both functions). A scheme
+  without an authority is written as before: `mailto:a@b.c` and `tel:+123` keep a lone `:`. Not changed: an empty
+  authority (`direct://`) is not recorded by the parser, so it is still written `direct:/`. Five tests in `test_url.cpp`
+  (`StrKeepsTheSlashesOfAnUnlistedScheme...`, `AnUnlistedSchemeWithAHostSurvivesItsOwnStr`,
+  `NormalizedKeepsTheSlashesOfAnUnlistedScheme...`, `StrStillWritesAColonAlone...`).
+
 ## [2.3.1] - 2026-11-21
 
 ### Fixed
