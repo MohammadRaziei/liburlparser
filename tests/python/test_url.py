@@ -5,7 +5,7 @@ import csv
 from pathlib import Path
 
 import pytest
-from liburlparser import IPv4, IPv6, Url
+from liburlparser import IPv4, IPv6, Url, bare_host
 
 with (Path(__file__).parent.parent / "data" / "url_data.csv").open("r") as f:
     reader = csv.DictReader(f)
@@ -124,18 +124,20 @@ def test_url_host_returns_independent_copy():
 
 @pytest.mark.parametrize(
     ("scheme", "port"),
-    [("http", 80), ("https", 443), ("ws", 80), ("wss", 443), ("ftp", 21), ("ssh", 0), ("socks5", 0), ("", 0)],
+    [("http", 80), ("https", 443), ("ws", 80), ("wss", 443), ("ftp", 21), ("socks5", 1080), ("socks5h", 1080), ("ssh", 0), ("", 0)],
 )
 def test_default_port(scheme, port):
     assert Url.default_port(scheme) == port
 
 
-def test_port_or_default():
-    assert Url("https://example.com:8443/").port_or_default == 8443
+def test_effective_port():
+    assert Url("https://example.com:8443/").effective_port == 8443
     plain = Url("http://example.com/")
     assert plain.port == 0
-    assert plain.port_or_default == 80
-    assert Url("gopher://example.com/").port_or_default == 0
+    assert plain.effective_port == 80
+    assert Url("gopher://example.com/").effective_port == 0
+    assert Url("socks5://proxy.local").effective_port == 1080
+    assert Url("socks5h://proxy.local:9050").effective_port == 9050
 
 
 @pytest.mark.parametrize(
@@ -154,6 +156,14 @@ def test_username_and_password(text, username, password):
     url = Url(text)
     assert url.username == username
     assert url.password == password
+
+
+@pytest.mark.parametrize(
+    "text, bare",
+    [("[::1]", "::1"), ("[2001:db8::1]", "2001:db8::1"), ("::1", "::1"), ("127.0.0.1", "127.0.0.1"), ("example.com", "example.com"), ("", ""), ("[::1", "[::1")],
+)
+def test_bare_host_on_a_host_held_as_text(text, bare):
+    assert bare_host(text) == bare
 
 
 def test_ipv6_literal_host():

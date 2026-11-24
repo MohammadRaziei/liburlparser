@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import warnings
 
-from ._urlparser_py import Host, Hostname, IPv4, IPv6, Psl, ScpUrl, Url, __doc__, __version__, quote, unquote, resolve, normalize, build_search_params
+from ._urlparser_py import Host, Hostname, IPv4, IPv6, Psl, ScpUrl, Url, __doc__, __version__, quote, unquote, resolve, normalize, build_search_params, bare_host
 
 # Alias: most callers reaching for ScpUrl are parsing a git remote
 # specifically - the class itself is named for the underlying address

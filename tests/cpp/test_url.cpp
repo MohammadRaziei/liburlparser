@@ -351,7 +351,7 @@ UTEST(UrlTest, EmptyPortDefaultsToZero) {
     EXPECT_EQ(url.port(), 0);
 }
 
-// --- default_port() / port_or_default() ---------------------------------
+// --- default_port() / effective_port() ---------------------------------
 
 UTEST(UrlTest, DefaultPortCoversTheWhatwgSpecialSchemes) {
     EXPECT_EQ(urlparser::url::default_port("http"), 80);
@@ -361,9 +361,23 @@ UTEST(UrlTest, DefaultPortCoversTheWhatwgSpecialSchemes) {
     EXPECT_EQ(urlparser::url::default_port("ftp"), 21);
 }
 
+UTEST(UrlTest, DefaultPortCoversTheSocksProxySchemes) {
+    EXPECT_EQ(urlparser::url::default_port("socks5"), 1080);
+    EXPECT_EQ(urlparser::url::default_port("socks5h"), 1080);
+    EXPECT_EQ(urlparser::url("socks5://proxy.local").effective_port(), 1080);
+    EXPECT_EQ(urlparser::url("socks5h://proxy.local:9050").effective_port(), 9050);  // a port the URL names wins
+    EXPECT_EQ(urlparser::url("socks5://proxy.local:0").effective_port(), 1080);      // 0 is "not specified" (see port())
+}
+
+UTEST(UrlTest, NormalizedDropsTheDefaultPortOfASocksSchemeAndKeepsAnyOther) {
+    EXPECT_STREQ(urlparser::url("socks5://proxy.local:1080/").normalized().c_str(), "socks5://proxy.local/");
+    EXPECT_STREQ(urlparser::url("socks5h://proxy.local:9050/").normalized().c_str(), "socks5h://proxy.local:9050/");
+    // an unlisted scheme keeps its port even when it is the protocol's own
+    EXPECT_STREQ(urlparser::url("ssh://host:22/").normalized().c_str(), "ssh://host:22/");
+}
+
 UTEST(UrlTest, DefaultPortIsZeroForSchemesWithoutOne) {
     EXPECT_EQ(urlparser::url::default_port("ssh"), 0);
-    EXPECT_EQ(urlparser::url::default_port("socks5"), 0);
     EXPECT_EQ(urlparser::url::default_port("gopher"), 0);
     EXPECT_EQ(urlparser::url::default_port(""), 0);
     // Matched as given (protocol() already returns lowercase), not case-folded.
@@ -371,18 +385,18 @@ UTEST(UrlTest, DefaultPortIsZeroForSchemesWithoutOne) {
 }
 
 UTEST(UrlTest, PortOrDefaultPrefersTheExplicitPort) {
-    EXPECT_EQ(urlparser::url("https://example.com:8443/").port_or_default(), 8443);
-    EXPECT_EQ(urlparser::url("http://example.com:443/").port_or_default(), 443);
+    EXPECT_EQ(urlparser::url("https://example.com:8443/").effective_port(), 8443);
+    EXPECT_EQ(urlparser::url("http://example.com:443/").effective_port(), 443);
 }
 
 UTEST(UrlTest, PortOrDefaultFallsBackToTheSchemeDefault) {
     urlparser::url plain("http://example.com/");
     EXPECT_EQ(plain.port(), 0);  // port() itself stays "not specified"
-    EXPECT_EQ(plain.port_or_default(), 80);
-    EXPECT_EQ(urlparser::url("https://example.com").port_or_default(), 443);
-    EXPECT_EQ(urlparser::url("HTTPS://Example.com/").port_or_default(), 443);
-    EXPECT_EQ(urlparser::url("example.com/path").port_or_default(), 0);
-    EXPECT_EQ(urlparser::url("gopher://example.com/").port_or_default(), 0);
+    EXPECT_EQ(plain.effective_port(), 80);
+    EXPECT_EQ(urlparser::url("https://example.com").effective_port(), 443);
+    EXPECT_EQ(urlparser::url("HTTPS://Example.com/").effective_port(), 443);
+    EXPECT_EQ(urlparser::url("example.com/path").effective_port(), 0);
+    EXPECT_EQ(urlparser::url("gopher://example.com/").effective_port(), 0);
 }
 
 // --- username() / password() --------------------------------------------
@@ -450,7 +464,7 @@ UTEST(UrlTest, Ipv6HostWithoutPort) {
     urlparser::url url("http://[::1]/path");
     EXPECT_STREQ(std::string(url.host_text()).c_str(), "[::1]");
     EXPECT_EQ(url.port(), 0);
-    EXPECT_EQ(url.port_or_default(), 80);
+    EXPECT_EQ(url.effective_port(), 80);
     EXPECT_STREQ(std::string(url.path()).c_str(), "/path");
 }
 
@@ -461,6 +475,20 @@ UTEST(UrlTest, Ipv6HostWithUserinfoAndQuery) {
     EXPECT_STREQ(std::string(url.host_text()).c_str(), "[2001:db8::1]");
     EXPECT_EQ(url.port(), 8443);
     EXPECT_STREQ(std::string(url.query()).c_str(), "b=1");
+}
+
+UTEST(UrlTest, BareHostWorksOnAHostHeldAsText) {
+    EXPECT_STREQ(std::string(urlparser::bare_host("[::1]")).c_str(), "::1");
+    EXPECT_STREQ(std::string(urlparser::bare_host("[2001:db8::1]")).c_str(), "2001:db8::1");
+    EXPECT_STREQ(std::string(urlparser::bare_host("::1")).c_str(), "::1");
+    EXPECT_STREQ(std::string(urlparser::bare_host("127.0.0.1")).c_str(), "127.0.0.1");
+    EXPECT_STREQ(std::string(urlparser::bare_host("example.com")).c_str(), "example.com");
+    // only a pair around the whole text goes; a lone or crossed bracket is left alone, and the empty text stays empty
+    EXPECT_STREQ(std::string(urlparser::bare_host("")).c_str(), "");
+    EXPECT_STREQ(std::string(urlparser::bare_host("[")).c_str(), "[");
+    EXPECT_STREQ(std::string(urlparser::bare_host("[::1")).c_str(), "[::1");
+    EXPECT_STREQ(std::string(urlparser::bare_host("::1]")).c_str(), "::1]");
+    EXPECT_STREQ(std::string(urlparser::bare_host("[]")).c_str(), "");
 }
 
 UTEST(UrlTest, UnknownSchemeStillParses) {
@@ -474,7 +502,7 @@ UTEST(UrlTest, UnknownSchemeStillParses) {
 // --- implicit construction from std::string / const char* ---------------
 
 static std::string describe_url(const urlparser::url& u) {
-    return std::string(u.protocol()) + "|" + std::string(u.host_text()) + "|" + std::to_string(u.port_or_default());
+    return std::string(u.protocol()) + "|" + std::string(u.host_text()) + "|" + std::to_string(u.effective_port());
 }
 
 UTEST(UrlTest, ConvertsImplicitlyFromStringLiteralAndStdString) {

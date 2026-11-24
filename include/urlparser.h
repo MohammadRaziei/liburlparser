@@ -833,18 +833,22 @@ class URLPARSER_API url {
     int port() const noexcept { return port_; }
     /**
      * @brief The default port of a scheme, or 0 when the scheme has none.
-     * Covers the WHATWG "special" schemes only (http 80, https 443, ws 80,
-     * wss 443, ftp 21) - the same table normalized() uses to drop a
-     * redundant port. Policy beyond that (for example a proxy scheme such
-     * as socks5) belongs to the caller. The scheme is matched as given
-     * (lowercase, as protocol() returns it).
+     * Covers the WHATWG "special" schemes (http 80, https 443, ws 80,
+     * wss 443, ftp 21) and the SOCKS proxy schemes (socks5 and socks5h,
+     * 1080, the port RFC 1928 and curl give them) - the same table
+     * normalized() uses to drop a redundant port, so "socks5://h:1080"
+     * normalizes to "socks5://h". Any other scheme has none (0), whatever
+     * the protocol's own convention (ssh 22, ...): the table lists the
+     * schemes a connection can be made to by this URL alone. The scheme is
+     * matched as given (lowercase, as protocol() returns it).
      */
     static int default_port(std::string_view scheme) noexcept;
     /**
-     * @brief port() when the URL names one, else the default port of its
-     * scheme (see default_port()), else 0.
+     * @brief The port a connection to this URL uses: port() when the URL
+     * names one, else the default port of its scheme (see default_port()),
+     * else 0. (Called port_or_default() up to 2.3.1.)
      */
-    int port_or_default() const noexcept { return port_ != 0 ? port_ : default_port(protocol()); }
+    int effective_port() const noexcept { return port_ != 0 ? port_ : default_port(protocol()); }
     /** @brief The '&'-separated query parameters, split into a vector. */
     query_params params() const noexcept;
     /**
@@ -1163,6 +1167,17 @@ namespace urlparser {
  * so it's left as-is here rather than special-cased.
  */
 URLPARSER_API std::string resolve(std::string_view base, std::string_view ref);
+
+/**
+ * @brief A host without the brackets of an IPv6 literal: "::1" for "[::1]". Any other text comes back unchanged.
+ *
+ * For a host that is held as text: a connection's target, a `Host:` value, a `no_proxy` entry; for the host of a url, `bare_host(u.host_text())`.
+ * `host_text()` is the raw text and keeps the brackets. The brackets belong to the URL syntax
+ * (a `Host:` header and a rebuilt URL need them), not to the address: a resolver, a TLS server name and a SOCKS5 request want it
+ * bare. Only a matching pair around the whole text is removed; the text is not validated, so "[example.com]" gives "example.com".
+ * Returns a view into `host_text`.
+ */
+URLPARSER_API std::string_view bare_host(std::string_view host_text) noexcept;
 
 }  // namespace urlparser
 

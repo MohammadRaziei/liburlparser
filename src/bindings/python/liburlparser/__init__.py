@@ -13,7 +13,7 @@ if _sys.platform == "win32" and hasattr(_os, "add_dll_directory"):
     if _os.path.isdir(_lib_dir):
         _os.add_dll_directory(_lib_dir)
 
-from .core import Host, Hostname, IPv4, IPv6, ScpUrl, GitUrl, Url, __doc__, __version__, psl, quote, unquote, resolve, normalize, build_search_params  # noqa: E402
+from .core import Host, Hostname, IPv4, IPv6, ScpUrl, GitUrl, Url, __doc__, __version__, psl, quote, unquote, resolve, normalize, build_search_params, bare_host  # noqa: E402
 
 
 def get_include_dir() -> str:
@@ -49,6 +49,7 @@ __all__ = [
     "resolve",
     "normalize",
     "build_search_params",
+    "bare_host",
     "get_include_dir",
     "get_lib_dir",
     "get_cmake_dir",

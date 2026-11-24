@@ -21,7 +21,7 @@ UTEST(link_check, url_accessors) {
     ASSERT_TRUE(u.username() == "user");
     ASSERT_TRUE(u.password() == "p%40ss");
     ASSERT_EQ(u.port(), 8443);
-    ASSERT_EQ(u.port_or_default(), 8443);
+    ASSERT_EQ(u.effective_port(), 8443);
     ASSERT_TRUE(u.abspath() == "/a/c");
     ASSERT_TRUE(u.normalized() == "https://user:p%40ss@example.com:8443/a/c?x=1&y=2#frag");
     ASSERT_FALSE(u.get_search_params().empty());
@@ -30,7 +30,7 @@ UTEST(link_check, url_accessors) {
 
 UTEST(link_check, default_port) {
     ASSERT_EQ(urlparser::url::default_port("https"), 443);
-    ASSERT_EQ(urlparser::url("http://example.com/").port_or_default(), 80);
+    ASSERT_EQ(urlparser::url("http://example.com/").effective_port(), 80);
 }
 
 UTEST(link_check, ipv6_literal_host) {

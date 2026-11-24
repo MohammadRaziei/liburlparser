@@ -294,6 +294,11 @@ NB_MODULE(_urlparser_py, m) {
     }, "s"_a, "keep_slash"_a = false,
        "Percent-encode a string. keep_slash=True leaves '/' unescaped "
        "(handy for a whole path component).");
+    m.def("bare_host", [](std::string_view host_text) {
+        return std::string(urlparser::bare_host(host_text));
+    }, "host_text"_a,
+       "A host without the brackets of an IPv6 literal: bare_host('[::1]') -> '::1'. Any other text comes back unchanged. "
+       "For the host of a url: bare_host(url.host_text).");
     m.def("resolve", [](std::string_view base, std::string_view ref) {
         return urlparser::resolve(base, ref);
     }, "base"_a, "ref"_a,
@@ -489,7 +494,7 @@ NB_MODULE(_urlparser_py, m) {
         .def_prop_ro("port", &urlparser::url::port)
         // port, or the scheme's default port (http 80, https 443, ws 80, wss 443, ftp 21)
         // when the URL names none; 0 when there is neither.
-        .def_prop_ro("port_or_default", &urlparser::url::port_or_default)
+        .def_prop_ro("effective_port", &urlparser::url::effective_port)
         .def_static("default_port", &urlparser::url::default_port, nb::arg("scheme"))
         .def_prop_ro("params", &urlparser::url::params)
         .def_prop_ro("search_params", [](const urlparser::url& u) {

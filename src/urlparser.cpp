@@ -786,12 +786,14 @@ const std::string& urlparser::url::abspath() const noexcept {
 // "https://host:443/..." and "https://host/..." are the same origin, so
 // normalized() omits the port when it matches the scheme's default (an
 // explicit non-default port, or any scheme not in this list - "ssh" isn't
-// a WHATWG special scheme, for one - is always kept). Also public as
-// url::default_port() / url::port_or_default().
+// a WHATWG special scheme, for one - is always kept). The list is the
+// WHATWG special schemes plus the SOCKS proxy schemes. Also public as
+// url::default_port() / url::effective_port().
 int urlparser::url::default_port(std::string_view scheme) noexcept {
     if (scheme == "http" || scheme == "ws") return 80;
     if (scheme == "https" || scheme == "wss") return 443;
     if (scheme == "ftp") return 21;
+    if (scheme == "socks5" || scheme == "socks5h") return 1080;  // RFC 1928; what curl uses for a proxy URL without a port
     return 0;
 }
 
@@ -1742,6 +1744,8 @@ std::ostream& operator<<(std::ostream& os, const urlparser::ipv6& dt) {
     os << dt.str();
     return os;
 }
+
+std::string_view urlparser::bare_host(std::string_view host_text) noexcept { return strip_ip_brackets(host_text); }
 
 // --- host classification (hostname / ipv4 / ipv6) -----------------------
 

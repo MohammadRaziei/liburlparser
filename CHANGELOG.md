@@ -10,6 +10,26 @@ releases are short, those entries are brief.
 
 ## [Unreleased]
 
+### Added
+- **`urlparser::bare_host(text)` (Python: `bare_host`): a host without the brackets of an IPv6 literal** (`"[::1]"` gives
+  `"::1"`; any other text comes back unchanged). `host_text()` is the raw text and keeps them, which is what a `Host:`
+  header and a rebuilt URL need. Everything that takes the host as an address or a name needs them gone: a resolver
+  (`getaddrinfo("[::1]")` answers "not found"), a TLS server name, a SOCKS5 request, a proxy-bypass comparison. Callers had to
+  strip the brackets by hand, and each one that forgot had a client that could not reach `http://[::1]:PORT/` (httpp's
+  `connect()` was one). It works on text, so it serves a host that is held as a string (a connection's target, a `Host:`
+  value, a `no_proxy` entry) and, as `bare_host(u.host_text())`, the host of a url. Returns a view into its argument. Two tests in
+  `test_url.cpp`, one parametrized test in `test_url.py`.
+
+### Changed
+- **`url::default_port()` knows the SOCKS proxy schemes: `socks5` and `socks5h` are 1080** (RFC 1928; what curl uses for a proxy
+  URL without a port). It was the WHATWG special schemes only, with "policy beyond that belongs to the caller", and the one such
+  rule every caller needed was socks. Because `normalized()` drops a port that equals the scheme's default, `socks5://h:1080/`
+  now normalizes to `socks5://h/`; a socks URL with any other port, and every scheme still outside the table (`ssh://h:22/`),
+  keep their port. Two tests in `test_url.cpp`, the parametrized `test_default_port` and `test_effective_port` in `test_url.py`.
+- **`url::port_or_default()` is now `url::effective_port()`** (Python: `Url.effective_port`). Same behaviour: `port()` when the URL
+  names one, else the default port of its scheme, else 0. The name says what the number is for (the port a connection uses) and
+  is not mistaken for a pair of the other accessors. The old name is gone, not kept as an alias: it was in 2.3.0 and 2.3.1 only.
+
 ### Fixed
 - **`url::str()` and `url::normalized()` keep the `//` of a scheme that is not in the netloc table, when the url has an
   authority.** They wrote `scheme:` for every scheme outside `USES_NETLOC` and glued the host to it, so `redis://h:6379/0`

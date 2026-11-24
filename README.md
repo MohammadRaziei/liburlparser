@@ -196,7 +196,8 @@ there is some examples in [examples](https://github.com/MohammadRaziei/liburlpar
 ...
 /// for parsing url
 urlparser::url url("https://ee.aut.ac.ir/about");
-std::string_view host_text = url.host_text(); // the raw host text, unclassified
+std::string_view host_text = url.host_text(); // the raw host text, unclassified: "[::1]" keeps its brackets
+std::string_view bare = urlparser::bare_host(url.host_text()); // without an IPv6 literal's brackets ("::1"): for a resolver, a TLS name, SOCKS
 
 /// url.host() is a urlparser::host (hostname/ipv4/ipv6, whichever this
 /// URL's host actually is)
